@@ -40,6 +40,20 @@
    * Anti-lookahead filter: only transactions announced on or before quarterEndDate(q)
    * are visible in historical/partial quarters.
    */
+  function compareQuarter(a, b) {
+    if (!a || !b) return 0;
+    return a.localeCompare(b);
+  }
+
+  /**
+   * Time-aware active relationship filter:
+   * 1. Historical quarters: must be announced on/before quarterEndDate(quarter) (no lookahead).
+   * 2. Must still be active/outstanding in `quarter`:
+   *    - Equity investments persist as ongoing capital stakes from announced/startQ onward.
+   *    - Debt, bonds, loans, leases, guarantees & long-term contracts remain active while
+   *      unmatured (quarter <= endQ) or while remaining commitment / unpaid principal > 0.
+   *    - Matured transactions with zero remaining obligation drop off after endQ.
+   */
   function getVisibleTransactions(transactions, quarter) {
     const endDate = quarterEndDate(quarter);
     const isForecast = quarterStatus(quarter) === "FORECAST";
@@ -47,8 +61,65 @@
       if (!isForecast && tx.announcedDate && tx.announcedDate > endDate) {
         return false;
       }
+      if (tx.type === "Equity Investment") {
+        return true;
+      }
+      // For debt/contracts/leases/guarantees: exclude if already matured with zero remaining obligation
+      if (tx.endQ && compareQuarter(quarter, tx.endQ) > 0) {
+        const rem = tx.remainingCommitment ?? 0;
+        const unpaid = (tx.amountDrawn ?? 0) - (tx.amountRepaid ?? 0);
+        if (rem <= 0 && unpaid <= 0) return false;
+      }
       return true;
     });
+  }
+
+  /**
+   * Computes Connected Components over non-Ocean entities using active edges,
+   * and strictly separates connected entities from unconnected (degree-0) entities.
+   */
+  function analyzeConnectivity(entities, activeTxs) {
+    const nonOcean = entities.filter(e => !e.isOcean);
+    const degree = {};
+    const adj = {};
+    nonOcean.forEach(e => { degree[e.id] = 0; adj[e.id] = new Set(); });
+
+    activeTxs.forEach(tx => {
+      if (degree[tx.payer] !== undefined) degree[tx.payer]++;
+      if (degree[tx.receiver] !== undefined) degree[tx.receiver]++;
+      if (adj[tx.payer] && adj[tx.receiver] && tx.payer !== "PRIVATE_CREDIT_OCEAN" && tx.receiver !== "PRIVATE_CREDIT_OCEAN") {
+        adj[tx.payer].add(tx.receiver);
+        adj[tx.receiver].add(tx.payer);
+      }
+    });
+
+    // Only entities with >= 1 active verified link to another company/SPV/known fund enter the main network
+    // (Entities linked ONLY to Private Credit Ocean move to Unconnected Entities)
+    const connectedIds = new Set(nonOcean.filter(e => adj[e.id] && adj[e.id].size > 0).map(e => e.id));
+    const unconnectedIds = nonOcean.filter(e => !connectedIds.has(e.id)).map(e => e.id);
+
+    const visited = new Set();
+    const components = [];
+    Array.from(connectedIds).forEach(nid => {
+      if (visited.has(nid)) return;
+      const queue = [nid];
+      const comp = [];
+      visited.add(nid);
+      while (queue.length > 0) {
+        const u = queue.shift();
+        comp.push(u);
+        (adj[u] || []).forEach(v => {
+          if (connectedIds.has(v) && !visited.has(v)) {
+            visited.add(v);
+            queue.push(v);
+          }
+        });
+      }
+      components.push(comp);
+    });
+    components.sort((a, b) => b.length - a.length);
+
+    return { connectedIds, unconnectedIds, components, degree };
   }
 
   /**
@@ -100,6 +171,60 @@
   /**
    * Computes Systemic Importance Score and all 6 switchable sizing metrics for every entity.
    */
+
+  /**
+   * Computes an objective, multi-factor Financial Fragility Score (0-100) for each entity
+   * based on leverage, cash burn / CapEx pressure, refinancing dependency, contract/debt service
+   * coverage, and active distress signals — ensuring no single company (e.g. OpenAI) is
+   * hardcoded as highest risk.
+   */
+  function computeFragilityScore(entity, st, ocean) {
+    if (!entity || entity.isOcean) return { score: 0, drivers: [] };
+    const p = entity.defaults || {};
+    const cash = st.cash !== null && st.cash !== undefined ? st.cash : (p.minCash ? p.minCash * 2 : 1.0);
+    const undrawn = st.undrawnCredit !== null && st.undrawnCredit !== undefined ? st.undrawnCredit : 0;
+    const liq = Math.max(0.2, cash + undrawn);
+    const debt = Math.max(0, st.debt ?? 0);
+    const fcf = st.fcf !== null && st.fcf !== undefined ? st.fcf : -((p.capex || 0) * 0.4);
+    const rev = Math.max(0.1, st.revenue !== null && st.revenue !== undefined ? st.revenue : 0.5);
+    const gm = Math.max(0.1, p.grossMargin ?? 0.5);
+    const refi = Math.max(0.1, (p.refiSuccess ?? 0.85) * ((ocean?.refiSuccessRate ?? 85) / 100));
+    const avail = (ocean?.fundingAvailability ?? 100) / 100;
+
+    // 1. Leverage / Debt-to-Liquidity pressure (0-30)
+    const debtToLiq = debt / liq;
+    const levScore = Math.min(30, debtToLiq * 3.8);
+
+    // 2. Cash burn & CapEx runway pressure (0-25)
+    const burnRatio = fcf < 0 ? Math.abs(fcf) / liq : 0;
+    const burnScore = Math.min(25, burnRatio * 28);
+
+    // 3. Refinancing & external capital dependency (0-25)
+    const refiDep = ((1 - refi) * 30) + ((p.newDebt || 0) / liq) * 10 * (1.2 - avail * 0.5);
+    const refiScore = Math.min(25, Math.max(0, refiDep));
+
+    // 4. Debt service & fixed compute/lease rigidity vs gross profit (0-20)
+    const fixedOblig = (st.interestExp || (debt * (p.interestRate || 0.06) / 4)) + (p.debtRepay || 0) + (p.computePay || 0);
+    const covRatio = fixedOblig / Math.max(0.15, rev * gm);
+    const covScore = Math.min(20, covRatio * 8);
+
+    // 5. Known market stress / distress boost
+    let stressBoost = 0;
+    if (st.distressLevel === 3) stressBoost = 30;
+    else if (st.distressLevel === 2) stressBoost = 18;
+    else if (st.distressLevel === 1) stressBoost = 8;
+    if (entity.id === "SPV_JUPITER") stressBoost += 14; // Verified Sep 2026 force majeure & 89-91c secondary loan quote
+
+    const score = Math.round(Math.min(100, Math.max(4, levScore + burnScore + refiScore + covScore + stressBoost)));
+    const drivers = [];
+    if (levScore >= 14) drivers.push("High Leverage");
+    if (burnScore >= 10) drivers.push("Cash Burn / CapEx");
+    if (refiScore >= 10) drivers.push("Refinancing Dependency");
+    if (covScore >= 10) drivers.push("Fixed Obligation Load");
+    if (entity.id === "SPV_JUPITER") drivers.push("Force Majeure / 89-91¢ Loan");
+    return { score, drivers };
+  }
+
   function computeEntityMetrics(entities, visibleTxs, stateByEntity) {
     const flowMap = {};
     const degreeMap = {};
@@ -220,6 +345,9 @@
         snap.creditLoss = 0;
         snap.lostReceipts = 0;
         snap.requiredRevenue = null;
+        const frag = computeFragilityScore(e, snap, ocean);
+        snap.fragilityScore = frag.score;
+        snap.fragilityDrivers = frag.drivers;
         states[e.id] = snap;
       });
       timeline[q] = { quarter: q, status: "HISTORICAL", entities: states, contagionLog: [] };
@@ -428,6 +556,11 @@
         });
       }
 
+      entities.forEach(e => {
+        const frag = computeFragilityScore(e, states[e.id], ocean);
+        states[e.id].fragilityScore = frag.score;
+        states[e.id].fragilityDrivers = frag.drivers;
+      });
       timeline[q] = { quarter: q, status, entities: states, contagionLog };
       prevStates = states;
     });
@@ -443,7 +576,9 @@
     quarterEndDate,
     quarterStatus,
     getVisibleTransactions,
+    analyzeConnectivity,
     getEdgeVisual,
+    computeFragilityScore,
     computeEntityMetrics,
     runSimulation
   };
