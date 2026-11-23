@@ -1,0 +1,5231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Credit Network &amp; Financial Contagion Simulator</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif; background: #0B1120; color: #F8FAFC; overflow: hidden; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0F172A; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  .node-label { pointer-events: none; user-select: none; text-shadow: 0 1px 4px rgba(2,6,23,0.95); }
+  .edge-path { transition: opacity 0.18s ease, stroke-width 0.18s ease; cursor: pointer; }
+  .node-circle { transition: stroke-width 0.15s ease, filter 0.15s ease; cursor: grab; }
+  .node-circle:active { cursor: grabbing; }
+  input[type=range] { accent-color: #38BDF8; }
+</style>
+</head>
+<body class="h-screen w-screen flex flex-col select-none">
+
+<!-- TOP CONTROL BAR -->
+<header class="bg-slate-950 border-b border-slate-800 px-3 py-2 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
+  <div class="flex items-center gap-2.5">
+    <div class="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_8px_#38BDF8]"></div>
+    <h1 class="text-sm sm:text-base font-bold tracking-tight text-white">AI Credit Network</h1>
+    <span id="versionBadge" class="mono text-[11px] px-2 py-0.5 rounded bg-slate-800 text-sky-300 border border-slate-700">v1.0</span>
+    <span id="quarterHeaderBadge" class="mono text-[11px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">2026Q3 · HISTORICAL</span>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+    <label class="flex items-center gap-1.5 text-slate-400">
+      <span>气泡依据</span>
+      <select id="sizeMetricSelect" class="bg-slate-900 border border-slate-700 text-slate-100 rounded px-2 py-1 text-xs focus:outline-none focus:border-sky-500">
+        <option value="systemic">系统重要性 (Systemic)</option>
+        <option value="revenue">季度营收 (Revenue)</option>
+        <option value="debt">总债务 (Total Debt)</option>
+        <option value="liquidity">现金与流动性 (Liquidity)</option>
+        <option value="commitments">长期合同承诺 (RPO)</option>
+        <option value="networkExposure">网络资金敞口 (Exposure)</option>
+      </select>
+    </label>
+
+    <label class="flex items-center gap-1.5 text-slate-400">
+      <span>交易类型</span>
+      <select id="txTypeFilter" class="bg-slate-900 border border-slate-700 text-slate-100 rounded px-2 py-1 text-xs focus:outline-none focus:border-sky-500">
+        <option value="ALL">全部类型</option>
+        <option value="Equity Investment">Equity Investment</option>
+        <option value="Cloud Computing Purchase">Cloud Computing Purchase</option>
+        <option value="Take-or-Pay Contract">Take-or-Pay Contract</option>
+        <option value="Data Center Lease">Data Center Lease</option>
+        <option value="GPU-backed Financing">GPU-backed Financing</option>
+        <option value="Project Finance">Project Finance</option>
+        <option value="Direct Loan">Direct Loan</option>
+        <option value="Corporate Bond">Corporate Bond</option>
+        <option value="Equipment Financing">Equipment Financing</option>
+        <option value="Loan Guarantee">Loan Guarantee</option>
+        <option value="Convertible Debt">Convertible Debt</option>
+        <option value="GPU / Server Purchase">GPU / Server Purchase</option>
+      </select>
+    </label>
+
+    <label class="flex items-center gap-1.5 text-slate-400">
+      <span>最小金额</span>
+      <input id="minAmountSlider" type="range" min="0" max="50" step="1" value="0" class="w-16">
+      <span id="minAmountVal" class="mono text-slate-200 w-9">$0B</span>
+    </label>
+
+    <label class="flex items-center gap-1 text-slate-400">
+      <span>层级</span>
+      <select id="hopDepthSelect" class="bg-slate-900 border border-slate-700 text-slate-100 rounded px-1.5 py-1 text-xs">
+        <option value="1">1-Hop</option>
+        <option value="2">2-Hop</option>
+      </select>
+    </label>
+
+    <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
+
+    <button id="presetBaselineBtn" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">基准情景</button>
+    <button id="presetOpenAIBtn" class="px-2 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-800">模拟 OpenAI 违约</button>
+    <button id="presetOceanBtn" class="px-2 py-1 rounded bg-amber-950/80 hover:bg-amber-900 text-amber-200 border border-amber-800">私募信贷收紧</button>
+
+    <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
+
+    <button id="openImportBtn" class="px-2.5 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white font-medium">导入/更新数据</button>
+    <button id="openExportBtn" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">导出</button>
+    <button id="resetLayoutBtn" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700" title="重置网络布局">重置布局</button>
+  </div>
+</header>
+
+<!-- MAIN 3-COLUMN WORKSPACE -->
+<div class="flex-1 flex min-h-0 overflow-hidden relative">
+
+  <!-- LEFT SIDEBAR: PRIVATE CREDIT OCEAN & CONTAGION MONITOR -->
+  <aside id="leftSidebar" class="w-72 bg-slate-900/95 border-r border-slate-800 flex flex-col shrink-0 overflow-y-auto p-3 gap-3 hidden lg:flex">
+    <div>
+      <div class="flex items-center justify-between mb-1.5">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-sky-400">Private Credit Ocean</h2>
+        <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">外部资金池 · 不破产</span>
+      </div>
+      <p class="text-[11px] text-slate-400 leading-relaxed mb-3">
+        统一承接未公开最终持有人之私募信贷、银团与 144A 债。调节下方参数模拟外部融资收紧对产业链的影响。
+      </p>
+
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <div class="flex justify-between mb-0.5"><span class="text-slate-300">外部资金可得性</span><span id="oceanAvailVal" class="mono text-sky-300">100%</span></div>
+          <input id="oceanAvail" type="range" min="0" max="100" step="5" value="100" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between mb-0.5"><span class="text-slate-300">新增债务基准利率</span><span id="oceanRateVal" class="mono text-sky-300">7.5%</span></div>
+          <input id="oceanRate" type="range" min="4" max="15" step="0.5" value="7.5" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between mb-0.5"><span class="text-slate-300">再融资成功率</span><span id="oceanRefiVal" class="mono text-sky-300">85%</span></div>
+          <input id="oceanRefi" type="range" min="0" max="100" step="5" value="85" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between mb-0.5"><span class="text-slate-300">单季外部资金上限</span><span id="oceanCapVal" class="mono text-sky-300">$250B</span></div>
+          <input id="oceanCap" type="range" min="20" max="400" step="10" value="250" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between mb-0.5"><span class="text-slate-300">信用利差收紧加点</span><span id="oceanTightVal" class="mono text-amber-300">+0 bps</span></div>
+          <input id="oceanTight" type="range" min="0" max="500" step="25" value="0" class="w-full">
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-slate-800 pt-3">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">全网风险状态监控</h2>
+      <div class="grid grid-cols-2 gap-1.5 text-center">
+        <div class="bg-slate-950 border border-slate-800 rounded p-2">
+          <div id="cntNormal" class="mono text-base font-semibold text-emerald-400">0</div>
+          <div class="text-[10px] text-slate-400">正常 (Normal)</div>
+        </div>
+        <div class="bg-slate-950 border border-amber-900/50 rounded p-2">
+          <div id="cntWarn" class="mono text-base font-semibold text-amber-400">0</div>
+          <div class="text-[10px] text-slate-400">L1 流动性预警</div>
+        </div>
+        <div class="bg-slate-950 border border-orange-900/50 rounded p-2">
+          <div id="cntCrisis" class="mono text-base font-semibold text-orange-400">0</div>
+          <div class="text-[10px] text-slate-400">L2 流动性危机</div>
+        </div>
+        <div class="bg-slate-950 border border-rose-900/60 rounded p-2">
+          <div id="cntDefault" class="mono text-base font-semibold text-rose-400">0</div>
+          <div class="text-[10px] text-slate-400">L3 模拟违约</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-slate-800 pt-3 flex-1 min-h-0 flex flex-col">
+      <div class="flex items-center justify-between mb-1.5">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-rose-400">信用传染事件日志</h2>
+        <span id="contagionTotalBadge" class="mono text-[10px] text-rose-300">$0.0B</span>
+      </div>
+      <div id="contagionFeed" class="flex-1 overflow-y-auto space-y-1.5 text-[11px] pr-1">
+        <div class="text-slate-500 italic">当前季度无触发传染事件。切换至未来季度或点击「模拟 OpenAI 违约」查看多跳传染链。</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER INTERACTIVE D3 NETWORK CANVAS -->
+  <main class="flex-1 relative bg-[#0B1120] overflow-hidden" id="networkContainer">
+    <svg id="networkSvg" class="w-full h-full block"></svg>
+
+    <!-- Floating Hover Tooltip -->
+    <div id="tooltip" class="hidden fixed pointer-events-none z-50 bg-slate-950/95 border border-slate-700 rounded-lg shadow-2xl px-3 py-2 text-xs max-w-xs"></div>
+
+    <!-- Bottom-Left Visual Legend -->
+    <div class="absolute bottom-3 left-3 bg-slate-950/90 border border-slate-800 rounded-lg px-3 py-2 text-[11px] text-slate-300 flex flex-wrap items-center gap-x-4 gap-y-1 pointer-events-none">
+      <span class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-red-500 inline-block"></span>资金流出 (红)</span>
+      <span class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-emerald-500 inline-block"></span>资金流入 (绿)</span>
+      <span class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-slate-300 inline-block"></span>实际已发生</span>
+      <span class="flex items-center gap-1.5"><span class="w-4 border-t-2 border-dashed border-slate-300 inline-block"></span>已签约未付款</span>
+      <span class="flex items-center gap-1.5"><span class="w-4 border-t-2 border-dotted border-sky-400 inline-block"></span>预测 / 未知</span>
+      <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full border-2 border-rose-500 inline-block"></span>L3 模拟违约</span>
+    </div>
+
+    <!-- Floating Quick Info -->
+    <div class="absolute top-3 left-3 bg-slate-950/80 border border-slate-800 rounded px-2.5 py-1 text-[11px] text-slate-400 pointer-events-none">
+      滚轮缩放 · 拖动节点 · 双击固定 · 点击气泡切换红/绿视角 · 点击空白恢复全局
+    </div>
+  </main>
+
+  <!-- RIGHT DETAIL, AUDIT & PARAMETER DRAWER -->
+  <aside id="rightDrawer" class="w-80 sm:w-96 bg-slate-900/95 border-l border-slate-800 flex flex-col shrink-0 overflow-hidden">
+    <div class="p-3 border-b border-slate-800 flex items-start justify-between gap-2 bg-slate-950/60">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <h2 id="detailName" class="text-sm font-bold text-white truncate">OpenAI Group PBC</h2>
+          <span id="detailTicker" class="mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">PRIVATE</span>
+        </div>
+        <div id="detailMeta" class="text-[11px] text-slate-400 mt-0.5 truncate">AI Model Lab · Ring 1</div>
+      </div>
+      <span id="detailDistressBadge" class="mono text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 shrink-0">Normal</span>
+    </div>
+
+    <!-- Drawer Tabs -->
+    <div class="flex border-b border-slate-800 text-xs bg-slate-950/40 shrink-0">
+      <button data-tab="overview" class="drawer-tab flex-1 py-2 font-medium text-sky-400 border-b-2 border-sky-400">财务与概览</button>
+      <button data-tab="transactions" class="drawer-tab flex-1 py-2 font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent">交易与溯源</button>
+      <button data-tab="params" class="drawer-tab flex-1 py-2 font-medium text-slate-400 hover:text-slate-200 border-b-2 border-transparent">预测与调参</button>
+    </div>
+
+    <!-- Drawer Tab Contents -->
+    <div class="flex-1 overflow-y-auto p-3 text-xs">
+      <!-- TAB 1: OVERVIEW -->
+      <div id="tab-overview" class="space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <span id="detailDataType" class="mono text-[11px] text-slate-400">数据口径: Actual</span>
+          <button id="toggleDefaultBtn" class="px-2.5 py-1 rounded text-[11px] font-medium bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800">
+            触发模拟违约 (Simulated)
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2" id="kpiGrid"></div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5">
+          <div class="flex justify-between items-center mb-1.5">
+            <span class="text-[11px] font-semibold text-slate-300">季度现金余额与债务轨迹 ($B)</span>
+            <span class="mono text-[10px] text-slate-500">2026Q1–2028Q4</span>
+          </div>
+          <div class="relative h-44">
+            <canvas id="entityCashChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-slate-950/70 border border-slate-800 rounded-lg p-2.5 space-y-1">
+          <div class="text-[11px] font-semibold text-slate-300">披露覆盖与原始来源</div>
+          <p id="detailCoverage" class="text-[11px] text-slate-400 leading-relaxed"></p>
+          <a id="detailSourceLink" href="#" target="_blank" rel="noopener noreferrer" class="inline-block text-[11px] text-sky-400 hover:underline mt-1">查看原始 SEC / 官方披露文件 →</a>
+        </div>
+      </div>
+
+      <!-- TAB 2: TRANSACTIONS & AUDIT -->
+      <div id="tab-transactions" class="hidden space-y-2.5">
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span>红 = 本主体资金流出 · 绿 = 本主体资金流入</span>
+          <span id="txCountBadge" class="mono text-slate-300">0 笔</span>
+        </div>
+        <div id="detailTxList" class="space-y-2"></div>
+      </div>
+
+      <!-- TAB 3: FORECAST PARAMETERS -->
+      <div id="tab-params" class="hidden space-y-3">
+        <div class="bg-slate-950 border border-slate-800 rounded p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-200">收入预测模式</span>
+            <select id="paramMode" class="bg-slate-900 border border-slate-700 text-slate-100 rounded px-2 py-1 text-xs">
+              <option value="A">Mode A: 合同覆盖反推 (Contract Coverage)</option>
+              <option value="B">Mode B: 上季增长外推 (Prev Qtr Growth)</option>
+            </select>
+          </div>
+          <div class="flex justify-between text-[11px] pt-1 border-t border-slate-800">
+            <span class="text-slate-400">维持安全储备所需最低季度收入:</span>
+            <span id="modeAReqRev" class="mono font-semibold text-amber-300">--</span>
+          </div>
+        </div>
+
+        <div id="paramControls" class="grid grid-cols-2 gap-2.5"></div>
+
+        <div class="flex gap-2 pt-1">
+          <button id="applyParamsBtn" class="flex-1 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white font-medium">应用并重算全网</button>
+          <button id="resetParamsBtn" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">恢复默认</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- BOTTOM QUARTERLY TIMELINE BAR -->
+<footer class="bg-slate-950 border-t border-slate-800 px-4 py-2.5 flex flex-wrap items-center gap-3 z-20 shrink-0">
+  <div class="flex items-center gap-1.5">
+    <button id="stepBackBtn" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">◀ 上季</button>
+    <button id="playTimelineBtn" class="px-2.5 py-1 rounded bg-sky-700 hover:bg-sky-600 text-xs text-white font-medium">▶ 播放</button>
+    <button id="stepFwdBtn" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">下季 ▶</button>
+  </div>
+
+  <div class="flex-1 min-w-[200px] flex items-center gap-3">
+    <span class="mono text-[11px] text-slate-500">2022Q1</span>
+    <input id="timelineSlider" type="range" min="0" max="27" step="1" value="18" class="flex-1">
+    <span class="mono text-[11px] text-sky-400">2028Q4</span>
+  </div>
+
+  <div class="flex items-center gap-1.5 text-xs">
+    <button id="jumpActualBtn" class="px-2 py-1 rounded bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800">最新完整季 (2026Q3)</button>
+    <button id="jumpPartialBtn" class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-800">当前季 (2026Q4 Partial)</button>
+    <button id="jumpForecastBtn" class="px-2 py-1 rounded bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-800">预测季 (2027Q4)</button>
+  </div>
+</footer>
+
+<!-- IMPORT / VERSION UPDATE MODAL -->
+<div id="importModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-2xl w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+      <h3 class="text-base font-bold text-white">持续数据更新与 CSV / Excel / JSON 导入</h3>
+      <button id="closeImportBtn" class="text-slate-400 hover:text-white text-lg px-2">✕</button>
+    </div>
+
+    <div class="text-xs text-slate-300 space-y-1.5">
+      <p>支持直接导入从 Bloomberg 终端导出的 CSV/Excel(制表符粘贴) 或 JSON 数据，系统将自动升级版本号并保留历史快照，支持一键回滚。</p>
+      <p class="text-slate-400">交易更新列格式：<code class="mono text-sky-300">id,payer,receiver,type,status,announcedDate,totalCommitment,amountDrawn,interestRate,actualLender,sourceUrl</code></p>
+    </div>
+
+    <div class="flex flex-wrap gap-2 items-center text-xs">
+      <label class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 cursor-pointer text-slate-200">
+        选择本地 CSV / JSON 文件
+        <input id="importFileInput" type="file" accept=".csv,.tsv,.json,.txt" class="hidden">
+      </label>
+      <button id="loadSampleUpdateBtn" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-300">载入示例更新（替换未知贷款人）</button>
+    </div>
+
+    <textarea id="importTextarea" rows="7" placeholder="在此粘贴 CSV / TSV (Excel 直接复制粘贴) 或 JSON 数组..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 mono text-xs text-slate-200 focus:outline-none focus:border-sky-500"></textarea>
+
+    <div id="importFeedback" class="hidden text-xs px-3 py-2 rounded"></div>
+
+    <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+      <div class="flex items-center gap-2 text-xs">
+        <span class="text-slate-400">历史版本:</span>
+        <select id="versionHistorySelect" class="bg-slate-950 border border-slate-700 text-slate-200 rounded px-2 py-1 text-xs"></select>
+        <button id="rollbackVersionBtn" class="px-2.5 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-200 border border-amber-800">回滚此版本</button>
+      </div>
+      <button id="executeImportBtn" class="px-4 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold">导入并重算网络</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div id="exportModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+      <h3 class="text-base font-bold text-white">导出数据库与压力测试结果</h3>
+      <button id="closeExportBtn" class="text-slate-400 hover:text-white text-lg px-2">✕</button>
+    </div>
+    <div class="space-y-2 text-xs">
+      <button id="dlEntitiesCsv" class="w-full py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 text-left text-slate-100 border border-slate-700 flex justify-between"><span>导出公司与当季财务数据</span><span class="mono text-sky-400">entities.csv</span></button>
+      <button id="dlTxCsv" class="w-full py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 text-left text-slate-100 border border-slate-700 flex justify-between"><span>导出融资与合同关系总账</span><span class="mono text-sky-400">transactions.csv</span></button>
+      <button id="dlForecastCsv" class="w-full py-2 px-3 rounded bg-slate-800 hover:bg-slate-700 text-left text-slate-100 border border-slate-700 flex justify-between"><span>导出当前情景预测与传染结果</span><span class="mono text-sky-400">forecast_results.csv</span></button>
+      <button id="dlSnapshotJson" class="w-full py-2 px-3 rounded bg-sky-900/60 hover:bg-sky-800/60 text-left text-sky-100 border border-sky-700 flex justify-between"><span>导出完整可恢复数据库快照</span><span class="mono text-sky-300">snapshot.json</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- EMBEDDED CONTAGION ENGINE & VERIFIED DATA -->
+<script>
+/**
+ * AI Credit Network — Cash Flow Forecasting, Stress Testing & Multi-Hop Contagion Engine
+ * Works identically in browser (window.AICreditEngine) and Node.js (module.exports).
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.AICreditEngine = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
+  const QUARTERS_HIST = [
+    "2022Q1","2022Q2","2022Q3","2022Q4",
+    "2023Q1","2023Q2","2023Q3","2023Q4",
+    "2024Q1","2024Q2","2024Q3","2024Q4",
+    "2025Q1","2025Q2","2025Q3","2025Q4",
+    "2026Q1","2026Q2","2026Q3"
+  ];
+  const QUARTER_PARTIAL = "2026Q4";
+  const QUARTERS_FORECAST = ["2027Q1","2027Q2","2027Q3","2027Q4","2028Q1","2028Q2","2028Q3","2028Q4"];
+  const ALL_QUARTERS = [...QUARTERS_HIST, QUARTER_PARTIAL, ...QUARTERS_FORECAST];
+
+  function quarterEndDate(q) {
+    const y = parseInt(q.slice(0, 4), 10);
+    const n = parseInt(q.slice(5), 10);
+    const ends = { 1: `${y}-03-31`, 2: `${y}-06-30`, 3: `${y}-09-30`, 4: `${y}-12-31` };
+    return ends[n] || `${y}-12-31`;
+  }
+
+  function quarterStatus(q) {
+    if (q === QUARTER_PARTIAL) return "PARTIAL";
+    return QUARTERS_FORECAST.includes(q) ? "FORECAST" : "HISTORICAL";
+  }
+
+  function qIndex(q) {
+    return ALL_QUARTERS.indexOf(q);
+  }
+
+  /**
+   * Anti-lookahead filter: only transactions announced on or before quarterEndDate(q)
+   * are visible in historical/partial quarters.
+   */
+  function getVisibleTransactions(transactions, quarter) {
+    const endDate = quarterEndDate(quarter);
+    const isForecast = quarterStatus(quarter) === "FORECAST";
+    return transactions.filter(tx => {
+      if (!isForecast && tx.announcedDate && tx.announcedDate > endDate) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  /**
+   * Strict visual semantics: Red = Cash Outflow, Green = Cash Inflow.
+   * Flips perspective when receiver vs payer is selected.
+   */
+  function getEdgeVisual(tx, selectedNodeId, quarter) {
+    const isForecastQ = quarterStatus(quarter) === "FORECAST";
+    let color = "url(#grad-out-in)";
+    let role = "neutral";
+    if (selectedNodeId) {
+      if (tx.payer === selectedNodeId) {
+        color = "#EF4444"; // Red outflow
+        role = "outflow";
+      } else if (tx.receiver === selectedNodeId) {
+        color = "#10B981"; // Green inflow
+        role = "inflow";
+      } else {
+        color = "#334155";
+        role = "dimmed";
+      }
+    }
+
+    const amt = tx.totalCommitment;
+    let dashArray = "";
+    let opacity = role === "dimmed" ? 0.14 : 0.85;
+    let lineKind = "Actual";
+
+    if (amt === null || amt === undefined || Number.isNaN(Number(amt))) {
+      dashArray = "2,4";
+      opacity = role === "dimmed" ? 0.08 : 0.55;
+      lineKind = "Unknown";
+    } else if (isForecastQ && tx.status !== "Actual") {
+      dashArray = "3,3";
+      opacity = role === "dimmed" ? 0.10 : 0.65;
+      lineKind = "Forecast";
+    } else if (tx.status === "Committed" || tx.amountDrawn === 0) {
+      dashArray = "8,4";
+      lineKind = "Committed";
+    } else {
+      dashArray = "";
+      lineKind = "Actual";
+    }
+
+    const strokeWidth = amt ? Math.max(1.4, Math.min(8.5, 1.2 + Math.log10(1 + amt) * 2.8)) : 1.2;
+    return { color, role, dashArray, opacity, strokeWidth, lineKind };
+  }
+
+  /**
+   * Computes Systemic Importance Score and all 6 switchable sizing metrics for every entity.
+   */
+  function computeEntityMetrics(entities, visibleTxs, stateByEntity) {
+    const flowMap = {};
+    const degreeMap = {};
+    const commitMap = {};
+    entities.forEach(e => {
+      flowMap[e.id] = 0;
+      degreeMap[e.id] = new Set();
+      commitMap[e.id] = 0;
+    });
+
+    visibleTxs.forEach(tx => {
+      const amt = Number(tx.totalCommitment) || 0;
+      if (flowMap[tx.payer] !== undefined) {
+        flowMap[tx.payer] += amt;
+        degreeMap[tx.payer].add(tx.receiver);
+        if (tx.status === "Committed") commitMap[tx.payer] += amt;
+      }
+      if (flowMap[tx.receiver] !== undefined) {
+        flowMap[tx.receiver] += amt;
+        degreeMap[tx.receiver].add(tx.payer);
+        if (tx.status === "Committed") commitMap[tx.receiver] += amt;
+      }
+    });
+
+    const metrics = {};
+    entities.forEach(e => {
+      const st = stateByEntity[e.id] || {};
+      const rev = st.revenue ?? 0;
+      const debt = st.debt ?? 0;
+      const cash = st.cash ?? 0;
+      const rpo = Math.max(st.rpo ?? 0, commitMap[e.id] || 0);
+      const flows = flowMap[e.id] || 0;
+      const deg = degreeMap[e.id] ? degreeMap[e.id].size : 0;
+      const infra = e.infraRole || 50;
+
+      // Composite Systemic Importance Score (0 - 100+)
+      const systemic = e.isOcean
+        ? 100
+        : Math.round(
+            Math.min(35, Math.log10(1 + flows) * 12) +
+            Math.min(20, Math.log10(1 + debt) * 8) +
+            Math.min(20, Math.log10(1 + rpo) * 7) +
+            Math.min(15, deg * 2.2) +
+            (infra * 0.25)
+          );
+
+      metrics[e.id] = {
+        systemic,
+        revenue: rev,
+        debt,
+        liquidity: cash + (st.undrawnCredit ?? 0),
+        commitments: rpo,
+        networkExposure: flows,
+        degree: deg
+      };
+    });
+    return metrics;
+  }
+
+  /**
+   * Core Phase 3 Simulation Engine:
+   * - Historical quarters (<= 2026Q3): returns strictly disclosed/reported values (no lookahead).
+   * - 2026Q4 (Partial) & Forecast quarters (2027Q1–2028Q4): runs Mode A / Mode B quarterly cash flow
+   *   projection with Ocean macro parameters, per-company overrides, 3-level distress detection,
+   *   and multi-hop contagion propagation along verified edges.
+   */
+  function runSimulation(entities, transactions, options = {}) {
+    const ocean = Object.assign({
+      fundingAvailability: 100,    // % (0-100)
+      interestRate: 7.5,           // %
+      refiSuccessRate: 85,         // % (0-100)
+      maxCapacity: 250,            // $B per quarter
+      creditTighteningBps: 0       // bps added to spreads
+    }, options.ocean || {});
+
+    const overrides = options.overrides || {}; // { entityId: { param: val } }
+    const forcedDefaults = new Set(options.forcedDefaults || []);
+    const defaultHaircut = options.defaultHaircut ?? 0.75;
+    const lgd = options.lgd ?? 0.45;
+
+    const timeline = {}; // { quarter: { entities: { id: state }, contagionLog: [], summary: {} } }
+
+    // Helper: get latest known financial snapshot on or before quarter q
+    function getHistoricalSnapshot(entity, q) {
+      const targetIdx = qIndex(q);
+      const qEnd = quarterEndDate(q);
+      const exact = entity.financials && entity.financials[q];
+      if (exact && (!exact.disclosedDate || exact.disclosedDate <= qEnd || q === "2026Q3")) {
+        return Object.assign({ quarter: q, hasActual: true, isSimulatedEvent: false, distressLevel: 0 }, exact);
+      }
+      // Check if an earlier quarter exists for carry-forward display (strictly labeled prior/unavailable)
+      let best = null;
+      if (entity.financials) {
+        for (const [fq, vals] of Object.entries(entity.financials)) {
+          if (qIndex(fq) <= targetIdx) {
+            best = vals;
+          }
+        }
+      }
+      if (!best) {
+        return {
+          quarter: q, revenue: null, cash: null, debt: null, ocf: null, capex: null, fcf: null,
+          rpo: null, interestExp: null, undrawnCredit: null,
+          dataType: entity.isOcean ? "System Pool" : "Unavailable",
+          hasActual: false, isSimulatedEvent: false, distressLevel: 0
+        };
+      }
+      return Object.assign({ quarter: q, hasActual: false, isSimulatedEvent: false, distressLevel: 0 }, best, { dataType: best.dataType || "Estimated" });
+    }
+
+    // Populate Historical Quarters (2022Q1 - 2026Q3)
+    QUARTERS_HIST.forEach(q => {
+      const states = {};
+      entities.forEach(e => {
+        const snap = getHistoricalSnapshot(e, q);
+        snap.distressLevel = 0;
+        snap.distressLabel = "Normal";
+        snap.creditLoss = 0;
+        snap.lostReceipts = 0;
+        snap.requiredRevenue = null;
+        states[e.id] = snap;
+      });
+      timeline[q] = { quarter: q, status: "HISTORICAL", entities: states, contagionLog: [] };
+    });
+
+    // Forward Simulation for 2026Q4 (Partial) and 2027Q1 - 2028Q4
+    const forwardQs = [QUARTER_PARTIAL, ...QUARTERS_FORECAST];
+    let prevStates = timeline["2026Q3"].entities;
+
+    forwardQs.forEach((q, stepIdx) => {
+      const status = quarterStatus(q);
+      const visibleTxs = getVisibleTransactions(transactions, q);
+      const states = {};
+      let oceanUsedThisQ = 0;
+
+      // Step 1: Standalone quarterly cash flow projection
+      entities.forEach(e => {
+        const prev = prevStates[e.id] || {};
+        if (e.isOcean) {
+          states[e.id] = {
+            quarter: q, revenue: null, cash: ocean.maxCapacity, debt: 0, ocf: null, capex: 0, fcf: null,
+            rpo: 0, interestExp: 0, undrawnCredit: ocean.maxCapacity,
+            dataType: "System Pool", distressLevel: 0, distressLabel: "External Pool (Non-Defaulting)",
+            isSimulatedEvent: false, creditLoss: 0, lostReceipts: 0, requiredRevenue: null
+          };
+          return;
+        }
+
+        const p = Object.assign({}, e.defaults || {}, overrides[e.id] || {});
+        const begCash = prev.cash !== null && prev.cash !== undefined ? prev.cash : (p.minCash ? p.minCash * 2 : 1.0);
+        const begDebt = prev.debt !== null && prev.debt !== undefined ? prev.debt : 0;
+        const prevRev = prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : Math.max(0.2, (p.opex || 0.2) * 1.6);
+        const undrawn = prev.undrawnCredit !== null && prev.undrawnCredit !== undefined ? prev.undrawnCredit : 0.5;
+
+        // Effective interest rate with Ocean credit tightening
+        const effRate = (p.interestRate ?? 0.06) + (ocean.creditTighteningBps / 10000);
+        const interestPaid = Number(((begDebt * effRate) / 4).toFixed(3));
+        const principalRepay = Number((p.debtRepay ?? 0).toFixed(3));
+        const capex = Number((p.capex ?? 0).toFixed(3));
+        const opex = Number((p.opex ?? 0).toFixed(3));
+        const computePay = Number((p.computePay ?? 0).toFixed(3));
+        const grossMargin = Math.max(0.05, Math.min(0.98, p.grossMargin ?? 0.55));
+        const cashConv = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
+        const minCash = p.minCash ?? 1.0;
+
+        // Ocean-constrained new financing & refinancing
+        const availFactor = Math.max(0, Math.min(1, ocean.fundingAvailability / 100));
+        const refiFactor = Math.max(0, Math.min(1, (p.refiSuccess ?? 0.85) * (ocean.refiSuccessRate / 100)));
+        const requestedDebt = (p.newDebt ?? 0) * availFactor * refiFactor;
+        const allowedDebt = Math.max(0, Math.min(requestedDebt, Math.max(0, ocean.maxCapacity - oceanUsedThisQ)));
+        oceanUsedThisQ += allowedDebt;
+        const equityInflow = (p.equityInflow ?? 0) * availFactor;
+
+        // Mode A (Contract Coverage) vs Mode B (Previous Quarter Growth)
+        const totalCashObligations = opex + computePay + capex + interestPaid + principalRepay;
+        const requiredRev = Math.max(0, (totalCashObligations + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
+
+        let projRev;
+        if (p.mode === "A") {
+          // Mode A outputs contract-coverage required revenue benchmark while projecting baseline growth
+          const g = Math.max(-0.35, (p.revGrowth ?? 0.08) - (p.revDecel ?? 0.01) * stepIdx);
+          projRev = Number((prevRev * (1 + g)).toFixed(3));
+        } else {
+          const g = Math.max(-0.35, (p.revGrowth ?? 0.05) - (p.revDecel ?? 0.005) * stepIdx);
+          projRev = Number((prevRev * (1 + g)).toFixed(3));
+        }
+
+        // Operating cash receipts (net of COGS ex-compute to avoid double-counting computePay)
+        const grossProfitCash = projRev * grossMargin * cashConv;
+        const taxes = Math.max(0, (grossProfitCash - opex - interestPaid) * 0.18);
+        const ocf = Number((grossProfitCash - opex - computePay - interestPaid - taxes).toFixed(3));
+        const fcf = Number((ocf - capex).toFixed(3));
+        const endCash = Number((begCash + fcf + allowedDebt + equityInflow - principalRepay).toFixed(3));
+        const endDebt = Number(Math.max(0, begDebt + allowedDebt - principalRepay).toFixed(3));
+
+        states[e.id] = {
+          quarter: q,
+          mode: p.mode || "B",
+          revenue: projRev,
+          requiredRevenue: Number(requiredRev.toFixed(2)),
+          begCash: Number(begCash.toFixed(2)),
+          cash: endCash,
+          debt: endDebt,
+          ocf,
+          capex,
+          fcf,
+          interestExp: interestPaid,
+          principalRepay,
+          computePay,
+          newDebt: Number(allowedDebt.toFixed(2)),
+          equityInflow: Number(equityInflow.toFixed(2)),
+          undrawnCredit: Number((undrawn * availFactor).toFixed(2)),
+          rpo: prev.rpo ?? 0,
+          minCash,
+          dataType: status === "PARTIAL" ? "Partial / Est." : "Forecast",
+          distressLevel: 0,
+          distressLabel: "Normal",
+          isSimulatedEvent: false,
+          creditLoss: 0,
+          lostReceipts: 0
+        };
+      });
+
+      // Helper to classify 3-level distress
+      function evaluateDistress(entityId) {
+        const st = states[entityId];
+        if (!st || entityId === "PRIVATE_CREDIT_OCEAN") return;
+        const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0) + (st.computePay || 0);
+        const totalLiq = (st.cash || 0) + (st.undrawnCredit || 0);
+
+        if (forcedDefaults.has(entityId) || totalLiq < 0) {
+          st.distressLevel = 3;
+          st.distressLabel = "Level 3: Simulated Default";
+          st.isSimulatedEvent = true;
+        } else if (totalLiq < mandatoryNextQ && mandatoryNextQ > 0) {
+          st.distressLevel = 2;
+          st.distressLabel = "Level 2: Liquidity Crisis";
+          st.isSimulatedEvent = true;
+        } else if (st.cash < st.minCash || (st.fcf < 0 && Math.abs(st.fcf) > Math.max(0.5, st.begCash * 0.35))) {
+          st.distressLevel = 1;
+          st.distressLabel = "Level 1: Liquidity Warning";
+          st.isSimulatedEvent = false;
+        } else {
+          st.distressLevel = 0;
+          st.distressLabel = "Normal";
+          st.isSimulatedEvent = false;
+        }
+      }
+
+      entities.forEach(e => evaluateDistress(e.id));
+
+      // Step 2: Multi-hop Contagion Propagation (up to 3 hops along verified edges only)
+      const contagionLog = [];
+      const propagatedDefaults = new Set();
+
+      for (let hop = 1; hop <= 3; hop++) {
+        const newDefaulters = entities
+          .map(e => e.id)
+          .filter(id => id !== "PRIVATE_CREDIT_OCEAN" && states[id].distressLevel === 3 && !propagatedDefaults.has(id));
+
+        if (newDefaulters.length === 0) break;
+
+        newDefaulters.forEach(defId => {
+          propagatedDefaults.add(defId);
+
+          visibleTxs.forEach(tx => {
+            // Channel A: Defaulter is PAYER on Cloud/Lease/GPU/Take-or-Pay -> Supplier loses quarterly cash receipts
+            if (tx.payer === defId && ["Cloud Computing Purchase", "Take-or-Pay Contract", "Data Center Lease", "GPU / Server Purchase"].includes(tx.type)) {
+              const supId = tx.receiver;
+              if (supId === "PRIVATE_CREDIT_OCEAN" || !states[supId]) return;
+              const qPay = tx.quarterlyPayment || (tx.totalCommitment ? tx.totalCommitment / 20 : 0);
+              const loss = Number((qPay * defaultHaircut).toFixed(3));
+              if (loss > 0) {
+                states[supId].lostReceipts = Number((states[supId].lostReceipts + loss).toFixed(3));
+                states[supId].revenue = Number(Math.max(0, states[supId].revenue - loss).toFixed(3));
+                states[supId].ocf = Number((states[supId].ocf - loss * 0.7).toFixed(3));
+                states[supId].fcf = Number((states[supId].fcf - loss * 0.7).toFixed(3));
+                states[supId].cash = Number((states[supId].cash - loss * 0.7).toFixed(3));
+                evaluateDistress(supId);
+                contagionLog.push({
+                  hop, from: defId, to: supId, txId: tx.id,
+                  channel: `${tx.type} Payment Cut (-${Math.round(defaultHaircut * 100)}%)`,
+                  impactB: loss
+                });
+              }
+            }
+
+            // Channel B: Defaulter is RECEIVER (Borrower) of Loan/Bond/SPV/GPU Debt -> Lender suffers credit loss
+            if (tx.receiver === defId && ["Direct Loan", "Corporate Bond", "Project Finance", "GPU-backed Financing", "Equipment Financing", "Convertible Debt"].includes(tx.type)) {
+              const lenderId = tx.payer;
+              if (!states[lenderId]) return;
+              const exp = (tx.amountDrawn && tx.amountDrawn > 0) ? tx.amountDrawn : (tx.totalCommitment || 0) * 0.5;
+              const cLoss = Number((exp * lgd).toFixed(3));
+              if (cLoss > 0) {
+                states[lenderId].creditLoss = Number((states[lenderId].creditLoss + cLoss).toFixed(3));
+                if (lenderId !== "PRIVATE_CREDIT_OCEAN") {
+                  states[lenderId].cash = Number((states[lenderId].cash - cLoss * 0.25).toFixed(3));
+                  evaluateDistress(lenderId);
+                }
+                contagionLog.push({
+                  hop, from: defId, to: lenderId, txId: tx.id,
+                  channel: `${tx.type} Credit Loss (LGD ${Math.round(lgd * 100)}%)`,
+                  impactB: cLoss
+                });
+              }
+            }
+
+            // Channel C: Guarantee triggered if receiver defaults
+            if (tx.receiver === defId && tx.type === "Loan Guarantee") {
+              const guarId = tx.payer;
+              if (guarId !== "PRIVATE_CREDIT_OCEAN" && states[guarId]) {
+                const callAmt = Number(((tx.totalCommitment || 0) * 0.25).toFixed(3));
+                if (callAmt > 0) {
+                  states[guarId].creditLoss = Number((states[guarId].creditLoss + callAmt).toFixed(3));
+                  states[guarId].cash = Number((states[guarId].cash - callAmt * 0.2).toFixed(3));
+                  evaluateDistress(guarId);
+                  contagionLog.push({
+                    hop, from: defId, to: guarId, txId: tx.id,
+                    channel: `Guarantee / RVG Call`,
+                    impactB: callAmt
+                  });
+                }
+              }
+            }
+          });
+        });
+      }
+
+      timeline[q] = { quarter: q, status, entities: states, contagionLog };
+      prevStates = states;
+    });
+
+    return { timeline, allQuarters: ALL_QUARTERS };
+  }
+
+  return {
+    QUARTERS_HIST,
+    QUARTER_PARTIAL,
+    QUARTERS_FORECAST,
+    ALL_QUARTERS,
+    quarterEndDate,
+    quarterStatus,
+    getVisibleTransactions,
+    getEdgeVisual,
+    computeEntityMetrics,
+    runSimulation
+  };
+});
+
+</script>
+<script>
+const INITIAL_ENTITIES = [
+  {
+    "id": "NVDA",
+    "name": "NVIDIA Corp.",
+    "ticker": "NVDA",
+    "cik": "0001045810",
+    "sector": "Chips & Hardware",
+    "ring": 1,
+    "isPublic": true,
+    "infraRole": 100,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–2026Q3; Q3 FY27 PR Nov 17, 2026)",
+    "sourceUrl": "https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2027",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-17",
+    "financials": {
+      "2026Q1": {
+        "revenue": 81.62,
+        "cash": 22.44,
+        "debt": 8.47,
+        "ocf": null,
+        "capex": null,
+        "fcf": null,
+        "ar": 38.47,
+        "rpo": null,
+        "leaseLiab": null,
+        "interestExp": 0.06,
+        "undrawnCredit": 0.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-05-28"
+      },
+      "2026Q2": {
+        "revenue": 96.22,
+        "cash": 22.44,
+        "debt": 32.37,
+        "ocf": 24.08,
+        "capex": 2.68,
+        "fcf": 21.34,
+        "ar": null,
+        "rpo": 110.0,
+        "leaseLiab": 74.0,
+        "interestExp": 0.15,
+        "undrawnCredit": 0.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-08-26"
+      },
+      "2026Q3": {
+        "revenue": 115.84,
+        "cash": 29.09,
+        "debt": 32.37,
+        "ocf": 48.25,
+        "capex": 4.42,
+        "fcf": 43.78,
+        "ar": 81.03,
+        "rpo": 134.0,
+        "leaseLiab": 102.0,
+        "interestExp": 0.32,
+        "undrawnCredit": 0.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-11-17"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.08,
+      "revDecel": 0.01,
+      "grossMargin": 0.74,
+      "opex": 6.5,
+      "capex": 4.8,
+      "computePay": 4.0,
+      "interestRate": 0.048,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.5,
+      "refiSuccess": 0.98,
+      "cashConv": 0.85,
+      "minCash": 15.0
+    }
+  },
+  {
+    "id": "MSFT",
+    "name": "Microsoft Corp.",
+    "ticker": "MSFT",
+    "cik": "0000789019",
+    "sector": "Cloud & Neocloud",
+    "ring": 1,
+    "isPublic": true,
+    "infraRole": 98,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–2026Q3 / Q1 FY27)",
+    "sourceUrl": "https://www.microsoft.com/en-us/investor/earnings/fy-2027-q1/press-release-webcast",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-28",
+    "financials": {
+      "2026Q3": {
+        "revenue": 92.3,
+        "cash": 60.5,
+        "debt": 35.5,
+        "ocf": 48.98,
+        "capex": 45.2,
+        "fcf": 3.78,
+        "ar": null,
+        "rpo": 320.0,
+        "leaseLiab": null,
+        "interestExp": 0.45,
+        "undrawnCredit": 10.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-28"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.045,
+      "revDecel": 0.002,
+      "grossMargin": 0.69,
+      "opex": 18.0,
+      "capex": 44.0,
+      "computePay": 2.5,
+      "interestRate": 0.042,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 1.0,
+      "refiSuccess": 0.99,
+      "cashConv": 0.92,
+      "minCash": 25.0
+    }
+  },
+  {
+    "id": "GOOGL",
+    "name": "Alphabet Inc. (incl. DeepMind)",
+    "ticker": "GOOGL",
+    "cik": "0001652044",
+    "sector": "Cloud & Neocloud",
+    "ring": 1,
+    "isPublic": true,
+    "infraRole": 96,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–2026Q3); Google DeepMind consolidated",
+    "sourceUrl": "https://s206.q4cdn.com/479360582/files/doc_financials/2026/q3/GOOG-10-Q-Q3-2026.pdf",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-28",
+    "financials": {
+      "2026Q2": {
+        "revenue": 118.0,
+        "cash": 260.0,
+        "debt": 120.0,
+        "ocf": 43.0,
+        "capex": 48.9,
+        "fcf": -5.9,
+        "ar": null,
+        "rpo": 500.0,
+        "leaseLiab": null,
+        "interestExp": 1.2,
+        "undrawnCredit": 10.0,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-07-28"
+      },
+      "2026Q3": {
+        "revenue": 127.6,
+        "cash": 265.1,
+        "debt": 126.1,
+        "ocf": 42.3,
+        "capex": 51.4,
+        "fcf": -9.1,
+        "ar": null,
+        "rpo": 560.8,
+        "leaseLiab": null,
+        "interestExp": 1.35,
+        "undrawnCredit": 10.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-28"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.055,
+      "revDecel": 0.003,
+      "grossMargin": 0.58,
+      "opex": 26.0,
+      "capex": 49.0,
+      "computePay": 1.5,
+      "interestRate": 0.044,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 1.5,
+      "refiSuccess": 0.99,
+      "cashConv": 0.9,
+      "minCash": 40.0
+    }
+  },
+  {
+    "id": "AMZN",
+    "name": "Amazon.com, Inc. (AWS)",
+    "ticker": "AMZN",
+    "cik": "0001018724",
+    "sector": "Cloud & Neocloud",
+    "ring": 1,
+    "isPublic": true,
+    "infraRole": 97,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–2026Q3)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000038/amzn-20260930xex991.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-29",
+    "financials": {
+      "2026Q3": {
+        "revenue": 201.9,
+        "cash": 114.2,
+        "debt": 180.3,
+        "ocf": 42.08,
+        "capex": 77.3,
+        "fcf": -35.22,
+        "ar": null,
+        "rpo": 578.0,
+        "leaseLiab": null,
+        "interestExp": 1.95,
+        "undrawnCredit": 80.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-29"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.035,
+      "revDecel": 0.002,
+      "grossMargin": 0.5,
+      "opex": 52.0,
+      "capex": 72.0,
+      "computePay": 1.0,
+      "interestRate": 0.048,
+      "newDebt": 10.0,
+      "equityInflow": 0.0,
+      "debtRepay": 3.0,
+      "refiSuccess": 0.98,
+      "cashConv": 0.9,
+      "minCash": 35.0
+    }
+  },
+  {
+    "id": "ORCL",
+    "name": "Oracle Corp.",
+    "ticker": "ORCL",
+    "cik": "0001341439",
+    "sector": "Cloud & Neocloud",
+    "ring": 1,
+    "isPublic": true,
+    "infraRole": 90,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–2026Q3 / Q1 FY27)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-09-10",
+    "financials": {
+      "2026Q3": {
+        "revenue": 17.16,
+        "cash": 36.37,
+        "debt": 125.3,
+        "ocf": 6.8,
+        "capex": 18.92,
+        "fcf": -12.12,
+        "ar": 11.39,
+        "rpo": 664.0,
+        "leaseLiab": null,
+        "interestExp": 1.65,
+        "undrawnCredit": 6.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-09-10"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.09,
+      "revDecel": 0.005,
+      "grossMargin": 0.68,
+      "opex": 4.2,
+      "capex": 19.5,
+      "computePay": 2.2,
+      "interestRate": 0.056,
+      "newDebt": 8.0,
+      "equityInflow": 0.0,
+      "debtRepay": 2.5,
+      "refiSuccess": 0.85,
+      "cashConv": 0.88,
+      "minCash": 10.0
+    }
+  },
+  {
+    "id": "META",
+    "name": "Meta Platforms (incl. Meta AI)",
+    "ticker": "META",
+    "cik": "0001326801",
+    "sector": "Cloud & Neocloud",
+    "ring": 1,
+    "isPublic": true,
+    "infraRole": 90,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–2026Q3); Meta AI consolidated",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026066700/meta-09302026xexhibit991.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-21",
+    "financials": {
+      "2026Q3": {
+        "revenue": 64.6,
+        "cash": 45.0,
+        "debt": 37.5,
+        "ocf": 26.5,
+        "capex": 31.0,
+        "fcf": -4.5,
+        "ar": null,
+        "rpo": 41.5,
+        "leaseLiab": 41.5,
+        "interestExp": 0.48,
+        "undrawnCredit": 5.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-21"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.055,
+      "revDecel": 0.004,
+      "grossMargin": 0.8,
+      "opex": 24.0,
+      "capex": 30.0,
+      "computePay": 2.0,
+      "interestRate": 0.052,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.8,
+      "refiSuccess": 0.96,
+      "cashConv": 0.92,
+      "minCash": 18.0
+    }
+  },
+  {
+    "id": "OPENAI",
+    "name": "OpenAI Group PBC",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "AI Model Lab",
+    "ring": 1,
+    "isPublic": false,
+    "infraRole": 95,
+    "filingCoverage": "Private / SEC Unavailable (Reported media estimates B/C only)",
+    "sourceUrl": "https://safeguard.sh/resources/blog/openai-revenue-losses-and-cash-burn-what-has-been-reported",
+    "confidence": "B",
+    "dataType": "Estimated",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-19",
+    "financials": {
+      "2026Q1": {
+        "revenue": 5.7,
+        "cash": null,
+        "debt": 0.0,
+        "ocf": -3.7,
+        "capex": null,
+        "fcf": -3.7,
+        "ar": null,
+        "rpo": 710.4,
+        "leaseLiab": null,
+        "interestExp": 0.0,
+        "undrawnCredit": 4.7,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-10-19"
+      },
+      "2026Q2": {
+        "revenue": 6.7,
+        "cash": null,
+        "debt": 0.0,
+        "ocf": null,
+        "capex": null,
+        "fcf": null,
+        "ar": null,
+        "rpo": 710.4,
+        "leaseLiab": null,
+        "interestExp": 0.0,
+        "undrawnCredit": 4.7,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-10-19"
+      },
+      "2026Q3": {
+        "revenue": 9.5,
+        "cash": 42.0,
+        "debt": 0.0,
+        "ocf": -10.9,
+        "capex": 1.5,
+        "fcf": -12.4,
+        "ar": null,
+        "rpo": 710.4,
+        "leaseLiab": null,
+        "interestExp": 0.0,
+        "undrawnCredit": 4.7,
+        "dataType": "Assumption",
+        "disclosedDate": "2026-11-14"
+      }
+    },
+    "defaults": {
+      "mode": "A",
+      "revGrowth": 0.16,
+      "revDecel": 0.015,
+      "grossMargin": 0.45,
+      "opex": 5.0,
+      "capex": 1.5,
+      "computePay": 18.0,
+      "interestRate": 0.06,
+      "newDebt": 0.0,
+      "equityInflow": 12.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.8,
+      "cashConv": 0.9,
+      "minCash": 10.0
+    }
+  },
+  {
+    "id": "ANTHROPIC",
+    "name": "Anthropic, PBC (S-1)",
+    "ticker": "ANT (IPO)",
+    "cik": "0002130357",
+    "sector": "AI Model Lab",
+    "ring": 1,
+    "isPublic": true,
+    "infraRole": 92,
+    "filingCoverage": "SEC Form S-1/A-3 (2023–Q3 2026; filed Nov 17, 2026)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2130357/000162828026074338/anthropicpbc-sx1ax3.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-17",
+    "financials": {
+      "2026Q2": {
+        "revenue": 11.56,
+        "cash": null,
+        "debt": 0.0,
+        "ocf": 1.95,
+        "capex": 0.24,
+        "fcf": 1.71,
+        "ar": null,
+        "rpo": 900.9,
+        "leaseLiab": null,
+        "interestExp": 0.0,
+        "undrawnCredit": 15.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-26"
+      },
+      "2026Q3": {
+        "revenue": 17.0,
+        "cash": 35.0,
+        "debt": 0.0,
+        "ocf": 2.1,
+        "capex": 0.3,
+        "fcf": 1.8,
+        "ar": null,
+        "rpo": 900.9,
+        "leaseLiab": null,
+        "interestExp": 0.0,
+        "undrawnCredit": 15.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-11-17"
+      }
+    },
+    "defaults": {
+      "mode": "A",
+      "revGrowth": 0.14,
+      "revDecel": 0.015,
+      "grossMargin": 0.48,
+      "opex": 3.0,
+      "capex": 0.4,
+      "computePay": 17.68,
+      "interestRate": 0.06,
+      "newDebt": 0.0,
+      "equityInflow": 5.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.88,
+      "cashConv": 0.92,
+      "minCash": 8.0
+    }
+  },
+  {
+    "id": "CRWV",
+    "name": "CoreWeave, Inc.",
+    "ticker": "CRWV",
+    "cik": "0001769628",
+    "sector": "Cloud & Neocloud",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 84,
+    "filingCoverage": "SEC 10-Q/S-1 (IPO Mar 2025 – Q3 2026)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000461/coreweave3q26earningspress.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-10",
+    "financials": {
+      "2026Q3": {
+        "revenue": 3.66,
+        "cash": 4.2,
+        "debt": 18.5,
+        "ocf": 1.1,
+        "capex": 5.8,
+        "fcf": -4.7,
+        "ar": null,
+        "rpo": 132.5,
+        "leaseLiab": null,
+        "interestExp": 0.42,
+        "undrawnCredit": 3.5,
+        "dataType": "Actual",
+        "disclosedDate": "2026-11-10"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.18,
+      "revDecel": 0.02,
+      "grossMargin": 0.56,
+      "opex": 0.8,
+      "capex": 5.5,
+      "computePay": 0.5,
+      "interestRate": 0.085,
+      "newDebt": 3.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.75,
+      "refiSuccess": 0.78,
+      "cashConv": 0.88,
+      "minCash": 2.0
+    }
+  },
+  {
+    "id": "SPCX_XAI",
+    "name": "SpaceX / xAI (SI Segment)",
+    "ticker": "SPCX",
+    "cik": "0001181412",
+    "sector": "AI Model Lab",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 85,
+    "filingCoverage": "Private pre-Feb 2026 -> SEC 8-K/S-1 via SpaceX IPO (Jun 2026 – Q3 2026)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026066482/spaceexplorationtechnologi.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-20",
+    "financials": {
+      "2026Q3": {
+        "revenue": 7.56,
+        "cash": 28.0,
+        "debt": 38.0,
+        "ocf": 1.8,
+        "capex": 4.5,
+        "fcf": -2.7,
+        "ar": null,
+        "rpo": 45.4,
+        "leaseLiab": null,
+        "interestExp": 0.75,
+        "undrawnCredit": 4.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-20"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.14,
+      "revDecel": 0.015,
+      "grossMargin": 0.52,
+      "opex": 2.2,
+      "capex": 4.8,
+      "computePay": 2.5,
+      "interestRate": 0.082,
+      "newDebt": 2.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.8,
+      "refiSuccess": 0.88,
+      "cashConv": 0.88,
+      "minCash": 6.0
+    }
+  },
+  {
+    "id": "AVGO",
+    "name": "Broadcom Inc.",
+    "ticker": "AVGO",
+    "cik": "0001730168",
+    "sector": "Chips & Hardware",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 86,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–Q3 FY26)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-09-10",
+    "financials": {
+      "2026Q2": {
+        "revenue": 22.19,
+        "cash": 19.63,
+        "debt": 65.14,
+        "ocf": 10.49,
+        "capex": 0.23,
+        "fcf": 10.26,
+        "ar": 7.15,
+        "rpo": null,
+        "leaseLiab": null,
+        "interestExp": 0.65,
+        "undrawnCredit": 7.5,
+        "dataType": "Actual",
+        "disclosedDate": "2026-06-11"
+      },
+      "2026Q3": {
+        "revenue": 29.59,
+        "cash": 23.98,
+        "debt": 59.42,
+        "ocf": 14.2,
+        "capex": 0.53,
+        "fcf": 13.67,
+        "ar": 13.71,
+        "rpo": 35.0,
+        "leaseLiab": null,
+        "interestExp": 0.6,
+        "undrawnCredit": 7.5,
+        "dataType": "Actual",
+        "disclosedDate": "2026-09-10"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.07,
+      "revDecel": 0.005,
+      "grossMargin": 0.72,
+      "opex": 5.5,
+      "capex": 0.6,
+      "computePay": 0.0,
+      "interestRate": 0.04,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 2.0,
+      "refiSuccess": 0.98,
+      "cashConv": 0.92,
+      "minCash": 8.0
+    }
+  },
+  {
+    "id": "AMD",
+    "name": "AMD, Inc.",
+    "ticker": "AMD",
+    "cik": "0000002488",
+    "sector": "Chips & Hardware",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 80,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–Q3 2026)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000188/q32026991.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-04",
+    "financials": {
+      "2026Q2": {
+        "revenue": 11.54,
+        "cash": 5.1,
+        "debt": 3.23,
+        "ocf": 2.37,
+        "capex": 0.81,
+        "fcf": 1.56,
+        "ar": 6.32,
+        "rpo": null,
+        "leaseLiab": null,
+        "interestExp": 0.04,
+        "undrawnCredit": 3.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-08-05"
+      },
+      "2026Q3": {
+        "revenue": 13.38,
+        "cash": 7.4,
+        "debt": 7.08,
+        "ocf": 1.2,
+        "capex": 0.65,
+        "fcf": 0.55,
+        "ar": 9.21,
+        "rpo": null,
+        "leaseLiab": null,
+        "interestExp": 0.09,
+        "undrawnCredit": 3.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-11-04"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.08,
+      "revDecel": 0.005,
+      "grossMargin": 0.54,
+      "opex": 4.2,
+      "capex": 0.7,
+      "computePay": 0.0,
+      "interestRate": 0.048,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.2,
+      "refiSuccess": 0.96,
+      "cashConv": 0.85,
+      "minCash": 3.0
+    }
+  },
+  {
+    "id": "MU",
+    "name": "Micron Technology",
+    "ticker": "MU",
+    "cik": "0000723125",
+    "sector": "Chips & Hardware",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 82,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–Q4 FY26)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-09",
+    "financials": {
+      "2026Q2": {
+        "revenue": 41.46,
+        "cash": 25.0,
+        "debt": 5.72,
+        "ocf": 25.39,
+        "capex": 7.83,
+        "fcf": 18.3,
+        "ar": 31.03,
+        "rpo": null,
+        "leaseLiab": null,
+        "interestExp": 0.08,
+        "undrawnCredit": 2.5,
+        "dataType": "Actual",
+        "disclosedDate": "2026-06-25"
+      },
+      "2026Q3": {
+        "revenue": 54.23,
+        "cash": 38.36,
+        "debt": 5.18,
+        "ocf": 43.97,
+        "capex": 11.11,
+        "fcf": 33.2,
+        "ar": 36.2,
+        "rpo": 32.0,
+        "leaseLiab": null,
+        "interestExp": 0.07,
+        "undrawnCredit": 2.5,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-09"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.05,
+      "revDecel": 0.008,
+      "grossMargin": 0.56,
+      "opex": 4.5,
+      "capex": 11.0,
+      "computePay": 0.0,
+      "interestRate": 0.048,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.3,
+      "refiSuccess": 0.96,
+      "cashConv": 0.9,
+      "minCash": 8.0
+    }
+  },
+  {
+    "id": "DELL",
+    "name": "Dell Technologies",
+    "ticker": "DELL",
+    "cik": "0001571996",
+    "sector": "Chips & Hardware",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 78,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–Q2 FY27)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1571996/000157199626000046/dell-20260731.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-09-08",
+    "financials": {
+      "2026Q2": {
+        "revenue": 43.84,
+        "cash": 11.0,
+        "debt": 34.47,
+        "ocf": 4.08,
+        "capex": 0.96,
+        "fcf": 3.12,
+        "ar": null,
+        "rpo": 51.3,
+        "leaseLiab": null,
+        "interestExp": 0.42,
+        "undrawnCredit": 6.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-06-05"
+      },
+      "2026Q3": {
+        "revenue": 46.97,
+        "cash": 11.57,
+        "debt": 34.47,
+        "ocf": 2.23,
+        "capex": 1.24,
+        "fcf": 0.99,
+        "ar": 22.92,
+        "rpo": 132.0,
+        "leaseLiab": null,
+        "interestExp": 0.44,
+        "undrawnCredit": 6.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-09-08"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.05,
+      "revDecel": 0.005,
+      "grossMargin": 0.22,
+      "opex": 6.2,
+      "capex": 1.2,
+      "computePay": 0.0,
+      "interestRate": 0.052,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 1.0,
+      "refiSuccess": 0.94,
+      "cashConv": 0.85,
+      "minCash": 5.0
+    }
+  },
+  {
+    "id": "SMCI",
+    "name": "Super Micro Computer",
+    "ticker": "SMCI",
+    "cik": "0001375365",
+    "sector": "Chips & Hardware",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 74,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–Q1 FY27)",
+    "sourceUrl": "https://ir.supermicro.com/news/news-details/2026/Supermicro-Announces-First-Quarter-of-Fiscal-Year-2027-Financial-Results/default.aspx",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-06",
+    "financials": {
+      "2026Q2": {
+        "revenue": 11.1,
+        "cash": 7.52,
+        "debt": 8.72,
+        "ocf": 0.75,
+        "capex": 0.05,
+        "fcf": 0.7,
+        "ar": 6.13,
+        "rpo": 39.0,
+        "leaseLiab": null,
+        "interestExp": 0.14,
+        "undrawnCredit": 1.5,
+        "dataType": "Actual",
+        "disclosedDate": "2026-08-28"
+      },
+      "2026Q3": {
+        "revenue": 19.95,
+        "cash": 6.9,
+        "debt": 8.65,
+        "ocf": -0.43,
+        "capex": 0.04,
+        "fcf": -0.48,
+        "ar": 9.69,
+        "rpo": 39.0,
+        "leaseLiab": null,
+        "interestExp": 0.15,
+        "undrawnCredit": 1.5,
+        "dataType": "Actual",
+        "disclosedDate": "2026-11-06"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.07,
+      "revDecel": 0.01,
+      "grossMargin": 0.12,
+      "opex": 0.9,
+      "capex": 0.1,
+      "computePay": 0.0,
+      "interestRate": 0.068,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.4,
+      "refiSuccess": 0.8,
+      "cashConv": 0.8,
+      "minCash": 2.5
+    }
+  },
+  {
+    "id": "HPE",
+    "name": "Hewlett Packard Enterprise",
+    "ticker": "HPE",
+    "cik": "0001645590",
+    "sector": "Chips & Hardware",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 68,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–Q3 FY26)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1645590/000164559026000080/hpe-20260731.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-09-03",
+    "financials": {
+      "2026Q3": {
+        "revenue": 12.2,
+        "cash": 6.2,
+        "debt": 17.3,
+        "ocf": 1.64,
+        "capex": 0.68,
+        "fcf": 0.96,
+        "ar": null,
+        "rpo": 30.0,
+        "leaseLiab": null,
+        "interestExp": 0.22,
+        "undrawnCredit": 4.5,
+        "dataType": "Actual",
+        "disclosedDate": "2026-09-03"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.04,
+      "revDecel": 0.004,
+      "grossMargin": 0.33,
+      "opex": 2.6,
+      "capex": 0.7,
+      "computePay": 0.0,
+      "interestRate": 0.052,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.6,
+      "refiSuccess": 0.94,
+      "cashConv": 0.88,
+      "minCash": 3.0
+    }
+  },
+  {
+    "id": "DLR",
+    "name": "Digital Realty Trust",
+    "ticker": "DLR",
+    "cik": "0001297996",
+    "sector": "Data Center & SPV",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 75,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–Q3 2026)",
+    "sourceUrl": "https://investor.digitalrealty.com/static-files/a00a800e-7b14-4b9e-b615-06a68c16c4e6",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-30",
+    "financials": {
+      "2026Q1": {
+        "revenue": 1.64,
+        "cash": 2.43,
+        "debt": 18.0,
+        "ocf": 0.65,
+        "capex": 0.95,
+        "fcf": -0.3,
+        "ar": null,
+        "rpo": 1.9,
+        "leaseLiab": 1.19,
+        "interestExp": 0.2,
+        "undrawnCredit": 3.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-05-01"
+      },
+      "2026Q2": {
+        "revenue": 1.92,
+        "cash": 1.86,
+        "debt": 18.64,
+        "ocf": 0.66,
+        "capex": 1.1,
+        "fcf": -0.44,
+        "ar": null,
+        "rpo": 1.9,
+        "leaseLiab": 1.19,
+        "interestExp": 0.21,
+        "undrawnCredit": 3.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-07-23"
+      },
+      "2026Q3": {
+        "revenue": 1.9,
+        "cash": 0.8,
+        "debt": 19.49,
+        "ocf": 0.66,
+        "capex": 1.15,
+        "fcf": -0.49,
+        "ar": null,
+        "rpo": 2.5,
+        "leaseLiab": 1.19,
+        "interestExp": 0.22,
+        "undrawnCredit": 3.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-30"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.035,
+      "revDecel": 0.002,
+      "grossMargin": 0.56,
+      "opex": 0.35,
+      "capex": 1.15,
+      "computePay": 0.0,
+      "interestRate": 0.048,
+      "newDebt": 0.6,
+      "equityInflow": 0.0,
+      "debtRepay": 0.3,
+      "refiSuccess": 0.95,
+      "cashConv": 0.92,
+      "minCash": 0.5
+    }
+  },
+  {
+    "id": "EQIX",
+    "name": "Equinix, Inc.",
+    "ticker": "EQIX",
+    "cik": "0001101239",
+    "sector": "Data Center & SPV",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 76,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–Q3 2026)",
+    "sourceUrl": "https://investor.equinix.com/sec-filings/all-sec-filings/content/0001101239-26-000180/eqix-20260930.htm",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-28",
+    "financials": {
+      "2026Q2": {
+        "revenue": 2.63,
+        "cash": 2.1,
+        "debt": 22.15,
+        "ocf": 1.01,
+        "capex": 1.46,
+        "fcf": -0.45,
+        "ar": null,
+        "rpo": null,
+        "leaseLiab": 3.76,
+        "interestExp": 0.24,
+        "undrawnCredit": 4.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-07-29"
+      },
+      "2026Q3": {
+        "revenue": 2.57,
+        "cash": 2.36,
+        "debt": 25.22,
+        "ocf": 1.01,
+        "capex": 1.46,
+        "fcf": -0.45,
+        "ar": null,
+        "rpo": null,
+        "leaseLiab": 3.76,
+        "interestExp": 0.27,
+        "undrawnCredit": 4.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-28"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.03,
+      "revDecel": 0.002,
+      "grossMargin": 0.5,
+      "opex": 0.45,
+      "capex": 1.45,
+      "computePay": 0.0,
+      "interestRate": 0.046,
+      "newDebt": 0.8,
+      "equityInflow": 0.0,
+      "debtRepay": 0.4,
+      "refiSuccess": 0.96,
+      "cashConv": 0.92,
+      "minCash": 1.0
+    }
+  },
+  {
+    "id": "NBIS",
+    "name": "Nebius Group",
+    "ticker": "NBIS",
+    "cik": "0001513845",
+    "sector": "Cloud & Neocloud",
+    "ring": 2,
+    "isPublic": true,
+    "infraRole": 70,
+    "filingCoverage": "Public SEC Filings (2025–Q3 2026)",
+    "sourceUrl": "https://sec-api.io/insights/nebius-group-nbis-q3-2026-earnings-980-8m-revenue-38-7bn-rpo-and-a-12bn-to-13bn-2027-outlook-sec-filing-analysis",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-12",
+    "financials": {
+      "2026Q3": {
+        "revenue": 0.98,
+        "cash": 7.4,
+        "debt": 2.5,
+        "ocf": 0.3,
+        "capex": 7.3,
+        "fcf": -7.0,
+        "ar": null,
+        "rpo": 38.7,
+        "leaseLiab": null,
+        "interestExp": 0.05,
+        "undrawnCredit": 1.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-11-12"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.28,
+      "revDecel": 0.03,
+      "grossMargin": 0.52,
+      "opex": 0.35,
+      "capex": 6.5,
+      "computePay": 0.1,
+      "interestRate": 0.075,
+      "newDebt": 2.5,
+      "equityInflow": 1.0,
+      "debtRepay": 0.2,
+      "refiSuccess": 0.8,
+      "cashConv": 0.9,
+      "minCash": 1.5
+    }
+  },
+  {
+    "id": "APLD",
+    "name": "Applied Digital Corp.",
+    "ticker": "APLD",
+    "cik": "0001144879",
+    "sector": "Cloud & Neocloud",
+    "ring": 3,
+    "isPublic": true,
+    "infraRole": 60,
+    "filingCoverage": "Full SEC 10-Q/10-K (2022Q1–2026); $41B+ backlog Nov 2026",
+    "sourceUrl": "https://www.tradingnews.com/news/applied-digital-apld-rips-26-to-1444-off-1131-low-as-backlog-tops-41b-20-usd-target-in-play",
+    "confidence": "B",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-23",
+    "financials": {
+      "2026Q3": {
+        "revenue": 0.22,
+        "cash": 0.65,
+        "debt": 1.4,
+        "ocf": 0.02,
+        "capex": 0.45,
+        "fcf": -0.43,
+        "ar": null,
+        "rpo": 41.0,
+        "leaseLiab": null,
+        "interestExp": 0.04,
+        "undrawnCredit": 0.5,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-11-23"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.2,
+      "revDecel": 0.02,
+      "grossMargin": 0.42,
+      "opex": 0.08,
+      "capex": 0.5,
+      "computePay": 0.0,
+      "interestRate": 0.09,
+      "newDebt": 0.4,
+      "equityInflow": 0.1,
+      "debtRepay": 0.08,
+      "refiSuccess": 0.75,
+      "cashConv": 0.85,
+      "minCash": 0.25
+    }
+  },
+  {
+    "id": "IREN",
+    "name": "IREN Limited",
+    "ticker": "IREN",
+    "cik": "0001878848",
+    "sector": "Cloud & Neocloud",
+    "ring": 3,
+    "isPublic": true,
+    "infraRole": 58,
+    "filingCoverage": "Public SEC 10-K/10-Q (2022Q1–2026); $3.4B NVIDIA AI cloud deal",
+    "sourceUrl": "https://www.blackridgeresearch.com/blog/list-of-top-neocloud-companies-in-the-world",
+    "confidence": "B",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-08-27",
+    "financials": {
+      "2026Q3": {
+        "revenue": 0.18,
+        "cash": 0.55,
+        "debt": 0.85,
+        "ocf": 0.05,
+        "capex": 0.35,
+        "fcf": -0.3,
+        "ar": null,
+        "rpo": 3.4,
+        "leaseLiab": null,
+        "interestExp": 0.02,
+        "undrawnCredit": 0.3,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-08-27"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.18,
+      "revDecel": 0.02,
+      "grossMargin": 0.45,
+      "opex": 0.06,
+      "capex": 0.35,
+      "computePay": 0.0,
+      "interestRate": 0.085,
+      "newDebt": 0.25,
+      "equityInflow": 0.1,
+      "debtRepay": 0.05,
+      "refiSuccess": 0.78,
+      "cashConv": 0.85,
+      "minCash": 0.2
+    }
+  },
+  {
+    "id": "CRUSOE",
+    "name": "Crusoe Energy Systems",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "Cloud & Neocloud",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 62,
+    "filingCoverage": "Private / Quarterly Financials Unavailable",
+    "sourceUrl": "https://www.businesswire.com/news/home/20241015910376/en/Crusoe-Blue-Owl-Capital-and-Primary-Digital-Infrastructure-Enter-%243.4-billion-Joint-Venture-for-AI-Data-Center-Development",
+    "confidence": "B",
+    "dataType": "Unavailable",
+    "latestDisclosedQuarter": null,
+    "disclosedDate": null,
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.15,
+      "revDecel": 0.015,
+      "grossMargin": 0.45,
+      "opex": 0.12,
+      "capex": 0.6,
+      "computePay": 0.0,
+      "interestRate": 0.09,
+      "newDebt": 0.4,
+      "equityInflow": 0.2,
+      "debtRepay": 0.08,
+      "refiSuccess": 0.75,
+      "cashConv": 0.85,
+      "minCash": 0.3
+    }
+  },
+  {
+    "id": "LAMBDA",
+    "name": "Lambda, Inc.",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "Cloud & Neocloud",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 55,
+    "filingCoverage": "Private / Quarterly Financials Unavailable",
+    "sourceUrl": "https://multiples.vc/private-comps/lambda",
+    "confidence": "B",
+    "dataType": "Unavailable",
+    "latestDisclosedQuarter": null,
+    "disclosedDate": null,
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.15,
+      "revDecel": 0.015,
+      "grossMargin": 0.45,
+      "opex": 0.1,
+      "capex": 0.4,
+      "computePay": 0.0,
+      "interestRate": 0.095,
+      "newDebt": 0.3,
+      "equityInflow": 0.15,
+      "debtRepay": 0.06,
+      "refiSuccess": 0.75,
+      "cashConv": 0.85,
+      "minCash": 0.25
+    }
+  },
+  {
+    "id": "COHERE",
+    "name": "Cohere Inc.",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "AI Model Lab",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 50,
+    "filingCoverage": "Private / Unavailable (~$240M ARR end-2025 reported)",
+    "sourceUrl": "https://okara.ai/blog/cohere-revenue-growth",
+    "confidence": "C",
+    "dataType": "Unavailable",
+    "latestDisclosedQuarter": null,
+    "disclosedDate": null,
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.18,
+      "revDecel": 0.02,
+      "grossMargin": 0.55,
+      "opex": 0.12,
+      "capex": 0.02,
+      "computePay": 0.15,
+      "interestRate": 0.08,
+      "newDebt": 0.0,
+      "equityInflow": 0.2,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.8,
+      "cashConv": 0.9,
+      "minCash": 0.2
+    }
+  },
+  {
+    "id": "MISTRAL",
+    "name": "Mistral AI SAS",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "AI Model Lab",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 52,
+    "filingCoverage": "Private / Unavailable (~$400M ARR early 2026 reported)",
+    "sourceUrl": "https://mistral.ai/news/mistral-ai-raises-1-7-b-to-accelerate-technological-progress-with-ai/",
+    "confidence": "B",
+    "dataType": "Unavailable",
+    "latestDisclosedQuarter": null,
+    "disclosedDate": null,
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.2,
+      "revDecel": 0.02,
+      "grossMargin": 0.52,
+      "opex": 0.15,
+      "capex": 0.05,
+      "computePay": 0.25,
+      "interestRate": 0.075,
+      "newDebt": 0.1,
+      "equityInflow": 0.3,
+      "debtRepay": 0.02,
+      "refiSuccess": 0.82,
+      "cashConv": 0.9,
+      "minCash": 0.3
+    }
+  },
+  {
+    "id": "VANTAGE",
+    "name": "Vantage Data Centers",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 72,
+    "filingCoverage": "Private / Rule 144A ABS (S&P Presale Reports available)",
+    "sourceUrl": "https://www.spglobal.com/ratings/en/regulatory/article/-/view/sourceId/101705013",
+    "confidence": "A",
+    "dataType": "Unavailable",
+    "latestDisclosedQuarter": null,
+    "disclosedDate": null,
+    "financials": {
+      "2026Q3": {
+        "revenue": null,
+        "cash": null,
+        "debt": 48.0,
+        "ocf": null,
+        "capex": null,
+        "fcf": null,
+        "ar": null,
+        "rpo": null,
+        "leaseLiab": null,
+        "interestExp": 0.72,
+        "undrawnCredit": 2.0,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-09-15"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.12,
+      "revDecel": 0.01,
+      "grossMargin": 0.6,
+      "opex": 0.35,
+      "capex": 3.5,
+      "computePay": 0.0,
+      "interestRate": 0.072,
+      "newDebt": 2.5,
+      "equityInflow": 0.5,
+      "debtRepay": 0.5,
+      "refiSuccess": 0.82,
+      "cashConv": 0.9,
+      "minCash": 1.2
+    }
+  },
+  {
+    "id": "QTS",
+    "name": "QTS Data Centers (BX)",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 68,
+    "filingCoverage": "Private (Blackstone-owned) / Fitch ABS & CMBS Rated",
+    "sourceUrl": "https://www.fitchratings.com/research/structured-finance/fitch-rates-qts-issuer-abs-ii-llc-series-2026-8-9-10-11-affirms-series-2026-6-7-05-10-2026",
+    "confidence": "A",
+    "dataType": "Unavailable",
+    "latestDisclosedQuarter": null,
+    "disclosedDate": null,
+    "financials": {
+      "2026Q3": {
+        "revenue": null,
+        "cash": null,
+        "debt": 8.26,
+        "ocf": null,
+        "capex": null,
+        "fcf": null,
+        "ar": null,
+        "rpo": null,
+        "leaseLiab": null,
+        "interestExp": 0.14,
+        "undrawnCredit": 1.0,
+        "dataType": "Actual",
+        "disclosedDate": "2026-10-05"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.1,
+      "revDecel": 0.01,
+      "grossMargin": 0.58,
+      "opex": 0.2,
+      "capex": 1.5,
+      "computePay": 0.0,
+      "interestRate": 0.065,
+      "newDebt": 1.0,
+      "equityInflow": 0.3,
+      "debtRepay": 0.25,
+      "refiSuccess": 0.88,
+      "cashConv": 0.9,
+      "minCash": 0.6
+    }
+  },
+  {
+    "id": "ALIGNED",
+    "name": "Aligned Data Centers (AIP)",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 66,
+    "filingCoverage": "Private ($40B EV Buyout by AIP/MGX/GIP closed Jul 2026)",
+    "sourceUrl": "https://aligneddc.com/press-release/aip-mgx-and-blackrocks-gip-close-acquisition-of-aligned-data-centers/",
+    "confidence": "A",
+    "dataType": "Unavailable",
+    "latestDisclosedQuarter": null,
+    "disclosedDate": null,
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.1,
+      "revDecel": 0.01,
+      "grossMargin": 0.58,
+      "opex": 0.18,
+      "capex": 1.2,
+      "computePay": 0.0,
+      "interestRate": 0.068,
+      "newDebt": 0.8,
+      "equityInflow": 0.4,
+      "debtRepay": 0.2,
+      "refiSuccess": 0.88,
+      "cashConv": 0.9,
+      "minCash": 0.5
+    }
+  },
+  {
+    "id": "AIRTRUNK",
+    "name": "AirTrunk (BX / CPPIB)",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 64,
+    "filingCoverage": "Private (A$16B SLL Refinancing Aug 2025)",
+    "sourceUrl": "https://airtrunk.com/airtrunk-closes-a16-billion-ex-japan-sustainable-financing-to-accelerate-apj-growth-and-impact/",
+    "confidence": "A",
+    "dataType": "Unavailable",
+    "latestDisclosedQuarter": null,
+    "disclosedDate": null,
+    "financials": {
+      "2026Q3": {
+        "revenue": null,
+        "cash": null,
+        "debt": 13.2,
+        "ocf": null,
+        "capex": null,
+        "fcf": null,
+        "ar": null,
+        "rpo": null,
+        "leaseLiab": null,
+        "interestExp": 0.2,
+        "undrawnCredit": 1.5,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-10-01"
+      }
+    },
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.1,
+      "revDecel": 0.01,
+      "grossMargin": 0.6,
+      "opex": 0.15,
+      "capex": 1.0,
+      "computePay": 0.0,
+      "interestRate": 0.062,
+      "newDebt": 0.6,
+      "equityInflow": 0.2,
+      "debtRepay": 0.25,
+      "refiSuccess": 0.88,
+      "cashConv": 0.9,
+      "minCash": 0.5
+    }
+  },
+  {
+    "id": "SPV_BEIGNET",
+    "name": "Beignet Investor LLC (Meta Hyperion SPV)",
+    "ticker": "SPV-144A",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 70,
+    "filingCoverage": "Unconsolidated VIE SPV ($27.3B 6.581% Notes, S&P A+, Mat 2049)",
+    "sourceUrl": "https://investor.atmeta.com/investor-news/press-release-details/2025/Meta-Announces-Joint-Venture-with-Funds-Managed-by-Blue-Owl-Capital-to-Develop-Hyperion-Data-Center/default.aspx",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2025-10-21",
+    "financials": {
+      "2026Q3": {
+        "revenue": 0.65,
+        "cash": 2.0,
+        "debt": 27.3,
+        "ocf": 0.55,
+        "capex": 1.5,
+        "fcf": -0.95,
+        "ar": null,
+        "rpo": 27.3,
+        "leaseLiab": null,
+        "interestExp": 0.45,
+        "undrawnCredit": 0.0,
+        "dataType": "Estimated",
+        "disclosedDate": "2025-10-21"
+      }
+    },
+    "defaults": {
+      "mode": "A",
+      "revGrowth": 0.02,
+      "revDecel": 0.0,
+      "grossMargin": 0.9,
+      "opex": 0.05,
+      "capex": 0.5,
+      "computePay": 0.0,
+      "interestRate": 0.0658,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.2,
+      "refiSuccess": 0.9,
+      "cashConv": 0.98,
+      "minCash": 0.5
+    }
+  },
+  {
+    "id": "SPV_JUPITER",
+    "name": "Project Jupiter SPV (Stargate NM)",
+    "ticker": "SPV-LOAN",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 66,
+    "filingCoverage": "Project SPV ($18B Bank Loan @ 89-91¢; Oracle Force Majeure Sep 2026)",
+    "sourceUrl": "https://capacityglobal.com/news/165bn-project-jupiter-what-oracles-force-majeure-notice-means-for-ai-data-centre-risk/",
+    "confidence": "B",
+    "dataType": "Estimated",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-09-24",
+    "financials": {
+      "2026Q3": {
+        "revenue": 0.0,
+        "cash": 0.8,
+        "debt": 18.0,
+        "ocf": -0.4,
+        "capex": 1.2,
+        "fcf": -1.6,
+        "ar": null,
+        "rpo": 18.0,
+        "leaseLiab": null,
+        "interestExp": 0.41,
+        "undrawnCredit": 0.0,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-09-24"
+      }
+    },
+    "defaults": {
+      "mode": "A",
+      "revGrowth": 0.0,
+      "revDecel": 0.0,
+      "grossMargin": 0.85,
+      "opex": 0.05,
+      "capex": 0.8,
+      "computePay": 0.0,
+      "interestRate": 0.09,
+      "newDebt": 0.0,
+      "equityInflow": 0.2,
+      "debtRepay": 0.3,
+      "refiSuccess": 0.55,
+      "cashConv": 0.95,
+      "minCash": 0.5
+    }
+  },
+  {
+    "id": "SPV_ABILENE",
+    "name": "Abilene / Stargate JV SPV (TX)",
+    "ticker": "SPV-LOAN",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 65,
+    "filingCoverage": "Project SPV ($15B JV incl. $9.4B JPM Construction Loans; Oracle 15yr Lease)",
+    "sourceUrl": "https://www.kirkland.com/news/press-release/2025/01/kirkland-ellis-advises-bo-funds-on-jv-and-financing-for-development-of-adc",
+    "confidence": "A",
+    "dataType": "Estimated",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2025-05-01",
+    "financials": {
+      "2026Q3": {
+        "revenue": 0.35,
+        "cash": 1.1,
+        "debt": 9.4,
+        "ocf": 0.25,
+        "capex": 0.8,
+        "fcf": -0.55,
+        "ar": null,
+        "rpo": 15.0,
+        "leaseLiab": null,
+        "interestExp": 0.21,
+        "undrawnCredit": 0.5,
+        "dataType": "Estimated",
+        "disclosedDate": "2025-05-01"
+      }
+    },
+    "defaults": {
+      "mode": "A",
+      "revGrowth": 0.05,
+      "revDecel": 0.0,
+      "grossMargin": 0.85,
+      "opex": 0.04,
+      "capex": 0.6,
+      "computePay": 0.0,
+      "interestRate": 0.085,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.2,
+      "refiSuccess": 0.75,
+      "cashConv": 0.95,
+      "minCash": 0.4
+    }
+  },
+  {
+    "id": "SPV_CRWV8",
+    "name": "CoreWeave Acq. Co. VIII SPV",
+    "ticker": "SPV-DDTL",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 64,
+    "filingCoverage": "Non-Recourse GPU SPV ($8.5B IG A3 DDTL 4.0, SOFR+225bps / ~5.9%)",
+    "sourceUrl": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Closes-Landmark-8-5-Billion-Financing-Facility-Achieving-First-Investment-Grade-Rated-GPU-backed-Financing/default.aspx",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-03-31",
+    "financials": {
+      "2026Q3": {
+        "revenue": 0.55,
+        "cash": 0.7,
+        "debt": 8.5,
+        "ocf": 0.45,
+        "capex": 0.3,
+        "fcf": 0.15,
+        "ar": null,
+        "rpo": 8.5,
+        "leaseLiab": null,
+        "interestExp": 0.13,
+        "undrawnCredit": 1.0,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-03-31"
+      }
+    },
+    "defaults": {
+      "mode": "A",
+      "revGrowth": 0.05,
+      "revDecel": 0.0,
+      "grossMargin": 0.85,
+      "opex": 0.04,
+      "capex": 0.2,
+      "computePay": 0.0,
+      "interestRate": 0.059,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.35,
+      "refiSuccess": 0.82,
+      "cashConv": 0.95,
+      "minCash": 0.3
+    }
+  },
+  {
+    "id": "SPV_XPV",
+    "name": "Broadcom AI XPV Compute SPV",
+    "ticker": "SPV-XPV",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 68,
+    "filingCoverage": "Structured Compute SPV ($35B Initial Tranche for Anthropic; AVGO Backstopped)",
+    "sourceUrl": "https://www.blackstone.com/news/press/broadcom-apollo-and-blackstone-establish-landmark-strategic-platform-to-accelerate-more-than-20-gigawatts-of-global-ai-deployments/",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-06-09",
+    "financials": {
+      "2026Q3": {
+        "revenue": 1.2,
+        "cash": 1.5,
+        "debt": 35.0,
+        "ocf": 1.0,
+        "capex": 2.0,
+        "fcf": -1.0,
+        "ar": null,
+        "rpo": 35.0,
+        "leaseLiab": null,
+        "interestExp": 0.55,
+        "undrawnCredit": 0.0,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-06-09"
+      }
+    },
+    "defaults": {
+      "mode": "A",
+      "revGrowth": 0.05,
+      "revDecel": 0.0,
+      "grossMargin": 0.88,
+      "opex": 0.06,
+      "capex": 1.0,
+      "computePay": 0.0,
+      "interestRate": 0.065,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.8,
+      "refiSuccess": 0.85,
+      "cashConv": 0.95,
+      "minCash": 0.6
+    }
+  },
+  {
+    "id": "SPV_VALOR",
+    "name": "Valor Compute Infra SPV (xAI)",
+    "ticker": "SPV-GPU",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 60,
+    "filingCoverage": "GPU SPV ($5.4B Vehicle w/ $3.5B Apollo Funds + NVIDIA LP; Triple-Net Lease)",
+    "sourceUrl": "https://www.globenewswire.com/news-release/2026/01/07/3214463/0/en/apollo-backs-5-4-billion-valor-and-xai-data-center-compute-infrastructure-transaction-with-3-5-billion-capital-solution.html",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-01-07",
+    "financials": {
+      "2026Q3": {
+        "revenue": 0.3,
+        "cash": 0.4,
+        "debt": 3.5,
+        "ocf": 0.25,
+        "capex": 0.1,
+        "fcf": 0.15,
+        "ar": null,
+        "rpo": 5.4,
+        "leaseLiab": null,
+        "interestExp": 0.08,
+        "undrawnCredit": 0.0,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-01-07"
+      }
+    },
+    "defaults": {
+      "mode": "A",
+      "revGrowth": 0.02,
+      "revDecel": 0.0,
+      "grossMargin": 0.88,
+      "opex": 0.02,
+      "capex": 0.05,
+      "computePay": 0.0,
+      "interestRate": 0.088,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.18,
+      "refiSuccess": 0.85,
+      "cashConv": 0.95,
+      "minCash": 0.2
+    }
+  },
+  {
+    "id": "BX_FUNDS",
+    "name": "Blackstone Credit & Infra Funds",
+    "ticker": "BX (Funds)",
+    "cik": "0001393818",
+    "sector": "Capital Provider",
+    "ring": 3,
+    "isPublic": true,
+    "infraRole": 72,
+    "filingCoverage": "Managed Funds / BCRED / BXCI (Strictly separated from BX Parent AUM)",
+    "sourceUrl": "https://www.blackstone.com/news/press/broadcom-apollo-and-blackstone-establish-landmark-strategic-platform-to-accelerate-more-than-20-gigawatts-of-global-ai-deployments/",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-22",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.03,
+      "revDecel": 0.0,
+      "grossMargin": 0.65,
+      "opex": 0.5,
+      "capex": 0.0,
+      "computePay": 0.0,
+      "interestRate": 0.05,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.98,
+      "cashConv": 0.95,
+      "minCash": 2.0
+    }
+  },
+  {
+    "id": "APOLLO_FUNDS",
+    "name": "Apollo Managed Credit & Athene",
+    "ticker": "APO (Funds)",
+    "cik": "0001858681",
+    "sector": "Capital Provider",
+    "ring": 3,
+    "isPublic": true,
+    "infraRole": 72,
+    "filingCoverage": "Managed Credit Funds & Athene Insurance Balance Sheet (Not Parent AUM)",
+    "sourceUrl": "https://www.globenewswire.com/news-release/2026/01/07/3214463/0/en/apollo-backs-5-4-billion-valor-and-xai-data-center-compute-infrastructure-transaction-with-3-5-billion-capital-solution.html",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-04",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.03,
+      "revDecel": 0.0,
+      "grossMargin": 0.65,
+      "opex": 0.5,
+      "capex": 0.0,
+      "computePay": 0.0,
+      "interestRate": 0.05,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.98,
+      "cashConv": 0.95,
+      "minCash": 2.0
+    }
+  },
+  {
+    "id": "BLUEOWL_FUNDS",
+    "name": "Blue Owl Digital Infra Funds",
+    "ticker": "OWL (Funds)",
+    "cik": "0001823945",
+    "sector": "Capital Provider",
+    "ring": 3,
+    "isPublic": true,
+    "infraRole": 70,
+    "filingCoverage": "Blue Owl Real Assets / Digital Infra Funds & OBDC (Not Parent AUM)",
+    "sourceUrl": "https://investor.atmeta.com/investor-news/press-release-details/2025/Meta-Announces-Joint-Venture-with-Funds-Managed-by-Blue-Owl-Capital-to-Develop-Hyperion-Data-Center/default.aspx",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-30",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.03,
+      "revDecel": 0.0,
+      "grossMargin": 0.65,
+      "opex": 0.3,
+      "capex": 0.0,
+      "computePay": 0.0,
+      "interestRate": 0.05,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.96,
+      "cashConv": 0.95,
+      "minCash": 1.5
+    }
+  },
+  {
+    "id": "BLK_AIP",
+    "name": "BlackRock GIP / AIP Consortium",
+    "ticker": "BLK (AIP)",
+    "cik": "0001364742",
+    "sector": "Capital Provider",
+    "ring": 3,
+    "isPublic": true,
+    "infraRole": 70,
+    "filingCoverage": "AI Infrastructure Partnership (BlackRock/GIP/MGX/MSFT) & El Paso Funds",
+    "sourceUrl": "https://aligneddc.com/press-release/aip-mgx-and-blackrocks-gip-close-acquisition-of-aligned-data-centers/",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-15",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.03,
+      "revDecel": 0.0,
+      "grossMargin": 0.65,
+      "opex": 0.4,
+      "capex": 0.0,
+      "computePay": 0.0,
+      "interestRate": 0.05,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.98,
+      "cashConv": 0.95,
+      "minCash": 2.0
+    }
+  },
+  {
+    "id": "PIMCO_FUNDS",
+    "name": "PIMCO Managed Accounts",
+    "ticker": "PRIVATE",
+    "cik": null,
+    "sector": "Capital Provider",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 66,
+    "filingCoverage": "Anchor Debt Investor (~$18B in Meta Hyperion Beignet Notes)",
+    "sourceUrl": "https://www.cliffordchance.com/news/news/2025/10/clifford-chance-advises-pimco-funds-on-investment-to-develop-metas-hyperion-data-center.html",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": null,
+    "disclosedDate": "2025-10-21",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.02,
+      "revDecel": 0.0,
+      "grossMargin": 0.7,
+      "opex": 0.2,
+      "capex": 0.0,
+      "computePay": 0.0,
+      "interestRate": 0.05,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.98,
+      "cashConv": 0.95,
+      "minCash": 2.0
+    }
+  },
+  {
+    "id": "JPM",
+    "name": "JPMorgan Chase (Arranger/Lender)",
+    "ticker": "JPM",
+    "cik": "0000019617",
+    "sector": "Capital Provider",
+    "ring": 3,
+    "isPublic": true,
+    "infraRole": 74,
+    "filingCoverage": "Global Bank — Lead Arranger & Construction Lender (Abilene, Frontier, OpenAI RCF)",
+    "sourceUrl": "https://www.ft.com/content/00261ab8-64d8-43a4-99d9-35a2017dbe2b?syn-25a6b1a6=1",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-14",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.02,
+      "revDecel": 0.0,
+      "grossMargin": 0.7,
+      "opex": 1.0,
+      "capex": 0.0,
+      "computePay": 0.0,
+      "interestRate": 0.045,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.99,
+      "cashConv": 0.95,
+      "minCash": 10.0
+    }
+  },
+  {
+    "id": "MS",
+    "name": "Morgan Stanley (Arranger)",
+    "ticker": "MS",
+    "cik": "0000895421",
+    "sector": "Capital Provider",
+    "ring": 3,
+    "isPublic": true,
+    "infraRole": 68,
+    "filingCoverage": "Lead Arranger/Bookrunner (xAI $5B, Anthropic $15B RCF, Beignet $27.3B, CRWV VIII)",
+    "sourceUrl": "https://www.pymnts.com/news/artificial-intelligence/2026/anthropic-expands-credit-facility-to-15-billion-ahead-of-mega-ipo/",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-10-16",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.02,
+      "revDecel": 0.0,
+      "grossMargin": 0.7,
+      "opex": 0.8,
+      "capex": 0.0,
+      "computePay": 0.0,
+      "interestRate": 0.045,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.99,
+      "cashConv": 0.95,
+      "minCash": 8.0
+    }
+  },
+  {
+    "id": "SOFTBANK",
+    "name": "SoftBank Group / MGX",
+    "ticker": "9984.T",
+    "cik": null,
+    "sector": "Capital Provider",
+    "ring": 3,
+    "isPublic": true,
+    "infraRole": 72,
+    "filingCoverage": "Strategic Equity Anchors (OpenAI $40B + $122B round, Stargate, AIP/Aligned)",
+    "sourceUrl": "https://group.softbank/en/news/press/20251231",
+    "confidence": "A",
+    "dataType": "Actual",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-12",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0.02,
+      "revDecel": 0.0,
+      "grossMargin": 0.6,
+      "opex": 0.5,
+      "capex": 0.0,
+      "computePay": 0.0,
+      "interestRate": 0.055,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.0,
+      "refiSuccess": 0.92,
+      "cashConv": 0.9,
+      "minCash": 5.0
+    }
+  },
+  {
+    "id": "PRIVATE_CREDIT_OCEAN",
+    "name": "External Capital Market / Private Credit Ocean",
+    "ticker": "OCEAN",
+    "cik": null,
+    "sector": "Private Credit Ocean",
+    "ring": 4,
+    "isPublic": false,
+    "isOcean": true,
+    "infraRole": 100,
+    "filingCoverage": "External pool for unidentified private credit lenders, 144A bondholders & unknown syndicate LPs. Does not default.",
+    "sourceUrl": "https://www.sec.gov/data-research/sec-markets-data/bdc-data-sets",
+    "confidence": "A",
+    "dataType": "System Pool",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-24",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0,
+      "revDecel": 0,
+      "grossMargin": 1,
+      "opex": 0,
+      "capex": 0,
+      "computePay": 0,
+      "interestRate": 0.075,
+      "newDebt": 0,
+      "equityInflow": 0,
+      "debtRepay": 0,
+      "refiSuccess": 1.0,
+      "cashConv": 1.0,
+      "minCash": 0
+    }
+  }
+];
+const INITIAL_TRANSACTIONS = [
+  {
+    "id": "TX01",
+    "payer": "MSFT",
+    "receiver": "OPENAI",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2023-01-23",
+    "startQ": "2023Q1",
+    "endQ": "2026Q3",
+    "totalCommitment": 13.0,
+    "amountDrawn": 12.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 1.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "Microsoft Corp.",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "Microsoft 10-Q / Recapitalization",
+    "sourceUrl": "https://www.stratrix.com/decision-forks/inside-the-microsoft-openai-partnership"
+  },
+  {
+    "id": "TX02",
+    "payer": "OPENAI",
+    "receiver": "MSFT",
+    "type": "Cloud Computing Purchase",
+    "status": "Committed",
+    "announcedDate": "2025-10-28",
+    "startQ": "2026Q1",
+    "endQ": "2030Q4",
+    "totalCommitment": 250.0,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 250.0,
+    "interestRate": null,
+    "maturityDate": "2030-12-31",
+    "quarterlyPayment": 8.0,
+    "scheduleType": "Assumption",
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "Microsoft Official Blog (Oct 28, 2025)",
+    "sourceUrl": "https://blogs.microsoft.com/blog/2025/10/28/the-next-chapter-of-the-microsoft-openai-partnership/"
+  },
+  {
+    "id": "TX03",
+    "payer": "OPENAI",
+    "receiver": "ORCL",
+    "type": "Cloud Computing Purchase",
+    "status": "Committed",
+    "announcedDate": "2025-07-22",
+    "startQ": "2027Q1",
+    "endQ": "2031Q4",
+    "totalCommitment": 300.0,
+    "amountDrawn": 0.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 300.0,
+    "interestRate": null,
+    "maturityDate": "2031-12-31",
+    "quarterlyPayment": 12.0,
+    "scheduleType": "Assumption",
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "OpenAI Stargate Oracle Announcement",
+    "sourceUrl": "https://openai.com/index/stargate-advances-with-partnership-with-oracle/"
+  },
+  {
+    "id": "TX04",
+    "payer": "OPENAI",
+    "receiver": "AMZN",
+    "type": "Cloud Computing Purchase",
+    "status": "Committed",
+    "announcedDate": "2025-11-03",
+    "startQ": "2026Q1",
+    "endQ": "2033Q4",
+    "totalCommitment": 138.0,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 138.0,
+    "interestRate": null,
+    "maturityDate": "2033-12-31",
+    "quarterlyPayment": 4.3,
+    "scheduleType": "Assumption",
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "Amazon AWS & OpenAI Partnership (Nov 2025 / Feb 2026)",
+    "sourceUrl": "https://openai.com/index/amazon-partnership/"
+  },
+  {
+    "id": "TX05",
+    "payer": "OPENAI",
+    "receiver": "CRWV",
+    "type": "Take-or-Pay Contract",
+    "status": "Committed",
+    "announcedDate": "2025-03-09",
+    "startQ": "2025Q2",
+    "endQ": "2030Q3",
+    "totalCommitment": 22.4,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 22.4,
+    "interestRate": null,
+    "maturityDate": "2030-09-30",
+    "quarterlyPayment": 1.12,
+    "scheduleType": "Assumption",
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "CoreWeave IR Press Release (Sep 25, 2025)",
+    "sourceUrl": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-Expands-Agreement-with-OpenAI-by-up-to-6-5B/default.aspx"
+  },
+  {
+    "id": "TX06",
+    "payer": "JPM",
+    "receiver": "OPENAI",
+    "type": "Direct Loan",
+    "status": "Committed",
+    "announcedDate": "2024-10-03",
+    "startQ": "2024Q4",
+    "endQ": "2027Q4",
+    "totalCommitment": 4.7,
+    "amountDrawn": 0.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 4.7,
+    "interestRate": "SOFR + 100 bps",
+    "maturityDate": "2027-10-03",
+    "quarterlyPayment": 0.0,
+    "collateral": "Unsecured",
+    "guarantor": "None",
+    "arranger": "JPMorgan, Citi, GS, MS + 7 Banks",
+    "actualLender": "11-Bank Revolving Syndicate",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "OpenAI Credit Facility Update (Mar 31, 2026)",
+    "sourceUrl": "https://openai.com/index/accelerating-the-next-phase-ai/"
+  },
+  {
+    "id": "TX07",
+    "payer": "SOFTBANK",
+    "receiver": "OPENAI",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2025-03-31",
+    "startQ": "2025Q2",
+    "endQ": "2025Q4",
+    "totalCommitment": 40.0,
+    "amountDrawn": 40.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "SoftBank Group",
+    "actualLender": "SoftBank + Syndicate",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "SoftBank Group Press Release (Dec 31, 2025)",
+    "sourceUrl": "https://group.softbank/en/news/press/20251231"
+  },
+  {
+    "id": "TX08",
+    "payer": "NVDA",
+    "receiver": "OPENAI",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2026-02-20",
+    "startQ": "2026Q1",
+    "endQ": "2026Q2",
+    "totalCommitment": 30.0,
+    "amountDrawn": 30.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "NVIDIA Corp.",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "Reuters / FT Report (Feb 20, 2026)",
+    "sourceUrl": "https://www.thestar.com.my/tech/tech-news/2026/02/20/nvidia-openai-near-30-billion-investment-in-place-of-unfinished-100-billion-deal-ft-reports"
+  },
+  {
+    "id": "TX09",
+    "payer": "AMZN",
+    "receiver": "OPENAI",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2026-02-27",
+    "startQ": "2026Q1",
+    "endQ": "2026Q3",
+    "totalCommitment": 50.0,
+    "amountDrawn": 50.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "Amazon.com, Inc.",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "OpenAI $122B Round / Habtoor Research 9M26 Analysis",
+    "sourceUrl": "https://www.habtoorresearch.com/programmes/ai-infrastructure-spending/"
+  },
+  {
+    "id": "TX10",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "OPENAI",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2026-03-31",
+    "startQ": "2026Q1",
+    "endQ": "2026Q3",
+    "totalCommitment": 42.0,
+    "amountDrawn": 42.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "Multiple Global Banks",
+    "actualLender": "a16z, TPG, Sovereign & Institutional Syndicate (Remainder of $122B)",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "OpenAI Announcement (Mar 31, 2026)",
+    "sourceUrl": "https://openai.com/index/accelerating-the-next-phase-ai/"
+  },
+  {
+    "id": "TX11",
+    "payer": "NVDA",
+    "receiver": "OPENAI",
+    "type": "Loan Guarantee",
+    "status": "Committed",
+    "announcedDate": "2026-08-01",
+    "startQ": "2028Q1",
+    "endQ": "2035Q4",
+    "totalCommitment": 105.0,
+    "amountDrawn": 0.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 105.0,
+    "interestRate": null,
+    "maturityDate": "2035-12-31",
+    "quarterlyPayment": 0.0,
+    "collateral": "SB Energy Ohio 4.25 GW Campus",
+    "guarantor": "NVIDIA Corp.",
+    "arranger": "N/A",
+    "actualLender": "Contingent Credit Support",
+    "spv": "SB Energy / OpenAI Affiliate",
+    "confidence": "A",
+    "sourceDoc": "NVIDIA Q3 FY27 Form 8-K",
+    "sourceUrl": "https://www.stocktitan.net/sec-filings/NVDA/8-k-nvidia-corp-reports-material-event-1b8846aa7232.html"
+  },
+  {
+    "id": "TX12",
+    "payer": "AMZN",
+    "receiver": "ANTHROPIC",
+    "type": "Convertible Debt",
+    "status": "Actual",
+    "announcedDate": "2023-09-25",
+    "startQ": "2023Q4",
+    "endQ": "2026Q2",
+    "totalCommitment": 13.0,
+    "amountDrawn": 13.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "Undisclosed (Converted)",
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "Amazon.com, Inc.",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "Amazon Official Newsroom (Apr 20, 2026)",
+    "sourceUrl": "https://www.aboutamazon.com/news/company-news/amazon-invests-additional-5-billion-anthropic-ai"
+  },
+  {
+    "id": "TX13",
+    "payer": "ANTHROPIC",
+    "receiver": "AMZN",
+    "type": "Take-or-Pay Contract",
+    "status": "Committed",
+    "announcedDate": "2026-05-01",
+    "startQ": "2026Q2",
+    "endQ": "2036Q2",
+    "totalCommitment": 110.0,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 110.0,
+    "interestRate": null,
+    "maturityDate": "2036-04-30",
+    "quarterlyPayment": 3.5,
+    "scheduleType": "Assumption",
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "Anthropic Form S-1/A-3 (Nov 2026)",
+    "sourceUrl": "https://fortune.com/2026/11/19/anthropic-ipo-amazon-google-stake-windfall-nonvoting/"
+  },
+  {
+    "id": "TX14",
+    "payer": "GOOGL",
+    "receiver": "ANTHROPIC",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2023-10-27",
+    "startQ": "2023Q4",
+    "endQ": "2026Q2",
+    "totalCommitment": 43.0,
+    "amountDrawn": 13.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 30.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "Alphabet Inc. ($13B funded + $30B milestone)",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "Alphabet / Anthropic Strategic Investment",
+    "sourceUrl": "https://ai-tldr.dev/releases/anthropic-google-40b/"
+  },
+  {
+    "id": "TX15",
+    "payer": "ANTHROPIC",
+    "receiver": "GOOGL",
+    "type": "Take-or-Pay Contract",
+    "status": "Committed",
+    "announcedDate": "2026-04-24",
+    "startQ": "2026Q2",
+    "endQ": "2033Q3",
+    "totalCommitment": 121.3,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 121.3,
+    "interestRate": null,
+    "maturityDate": "2033-07-31",
+    "quarterlyPayment": 4.5,
+    "scheduleType": "Assumption",
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "Anthropic Form S-1/A-3 (Nov 2026)",
+    "sourceUrl": "https://fortune.com/2026/11/19/anthropic-ipo-amazon-google-stake-windfall-nonvoting/"
+  },
+  {
+    "id": "TX16",
+    "payer": "NVDA",
+    "receiver": "ANTHROPIC",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2025-11-01",
+    "startQ": "2026Q3",
+    "endQ": "2026Q4",
+    "totalCommitment": 10.0,
+    "amountDrawn": 10.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "NVIDIA Corp. (Class N)",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "Anthropic IPO Concurrent Placement",
+    "sourceUrl": "https://eu.36kr.com/en/p/4077339293242504"
+  },
+  {
+    "id": "TX17",
+    "payer": "MS",
+    "receiver": "ANTHROPIC",
+    "type": "Direct Loan",
+    "status": "Committed",
+    "announcedDate": "2026-09-04",
+    "startQ": "2025Q2",
+    "endQ": "2030Q2",
+    "totalCommitment": 15.0,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 15.0,
+    "interestRate": "Undisclosed",
+    "maturityDate": "2030-05-16",
+    "quarterlyPayment": 0.0,
+    "collateral": "Unsecured RCF",
+    "guarantor": "None",
+    "arranger": "Morgan Stanley (Lead) + 15 IPO Banks",
+    "actualLender": "16-Bank Syndicate",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "PYMNTS / Anthropic S-1 (Sep 4, 2026)",
+    "sourceUrl": "https://www.pymnts.com/news/artificial-intelligence/2026/anthropic-expands-credit-facility-to-15-billion-ahead-of-mega-ipo/"
+  },
+  {
+    "id": "TX18",
+    "payer": "APOLLO_FUNDS",
+    "receiver": "SPV_XPV",
+    "type": "Project Finance",
+    "status": "Actual",
+    "announcedDate": "2026-06-09",
+    "startQ": "2026Q2",
+    "endQ": "2031Q2",
+    "totalCommitment": 17.5,
+    "amountDrawn": 17.5,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "Undisclosed",
+    "maturityDate": "2031-06-09",
+    "quarterlyPayment": 0.0,
+    "collateral": "Broadcom/Google TPU Pods",
+    "guarantor": "Broadcom Inc.",
+    "arranger": "Apollo & 7 Global Banks",
+    "actualLender": "Apollo Managed Funds (50% Est. Share of $35B)",
+    "spv": "Broadcom AI XPV SPV",
+    "confidence": "A",
+    "sourceDoc": "Blackstone & Broadcom PR (Jun 9, 2026)",
+    "sourceUrl": "https://www.blackstone.com/news/press/broadcom-apollo-and-blackstone-establish-landmark-strategic-platform-to-accelerate-more-than-20-gigawatts-of-global-ai-deployments/"
+  },
+  {
+    "id": "TX19",
+    "payer": "BX_FUNDS",
+    "receiver": "SPV_XPV",
+    "type": "Project Finance",
+    "status": "Actual",
+    "announcedDate": "2026-06-09",
+    "startQ": "2026Q2",
+    "endQ": "2031Q2",
+    "totalCommitment": 17.5,
+    "amountDrawn": 17.5,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "Undisclosed",
+    "maturityDate": "2031-06-09",
+    "quarterlyPayment": 0.0,
+    "collateral": "Broadcom/Google TPU Pods",
+    "guarantor": "Broadcom Inc.",
+    "arranger": "Blackstone & 7 Global Banks",
+    "actualLender": "Blackstone Managed Funds (50% Est. Share of $35B)",
+    "spv": "Broadcom AI XPV SPV",
+    "confidence": "A",
+    "sourceDoc": "Blackstone & Broadcom PR (Jun 9, 2026)",
+    "sourceUrl": "https://www.blackstone.com/news/press/broadcom-apollo-and-blackstone-establish-landmark-strategic-platform-to-accelerate-more-than-20-gigawatts-of-global-ai-deployments/"
+  },
+  {
+    "id": "TX20",
+    "payer": "ANTHROPIC",
+    "receiver": "SPV_XPV",
+    "type": "Data Center Lease",
+    "status": "Committed",
+    "announcedDate": "2026-06-09",
+    "startQ": "2026Q3",
+    "endQ": "2031Q2",
+    "totalCommitment": 35.0,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 35.0,
+    "interestRate": null,
+    "maturityDate": "2031-06-09",
+    "quarterlyPayment": 1.75,
+    "scheduleType": "Assumption",
+    "collateral": "Compute Lease",
+    "guarantor": "Broadcom Inc.",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "Broadcom AI XPV SPV",
+    "confidence": "A",
+    "sourceDoc": "Broadcom IR Release (Jun 9, 2026)",
+    "sourceUrl": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-apollo-and-blackstone-establish-landmark-strategic"
+  },
+  {
+    "id": "TX21",
+    "payer": "AVGO",
+    "receiver": "SPV_XPV",
+    "type": "Loan Guarantee",
+    "status": "Committed",
+    "announcedDate": "2026-06-09",
+    "startQ": "2026Q2",
+    "endQ": "2031Q2",
+    "totalCommitment": 35.0,
+    "amountDrawn": 0.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 35.0,
+    "interestRate": null,
+    "maturityDate": "2031-06-09",
+    "quarterlyPayment": 0.0,
+    "collateral": "Senior Tranche / Residual Value Backstop",
+    "guarantor": "Broadcom Inc.",
+    "arranger": "N/A",
+    "actualLender": "Contingent Backstop",
+    "spv": "Broadcom AI XPV SPV",
+    "confidence": "B",
+    "sourceDoc": "LSEG FTSE Russell Circular Financing Report (Oct 21, 2026)",
+    "sourceUrl": "https://www.lseg.com/en/insights/ftse-russell/mapping-circular-financing-in-ai-does-it-add-Instability"
+  },
+  {
+    "id": "TX22",
+    "payer": "NVDA",
+    "receiver": "CRWV",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2026-01-23",
+    "startQ": "2026Q1",
+    "endQ": "2026Q1",
+    "totalCommitment": 2.0,
+    "amountDrawn": 2.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "NVIDIA Corp.",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "CoreWeave Form 8-K (Jan 23, 2026)",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000044/crwv-20260123.htm"
+  },
+  {
+    "id": "TX23",
+    "payer": "NVDA",
+    "receiver": "CRWV",
+    "type": "Take-or-Pay Contract",
+    "status": "Committed",
+    "announcedDate": "2025-09-15",
+    "startQ": "2025Q4",
+    "endQ": "2032Q2",
+    "totalCommitment": 6.3,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 6.3,
+    "interestRate": null,
+    "maturityDate": "2032-04-13",
+    "quarterlyPayment": 0.25,
+    "scheduleType": "Assumption",
+    "collateral": "Residual Capacity Backstop",
+    "guarantor": "NVIDIA Corp.",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "MacKay Shields / CoreWeave Disclosures",
+    "sourceUrl": "https://www.nylim.com/mackay-shields/insights/stress-at-the-edge"
+  },
+  {
+    "id": "TX24",
+    "payer": "CRWV",
+    "receiver": "NVDA",
+    "type": "GPU / Server Purchase",
+    "status": "Actual",
+    "announcedDate": "2025-03-01",
+    "startQ": "2025Q1",
+    "endQ": "2027Q4",
+    "totalCommitment": 18.0,
+    "amountDrawn": 10.5,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 7.5,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 2.2,
+    "scheduleType": "Assumption",
+    "collateral": "Blackwell/Hopper GPU Fleet",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "CoreWeave Q3 2026 8-K / CapEx Disclosures",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000461/coreweave3q26earningspress.htm"
+  },
+  {
+    "id": "TX25",
+    "payer": "MSFT",
+    "receiver": "CRWV",
+    "type": "Cloud Computing Purchase",
+    "status": "Actual",
+    "announcedDate": "2023-06-01",
+    "startQ": "2024Q1",
+    "endQ": "2030Q4",
+    "totalCommitment": 10.0,
+    "amountDrawn": 4.2,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 5.8,
+    "interestRate": null,
+    "maturityDate": "2030-12-31",
+    "quarterlyPayment": 1.1,
+    "scheduleType": "Assumption",
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "CoreWeave S-1 / Q3 2026 Customer Concentration",
+    "sourceUrl": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Reports-Strong-Third-Quarter-2026-Results/default.aspx"
+  },
+  {
+    "id": "TX26",
+    "payer": "BX_FUNDS",
+    "receiver": "SPV_CRWV8",
+    "type": "GPU-backed Financing",
+    "status": "Actual",
+    "announcedDate": "2026-03-31",
+    "startQ": "2026Q2",
+    "endQ": "2032Q1",
+    "totalCommitment": 8.5,
+    "amountDrawn": 6.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 2.5,
+    "interestRate": "SOFR + 225 bps / ~5.9%",
+    "maturityDate": "2032-03-31",
+    "quarterlyPayment": 0.13,
+    "collateral": "SPV GPU Fleet & Contracted Revenue",
+    "guarantor": "Non-Recourse to CRWV Parent",
+    "arranger": "MUFG, Morgan Stanley, GS, JPM",
+    "actualLender": "Blackstone Credit & Insurance (Anchor) + Insurers",
+    "spv": "CoreWeave Compute Acquisition Co. VIII, LLC",
+    "confidence": "A",
+    "sourceDoc": "CoreWeave IR Release (Mar 31, 2026)",
+    "sourceUrl": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Closes-Landmark-8-5-Billion-Financing-Facility-Achieving-First-Investment-Grade-Rated-GPU-backed-Financing/default.aspx"
+  },
+  {
+    "id": "TX27",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "CRWV",
+    "type": "GPU-backed Financing",
+    "status": "Actual",
+    "announcedDate": "2024-05-17",
+    "startQ": "2024Q2",
+    "endQ": "2029Q2",
+    "totalCommitment": 10.0,
+    "amountDrawn": 10.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "SOFR + 600–962 bps (Legacy DDTLs)",
+    "maturityDate": "2029-05-17",
+    "quarterlyPayment": 0.28,
+    "collateral": "GPU Collateral & Contracts",
+    "guarantor": "SPV Subsidiaries",
+    "arranger": "Blackstone / Magnetar / Carlyle / Coatue Syndicate",
+    "actualLender": "Unknown Private Credit Syndicate LPs (Routed to Ocean)",
+    "spv": "CoreWeave Legacy DDTL SPVs",
+    "confidence": "B",
+    "sourceDoc": "CoreWeave S-1 / Q3 2026 Debt Footnote",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000461/coreweave3q26earningspress.htm"
+  },
+  {
+    "id": "TX28",
+    "payer": "CRWV",
+    "receiver": "APLD",
+    "type": "Data Center Lease",
+    "status": "Committed",
+    "announcedDate": "2025-06-02",
+    "startQ": "2026Q1",
+    "endQ": "2040Q4",
+    "totalCommitment": 11.0,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 11.0,
+    "interestRate": null,
+    "maturityDate": "2040-12-31",
+    "quarterlyPayment": 0.18,
+    "scheduleType": "Assumption",
+    "collateral": "Ellendale ND Campus Lease",
+    "guarantor": "CoreWeave, Inc.",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "Applied Digital 2026 Backlog Disclosures",
+    "sourceUrl": "https://www.tradingnews.com/news/applied-digital-apld-rips-26-to-1444-off-1131-low-as-backlog-tops-41b-20-usd-target-in-play"
+  },
+  {
+    "id": "TX29",
+    "payer": "ORCL",
+    "receiver": "SPV_ABILENE",
+    "type": "Data Center Lease",
+    "status": "Committed",
+    "announcedDate": "2024-10-15",
+    "startQ": "2026Q2",
+    "endQ": "2041Q2",
+    "totalCommitment": 15.0,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 15.0,
+    "interestRate": null,
+    "maturityDate": "2041-06-30",
+    "quarterlyPayment": 0.35,
+    "scheduleType": "Assumption",
+    "collateral": "15-Year Lease Backing SPV Debt",
+    "guarantor": "Oracle Corp.",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "Abilene / Stargate JV SPV",
+    "confidence": "A",
+    "sourceDoc": "Crusoe / Blue Owl BusinessWire & Kirkland PR",
+    "sourceUrl": "https://www.businesswire.com/news/home/20241015910376/en/Crusoe-Blue-Owl-Capital-and-Primary-Digital-Infrastructure-Enter-%243.4-billion-Joint-Venture-for-AI-Data-Center-Development"
+  },
+  {
+    "id": "TX30",
+    "payer": "JPM",
+    "receiver": "SPV_ABILENE",
+    "type": "Project Finance",
+    "status": "Actual",
+    "announcedDate": "2025-01-22",
+    "startQ": "2025Q1",
+    "endQ": "2030Q1",
+    "totalCommitment": 9.4,
+    "amountDrawn": 5.5,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 3.9,
+    "interestRate": "Floating Construction",
+    "maturityDate": "2030-01-22",
+    "quarterlyPayment": 0.21,
+    "collateral": "Abilene 1.2 GW Campus & Oracle Leases",
+    "guarantor": "Non-Recourse to Oracle/Crusoe Parent",
+    "arranger": "JPMorgan Chase (Newmark Advisor)",
+    "actualLender": "JPMorgan + Bank Syndicate",
+    "spv": "Abilene / Stargate JV SPV",
+    "confidence": "A",
+    "sourceDoc": "Kirkland & Ellis / Safeguard Project Finance Audit",
+    "sourceUrl": "https://www.kirkland.com/news/press-release/2025/01/kirkland-ellis-advises-bo-funds-on-jv-and-financing-for-development-of-adc"
+  },
+  {
+    "id": "TX31",
+    "payer": "BLUEOWL_FUNDS",
+    "receiver": "SPV_ABILENE",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2024-10-15",
+    "startQ": "2024Q4",
+    "endQ": "2026Q3",
+    "totalCommitment": 5.6,
+    "amountDrawn": 4.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 1.6,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "JV Equity",
+    "guarantor": "None",
+    "arranger": "Blue Owl Real Assets",
+    "actualLender": "Blue Owl Funds + Crusoe + Primary Digital",
+    "spv": "Abilene / Stargate JV SPV",
+    "confidence": "A",
+    "sourceDoc": "BusinessWire (Oct 15, 2024)",
+    "sourceUrl": "https://www.businesswire.com/news/home/20241015910376/en/Crusoe-Blue-Owl-Capital-and-Primary-Digital-Infrastructure-Enter-%243.4-billion-Joint-Venture-for-AI-Data-Center-Development"
+  },
+  {
+    "id": "TX32",
+    "payer": "ORCL",
+    "receiver": "SPV_JUPITER",
+    "type": "Data Center Lease",
+    "status": "Committed",
+    "announcedDate": "2025-11-01",
+    "startQ": "2027Q1",
+    "endQ": "2042Q1",
+    "totalCommitment": 21.0,
+    "amountDrawn": 0.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 21.0,
+    "interestRate": null,
+    "maturityDate": "2042-01-01",
+    "quarterlyPayment": 0.45,
+    "scheduleType": "Assumption",
+    "collateral": "Force Majeure Notice Issued Sep 24, 2026",
+    "guarantor": "Oracle Corp.",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "Project Jupiter SPV (NM)",
+    "confidence": "B",
+    "sourceDoc": "Capacity Global / FT (Sep 2026)",
+    "sourceUrl": "https://capacityglobal.com/news/165bn-project-jupiter-what-oracles-force-majeure-notice-means-for-ai-data-centre-risk/"
+  },
+  {
+    "id": "TX33",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "SPV_JUPITER",
+    "type": "Project Finance",
+    "status": "Actual",
+    "announcedDate": "2025-11-15",
+    "startQ": "2025Q4",
+    "endQ": "2030Q4",
+    "totalCommitment": 18.0,
+    "amountDrawn": 18.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "~9.0% Carry (Quoted 89–91¢ Sep 2026)",
+    "maturityDate": "2030-11-15",
+    "quarterlyPayment": 0.41,
+    "collateral": "1,400-Acre NM Stargate Campus",
+    "guarantor": "Non-Recourse SPV",
+    "arranger": "BNP Paribas, GS, SMBC, MUFG, Santander, Jefferies (~20 Banks)",
+    "actualLender": "Unsyndicated 20-Bank / Credit Pool (Exact Splits Unknown -> Ocean)",
+    "spv": "Project Jupiter SPV",
+    "confidence": "B",
+    "sourceDoc": "Global Data Center Hub / FT (Sep 2026)",
+    "sourceUrl": "https://www.globaldatacenterhub.com/p/oracles-jupiter-force-majeure-stacks"
+  },
+  {
+    "id": "TX34",
+    "payer": "BLUEOWL_FUNDS",
+    "receiver": "SPV_JUPITER",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2025-11-01",
+    "startQ": "2025Q4",
+    "endQ": "2026Q2",
+    "totalCommitment": 3.0,
+    "amountDrawn": 3.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "Sponsor Equity (STACK Infra)",
+    "guarantor": "None",
+    "arranger": "Blue Owl Capital",
+    "actualLender": "Blue Owl Funds",
+    "spv": "Project Jupiter SPV",
+    "confidence": "B",
+    "sourceDoc": "Capacity Global (Sep 2026)",
+    "sourceUrl": "https://capacityglobal.com/news/165bn-project-jupiter-what-oracles-force-majeure-notice-means-for-ai-data-centre-risk/"
+  },
+  {
+    "id": "TX35",
+    "payer": "JPM",
+    "receiver": "VANTAGE",
+    "type": "Project Finance",
+    "status": "Actual",
+    "announcedDate": "2025-08-20",
+    "startQ": "2025Q3",
+    "endQ": "2030Q3",
+    "totalCommitment": 22.0,
+    "amountDrawn": 12.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 10.0,
+    "interestRate": "Undisclosed",
+    "maturityDate": "2030-08-20",
+    "quarterlyPayment": 0.25,
+    "collateral": "Frontier TX 1,200-Acre Stargate Campus",
+    "guarantor": "SPV Project Assets",
+    "arranger": "JPMorgan & MUFG (Lead Arrangers) + GS",
+    "actualLender": "Bank Syndicate",
+    "spv": "Vantage Frontier Campus SPV",
+    "confidence": "B",
+    "sourceDoc": "Financial Times (Aug 2025)",
+    "sourceUrl": "https://www.ft.com/content/00261ab8-64d8-43a4-99d9-35a2017dbe2b?syn-25a6b1a6=1"
+  },
+  {
+    "id": "TX36",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "VANTAGE",
+    "type": "Corporate Bond",
+    "status": "Actual",
+    "announcedDate": "2025-11-01",
+    "startQ": "2025Q4",
+    "endQ": "2033Q1",
+    "totalCommitment": 26.0,
+    "amountDrawn": 26.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "ABS / Private Credit Mix",
+    "maturityDate": "2033-01-31",
+    "quarterlyPayment": 0.45,
+    "collateral": "NA/EMEA Data Center Master Trust ABS + Ares $2.4B Facility",
+    "guarantor": "SPV Issuers",
+    "arranger": "Guggenheim / Ares / Bank Syndicate",
+    "actualLender": "Rule 144A ABS Holders & Private Credit Pool (Ocean)",
+    "spv": "Vantage Data Centers Issuer LLC",
+    "confidence": "A",
+    "sourceDoc": "S&P Presale 2026-1/2 & FT",
+    "sourceUrl": "https://www.spglobal.com/ratings/en/regulatory/article/-/view/sourceId/101705013"
+  },
+  {
+    "id": "TX37",
+    "payer": "PIMCO_FUNDS",
+    "receiver": "SPV_BEIGNET",
+    "type": "Corporate Bond",
+    "status": "Actual",
+    "announcedDate": "2025-10-21",
+    "startQ": "2025Q4",
+    "endQ": "2049Q2",
+    "totalCommitment": 18.0,
+    "amountDrawn": 18.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "6.581% Fixed (A+)",
+    "maturityDate": "2049-05-31",
+    "quarterlyPayment": 0.3,
+    "collateral": "Hyperion Richland Parish LA Data Center",
+    "guarantor": "Meta 16-Yr RVG",
+    "arranger": "Morgan Stanley (Sole Bookrunner)",
+    "actualLender": "PIMCO Managed Funds & Accounts (Anchor)",
+    "spv": "Beignet Investor LLC",
+    "confidence": "A",
+    "sourceDoc": "Clifford Chance / Meta IR (Oct 21, 2025)",
+    "sourceUrl": "https://www.cliffordchance.com/news/news/2025/10/clifford-chance-advises-pimco-funds-on-investment-to-develop-metas-hyperion-data-center.html"
+  },
+  {
+    "id": "TX38",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "SPV_BEIGNET",
+    "type": "Corporate Bond",
+    "status": "Actual",
+    "announcedDate": "2025-10-21",
+    "startQ": "2025Q4",
+    "endQ": "2049Q2",
+    "totalCommitment": 9.3,
+    "amountDrawn": 9.3,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "6.581% Fixed (A+)",
+    "maturityDate": "2049-05-31",
+    "quarterlyPayment": 0.15,
+    "collateral": "Hyperion Data Center (Non-PIMCO 144A Tranche)",
+    "guarantor": "Meta 16-Yr RVG",
+    "arranger": "Morgan Stanley",
+    "actualLender": "Unknown Rule 144A Bondholders (Routed to Ocean)",
+    "spv": "Beignet Investor LLC",
+    "confidence": "A",
+    "sourceDoc": "Meta IR Press Release (Oct 21, 2025)",
+    "sourceUrl": "https://investor.atmeta.com/investor-news/press-release-details/2025/Meta-Announces-Joint-Venture-with-Funds-Managed-by-Blue-Owl-Capital-to-Develop-Hyperion-Data-Center/default.aspx"
+  },
+  {
+    "id": "TX39",
+    "payer": "BLUEOWL_FUNDS",
+    "receiver": "SPV_BEIGNET",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2025-10-21",
+    "startQ": "2025Q4",
+    "endQ": "2026Q1",
+    "totalCommitment": 7.0,
+    "amountDrawn": 7.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "80% Unconsolidated VIE Equity",
+    "guarantor": "None",
+    "arranger": "Blue Owl Capital",
+    "actualLender": "Blue Owl Managed Funds",
+    "spv": "Beignet Investor LLC",
+    "confidence": "A",
+    "sourceDoc": "Meta IR Press Release (Oct 21, 2025)",
+    "sourceUrl": "https://investor.atmeta.com/investor-news/press-release-details/2025/Meta-Announces-Joint-Venture-with-Funds-Managed-by-Blue-Owl-Capital-to-Develop-Hyperion-Data-Center/default.aspx"
+  },
+  {
+    "id": "TX40",
+    "payer": "META",
+    "receiver": "SPV_BEIGNET",
+    "type": "Loan Guarantee",
+    "status": "Committed",
+    "announcedDate": "2025-10-21",
+    "startQ": "2025Q4",
+    "endQ": "2041Q4",
+    "totalCommitment": 41.5,
+    "amountDrawn": 0.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 41.5,
+    "interestRate": null,
+    "maturityDate": "2041-10-21",
+    "quarterlyPayment": 0.65,
+    "scheduleType": "Assumption",
+    "collateral": "Operating Lease + 16-Yr Residual Value Guarantee ($68.4B Max incl. El Paso)",
+    "guarantor": "Meta Platforms, Inc.",
+    "arranger": "N/A",
+    "actualLender": "Contingent RVG",
+    "spv": "Beignet & Sopaipilla SPVs",
+    "confidence": "A",
+    "sourceDoc": "Meta Q3 2026 10-Q / Luminix Audit",
+    "sourceUrl": "https://www.useluminix.com/reports/industry-analysis/meta-debt-bonds-and-credit-rating"
+  },
+  {
+    "id": "TX41",
+    "payer": "APOLLO_FUNDS",
+    "receiver": "SPV_VALOR",
+    "type": "GPU-backed Financing",
+    "status": "Actual",
+    "announcedDate": "2026-01-07",
+    "startQ": "2026Q1",
+    "endQ": "2031Q1",
+    "totalCommitment": 3.5,
+    "amountDrawn": 3.5,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "Undisclosed",
+    "maturityDate": "2031-01-07",
+    "quarterlyPayment": 0.08,
+    "collateral": "NVIDIA GB200 GPUs (Colossus 2)",
+    "guarantor": "Triple-Net xAI Lease",
+    "arranger": "Valor Equity Partners",
+    "actualLender": "Apollo Managed Funds",
+    "spv": "Valor Compute Infrastructure L.P.",
+    "confidence": "A",
+    "sourceDoc": "Apollo / GlobeNewswire PR (Jan 7, 2026)",
+    "sourceUrl": "https://www.globenewswire.com/news-release/2026/01/07/3214463/0/en/apollo-backs-5-4-billion-valor-and-xai-data-center-compute-infrastructure-transaction-with-3-5-billion-capital-solution.html"
+  },
+  {
+    "id": "TX42",
+    "payer": "SPCX_XAI",
+    "receiver": "SPV_VALOR",
+    "type": "Data Center Lease",
+    "status": "Committed",
+    "announcedDate": "2026-01-07",
+    "startQ": "2026Q1",
+    "endQ": "2031Q1",
+    "totalCommitment": 5.4,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 5.4,
+    "interestRate": null,
+    "maturityDate": "2031-01-07",
+    "quarterlyPayment": 0.3,
+    "scheduleType": "Assumption",
+    "collateral": "Triple-Net GPU Compute Lease",
+    "guarantor": "xAI Subsidiary",
+    "arranger": "Valor Equity Partners",
+    "actualLender": "N/A",
+    "spv": "Valor Compute Infrastructure L.P.",
+    "confidence": "A",
+    "sourceDoc": "Apollo / GlobeNewswire PR (Jan 7, 2026)",
+    "sourceUrl": "https://www.globenewswire.com/news-release/2026/01/07/3214463/0/en/apollo-backs-5-4-billion-valor-and-xai-data-center-compute-infrastructure-transaction-with-3-5-billion-capital-solution.html"
+  },
+  {
+    "id": "TX43",
+    "payer": "APOLLO_FUNDS",
+    "receiver": "SPCX_XAI",
+    "type": "Equipment Financing",
+    "status": "Committed",
+    "announcedDate": "2026-10-26",
+    "startQ": "2027Q1",
+    "endQ": "2032Q2",
+    "totalCommitment": 40.0,
+    "amountDrawn": 0.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 40.0,
+    "interestRate": "Callable Debt / Pod Lease",
+    "maturityDate": "2032-06-30",
+    "quarterlyPayment": 2.0,
+    "scheduleType": "Assumption",
+    "collateral": "NVIDIA Vera Rubin GPU Pods",
+    "guarantor": "SpaceX Investment-Grade Profile",
+    "arranger": "Apollo (Lead) + GS / BlackRock / KKR",
+    "actualLender": "Apollo & Institutional Syndicate",
+    "spv": "SpaceX Vera Rubin Lease Vehicle",
+    "confidence": "A",
+    "sourceDoc": "SpaceX Form 8-K (Oct 26, 2026)",
+    "sourceUrl": "https://mlq.ai/news/spacex-commits-to-40-billion-apollo-gpu-lease-with-deliveries-planned-for-early-2027/"
+  },
+  {
+    "id": "TX44",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "SPCX_XAI",
+    "type": "Corporate Bond",
+    "status": "Actual",
+    "announcedDate": "2025-07-01",
+    "startQ": "2025Q3",
+    "endQ": "2030Q3",
+    "totalCommitment": 5.0,
+    "amountDrawn": 5.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "12.5% Notes / SOFR+725bps TLB",
+    "maturityDate": "2030-07-01",
+    "quarterlyPayment": 0.16,
+    "collateral": "xAI Assets & IP",
+    "guarantor": "xAI Corp.",
+    "arranger": "Morgan Stanley (Lead Arranger)",
+    "actualLender": "Institutional High-Yield & TLB Holders (Routed to Ocean)",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "Reuters / Korea JoongAng Daily (Jul 1, 2025)",
+    "sourceUrl": "https://www.koreajoongangdaily.com/business/musks-xai-raises-5-billion-each-in-fresh-debt-and-equity-morgan-stanley-says/11992172"
+  },
+  {
+    "id": "TX45",
+    "payer": "BLK_AIP",
+    "receiver": "ALIGNED",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2025-10-15",
+    "startQ": "2026Q3",
+    "endQ": "2026Q3",
+    "totalCommitment": 45.0,
+    "amountDrawn": 40.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 5.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "100% Buyout + $5B Growth Equity",
+    "guarantor": "None",
+    "arranger": "AIP / MGX / BlackRock GIP",
+    "actualLender": "AIP Consortium",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "Aligned Data Centers Closing PR (Jul 21, 2026)",
+    "sourceUrl": "https://aligneddc.com/press-release/aip-mgx-and-blackrocks-gip-close-acquisition-of-aligned-data-centers/"
+  },
+  {
+    "id": "TX46",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "QTS",
+    "type": "Corporate Bond",
+    "status": "Actual",
+    "announcedDate": "2025-11-01",
+    "startQ": "2025Q4",
+    "endQ": "2031Q4",
+    "totalCommitment": 8.26,
+    "amountDrawn": 8.26,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "Floating CMBS / AAA–BBB- ABS",
+    "maturityDate": "2031-10-05",
+    "quarterlyPayment": 0.14,
+    "collateral": "QTS AI Data Centers (BX 2025-VOLT + ABS II)",
+    "guarantor": "Non-Recourse SPV",
+    "arranger": "Blackstone-Sponsored CMBS/ABS",
+    "actualLender": "CMBS/ABS Institutional Investors (Ocean)",
+    "spv": "QTS Issuer ABS II LLC / BX 2025-VOLT",
+    "confidence": "A",
+    "sourceDoc": "Fitch Ratings (Oct 5, 2026)",
+    "sourceUrl": "https://www.fitchratings.com/research/structured-finance/fitch-rates-qts-issuer-abs-ii-llc-series-2026-8-9-10-11-affirms-series-2026-6-7-05-10-2026"
+  },
+  {
+    "id": "TX47",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "AIRTRUNK",
+    "type": "Direct Loan",
+    "status": "Actual",
+    "announcedDate": "2025-08-25",
+    "startQ": "2025Q3",
+    "endQ": "2030Q3",
+    "totalCommitment": 13.2,
+    "amountDrawn": 13.2,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "Sustainability-Linked Floating",
+    "maturityDate": "2030-08-25",
+    "quarterlyPayment": 0.2,
+    "collateral": "APAC Data Center Assets (Refinanced 2024 LBO Loan)",
+    "guarantor": "Project Entities",
+    "arranger": "APAC Bank Syndicate",
+    "actualLender": "APAC Bank Syndicate (Exact Splits Unknown -> Ocean)",
+    "spv": "AirTrunk Project Entities",
+    "confidence": "A",
+    "sourceDoc": "AirTrunk PR (Aug 25, 2025 — A$16B + A$4.25B)",
+    "sourceUrl": "https://airtrunk.com/airtrunk-closes-a16-billion-ex-japan-sustainable-financing-to-accelerate-apj-growth-and-impact/"
+  },
+  {
+    "id": "TX48",
+    "payer": "DLR",
+    "receiver": "BX_FUNDS",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2026-06-29",
+    "startQ": "2026Q2",
+    "endQ": "2026Q2",
+    "totalCommitment": 7.8,
+    "amountDrawn": 3.5,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "JV Buyout ($3.5B Equity + Debt Assumed)",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "Digital Realty Trust, Inc.",
+    "spv": "Northern Virginia JV",
+    "confidence": "A",
+    "sourceDoc": "Digital Realty Press Release (Jun 29, 2026)",
+    "sourceUrl": "https://investor.digitalrealty.com/news-releases/news-release-details/digital-realty-announces-purchase-blackstone-interest-three"
+  },
+  {
+    "id": "TX49",
+    "payer": "NVDA",
+    "receiver": "NBIS",
+    "type": "Equity Investment",
+    "status": "Actual",
+    "announcedDate": "2026-03-11",
+    "startQ": "2026Q1",
+    "endQ": "2026Q2",
+    "totalCommitment": 2.0,
+    "amountDrawn": 2.0,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": null,
+    "maturityDate": null,
+    "quarterlyPayment": 0.0,
+    "collateral": "None",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "NVIDIA Corp.",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "NVIDIA Newsroom (Mar 11, 2026)",
+    "sourceUrl": "https://nvidianews.nvidia.com/news/nvidia-and-nebius-partner-to-scale-full-stack-ai-cloud"
+  },
+  {
+    "id": "TX50",
+    "payer": "NVDA",
+    "receiver": "IREN",
+    "type": "Cloud Computing Purchase",
+    "status": "Committed",
+    "announcedDate": "2026-05-01",
+    "startQ": "2026Q2",
+    "endQ": "2031Q2",
+    "totalCommitment": 3.4,
+    "amountDrawn": null,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 3.4,
+    "interestRate": null,
+    "maturityDate": "2031-05-01",
+    "quarterlyPayment": 0.17,
+    "scheduleType": "Assumption",
+    "collateral": "5-Yr Managed AI Cloud Agreement",
+    "guarantor": "None",
+    "arranger": "N/A",
+    "actualLender": "N/A",
+    "spv": "None",
+    "confidence": "B",
+    "sourceDoc": "Blackridge Research / TradingView (2026)",
+    "sourceUrl": "https://www.blackridgeresearch.com/blog/list-of-top-neocloud-companies-in-the-world"
+  },
+  {
+    "id": "TX51",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "NVDA",
+    "type": "Corporate Bond",
+    "status": "Actual",
+    "announcedDate": "2026-06-15",
+    "startQ": "2026Q2",
+    "endQ": "2056Q2",
+    "totalCommitment": 25.0,
+    "amountDrawn": 24.9,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "4.250%–5.625% (7 Tranches)",
+    "maturityDate": "2056-06-15",
+    "quarterlyPayment": 0.31,
+    "collateral": "Senior Unsecured",
+    "guarantor": "None",
+    "arranger": "Goldman Sachs, JPMorgan, Morgan Stanley",
+    "actualLender": "Public Bond Investors (Ocean)",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "NVIDIA Q3 FY27 PR / Forbes (Jun 17, 2026)",
+    "sourceUrl": "https://www.forbes.com/sites/daraabasiita/2026/06/17/nvidia-returns-to-the-bond-market-with-a-25-billion-sale/"
+  },
+  {
+    "id": "TX52",
+    "payer": "PRIVATE_CREDIT_OCEAN",
+    "receiver": "AMD",
+    "type": "Corporate Bond",
+    "status": "Actual",
+    "announcedDate": "2026-08-17",
+    "startQ": "2026Q3",
+    "endQ": "2036Q3",
+    "totalCommitment": 4.75,
+    "amountDrawn": 4.73,
+    "amountRepaid": 0.0,
+    "remainingCommitment": 0.0,
+    "interestRate": "Senior Unsecured Notes",
+    "maturityDate": "2036-08-17",
+    "quarterlyPayment": 0.06,
+    "collateral": "Unsecured",
+    "guarantor": "None",
+    "arranger": "Bank Bookrunners",
+    "actualLender": "Public Bond Investors (Ocean)",
+    "spv": "None",
+    "confidence": "A",
+    "sourceDoc": "AMD Q3 2026 Form 8-K EX-99.1",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000188/q32026991.htm"
+  }
+];
+const INITIAL_SCHEMA = {
+  "version": "v1.0-phase1.5-public-2026-11-24",
+  "retrievedAt": "2026-11-24",
+  "currency": "USD",
+  "unit": "Billions",
+  "entityCount": 44,
+  "transactionCount": 52,
+  "quarters": {
+    "historical": [
+      "2022Q1",
+      "2022Q2",
+      "2022Q3",
+      "2022Q4",
+      "2023Q1",
+      "2023Q2",
+      "2023Q3",
+      "2023Q4",
+      "2024Q1",
+      "2024Q2",
+      "2024Q3",
+      "2024Q4",
+      "2025Q1",
+      "2025Q2",
+      "2025Q3",
+      "2025Q4",
+      "2026Q1",
+      "2026Q2",
+      "2026Q3"
+    ],
+    "partial": "2026Q4",
+    "forecast": [
+      "2027Q1",
+      "2027Q2",
+      "2027Q3",
+      "2027Q4",
+      "2028Q1",
+      "2028Q2",
+      "2028Q3",
+      "2028Q4"
+    ]
+  },
+  "antiDoubleCountingRules": [
+    "Google DeepMind consolidated into Alphabet (GOOGL); Meta AI consolidated into Meta Platforms (META).",
+    "AirTrunk 2025 A$16B SLL explicitly replaces 2024 A$5.5B LBO loan (not double-counted).",
+    "Meta Beignet ($27.3B) & Sopaipilla ($12.55B) debt kept on unconsolidated SPV nodes; Meta holds 20% equity + $41.5B RVG.",
+    "NVIDIA $105B SB Energy guarantee and $32B contingent neocloud commitments separated from balance-sheet debt.",
+    "Unidentified private credit lenders & 144A bondholders routed to PRIVATE_CREDIT_OCEAN (never deleted, never set to 0).",
+    "Bidirectional cash flows (e.g. Google <-> Anthropic, MSFT <-> OpenAI, NVDA <-> CoreWeave) stored as separate directed edges."
+  ]
+};
+
+(function () {
+  const Engine = window.AICreditEngine;
+
+  // --- APPLICATION STATE ---
+  let state = {
+    version: INITIAL_SCHEMA.version,
+    versions: [{
+      version: INITIAL_SCHEMA.version,
+      timestamp: "2026-11-24",
+      entities: JSON.parse(JSON.stringify(INITIAL_ENTITIES)),
+      transactions: JSON.parse(JSON.stringify(INITIAL_TRANSACTIONS))
+    }],
+    entities: JSON.parse(JSON.stringify(INITIAL_ENTITIES)),
+    transactions: JSON.parse(JSON.stringify(INITIAL_TRANSACTIONS)),
+    currentQuarter: "2026Q3",
+    sizeMetric: "systemic",
+    txTypeFilter: "ALL",
+    minAmount: 0,
+    hopDepth: 1,
+    selectedNodeId: "OPENAI",
+    forcedDefaults: new Set(),
+    overrides: {},
+    ocean: {
+      fundingAvailability: 100,
+      interestRate: 7.5,
+      refiSuccessRate: 85,
+      maxCapacity: 250,
+      creditTighteningBps: 0
+    },
+    simResult: null,
+    playTimer: null,
+    pinnedNodes: new Set(),
+    nodePositions: {}
+  };
+
+  let cashChart = null;
+  let svg, zoomGroup, edgeLayer, nodeLayer, ringLayer, zoomBehavior;
+  let width = 800, height = 600;
+
+  const SECTOR_COLORS = {
+    "AI Model Lab": "#A855F7",
+    "Cloud & Neocloud": "#38BDF8",
+    "Chips & Hardware": "#F59E0B",
+    "Data Center & SPV": "#14B8A6",
+    "Capital Provider": "#6366F1",
+    "Private Credit Ocean": "#0284C7"
+  };
+
+  function fmtB(v) {
+    if (v === null || v === undefined || Number.isNaN(Number(v))) return "Unavailable";
+    const n = Number(v);
+    return (n < 0 ? "-$" : "$") + Math.abs(n).toFixed(Math.abs(n) >= 100 ? 1 : 2) + "B";
+  }
+
+  function recompute() {
+    state.simResult = Engine.runSimulation(state.entities, state.transactions, {
+      ocean: state.ocean,
+      overrides: state.overrides,
+      forcedDefaults: Array.from(state.forcedDefaults)
+    });
+    renderAll();
+  }
+
+  // --- CONCENTRIC LAYOUT CALCULATOR ---
+  function computeInitialPositions(w, h) {
+    const cx = w / 2, cy = h / 2;
+    const minDim = Math.min(w, h);
+    const radii = { 1: minDim * 0.14, 2: minDim * 0.27, 3: minDim * 0.38, 4: minDim * 0.43 };
+
+    [1, 2, 3].forEach(ring => {
+      const group = state.entities.filter(e => e.ring === ring);
+      group.forEach((e, idx) => {
+        if (!state.nodePositions[e.id]) {
+          const angle = (2 * Math.PI * idx) / Math.max(1, group.length) - Math.PI / 2;
+          state.nodePositions[e.id] = {
+            x: cx + radii[ring] * Math.cos(angle),
+            y: cy + radii[ring] * Math.sin(angle)
+          };
+        }
+      });
+    });
+
+    // Place Private Credit Ocean cleanly on the outer right-top rim
+    const ocean = state.entities.find(e => e.isOcean);
+    if (ocean && !state.nodePositions[ocean.id]) {
+      state.nodePositions[ocean.id] = { x: cx + radii[4] * 0.78, y: cy - radii[4] * 0.68 };
+    }
+  }
+
+  function initSvg() {
+    const container = document.getElementById("networkContainer");
+    width = container.clientWidth || 800;
+    height = container.clientHeight || 600;
+
+    svg = d3.select("#networkSvg").attr("viewBox", [0, 0, width, height]);
+    svg.selectAll("*").remove();
+
+    const defs = svg.append("defs");
+    // Unselected directional gradient: Red (payer) -> Green (receiver)
+    const grad = defs.append("linearGradient").attr("id", "grad-out-in").attr("gradientUnits", "objectBoundingBox");
+    grad.append("stop").attr("offset", "0%").attr("stop-color", "#EF4444");
+    grad.append("stop").attr("offset", "100%").attr("stop-color", "#10B981");
+
+    const markers = [
+      { id: "arrow-neutral", color: "#94A3B8" },
+      { id: "arrow-red", color: "#EF4444" },
+      { id: "arrow-green", color: "#10B981" },
+      { id: "arrow-dim", color: "#334155" }
+    ];
+    markers.forEach(m => {
+      defs.append("marker")
+        .attr("id", m.id)
+        .attr("viewBox", "0 -5 10 10")
+        .attr("markerUnits", "userSpaceOnUse")
+        .attr("refX", 24)
+        .attr("refY", 0)
+        .attr("markerWidth", 10)
+        .attr("markerHeight", 10)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-4L9,0L0,4Z")
+        .attr("fill", m.color);
+    });
+
+    zoomGroup = svg.append("g");
+    ringLayer = zoomGroup.append("g").attr("class", "rings");
+    edgeLayer = zoomGroup.append("g").attr("class", "edges");
+    nodeLayer = zoomGroup.append("g").attr("class", "nodes");
+
+    zoomBehavior = d3.zoom().scaleExtent([0.35, 3.2]).on("zoom", (event) => {
+      zoomGroup.attr("transform", event.transform);
+    });
+    svg.call(zoomBehavior);
+
+    // Click blank background to clear node selection
+    svg.on("click", (event) => {
+      if (event.target.id === "networkSvg") {
+        state.selectedNodeId = null;
+        renderNetwork();
+      }
+    });
+
+    computeInitialPositions(width, height);
+  }
+
+  function renderRings() {
+    const cx = width / 2, cy = height / 2;
+    const minDim = Math.min(width, height);
+    const ringDefs = [
+      { r: minDim * 0.14, label: "Core AI & Hyperscalers", stroke: "#1E293B", dash: "4,4" },
+      { r: minDim * 0.27, label: "Tier-2 Chips, Neoclouds & REITs", stroke: "#1E293B", dash: "4,4" },
+      { r: minDim * 0.38, label: "SPVs, Operators & Known Funds", stroke: "#1E293B", dash: "4,4" },
+      { r: minDim * 0.44, label: "External Capital Market / Private Credit Ocean", stroke: "#0369A1", dash: "8,6" }
+    ];
+
+    ringLayer.selectAll("*").remove();
+    ringDefs.forEach(rd => {
+      ringLayer.append("circle")
+        .attr("cx", cx).attr("cy", cy).attr("r", rd.r)
+        .attr("fill", "none").attr("stroke", rd.stroke)
+        .attr("stroke-width", rd.stroke === "#0369A1" ? 1.5 : 1)
+        .attr("stroke-dasharray", rd.dash)
+        .attr("opacity", 0.7);
+      ringLayer.append("text")
+        .attr("x", cx).attr("y", cy - rd.r - 4)
+        .attr("text-anchor", "middle")
+        .attr("fill", rd.stroke === "#0369A1" ? "#38BDF8" : "#475569")
+        .attr("font-size", "10px")
+        .text(rd.label);
+    });
+  }
+
+  function getNeighborhood(selectedId, visibleTxs, depth) {
+    if (!selectedId) return null;
+    const set = new Set([selectedId]);
+    let frontier = new Set([selectedId]);
+    for (let d = 0; d < depth; d++) {
+      const next = new Set();
+      visibleTxs.forEach(tx => {
+        if (frontier.has(tx.payer)) next.add(tx.receiver);
+        if (frontier.has(tx.receiver)) next.add(tx.payer);
+      });
+      next.forEach(id => set.add(id));
+      frontier = next;
+    }
+    return set;
+  }
+
+  function renderNetwork() {
+    renderRings();
+    const q = state.currentQuarter;
+    const qData = state.simResult.timeline[q];
+    let visibleTxs = Engine.getVisibleTransactions(state.transactions, q);
+
+    if (state.txTypeFilter !== "ALL") {
+      visibleTxs = visibleTxs.filter(t => t.type === state.txTypeFilter);
+    }
+    if (state.minAmount > 0) {
+      visibleTxs = visibleTxs.filter(t => (Number(t.totalCommitment) || 0) >= state.minAmount);
+    }
+
+    const metrics = Engine.computeEntityMetrics(state.entities, visibleTxs, qData.entities);
+    const neighbors = getNeighborhood(state.selectedNodeId, visibleTxs, state.hopDepth);
+
+    // Compute dynamic radius for each node based on selected sizeMetric
+    const maxVal = Math.max(1, ...state.entities.filter(e => !e.isOcean).map(e => metrics[e.id][state.sizeMetric] || 0));
+    function nodeRadius(e) {
+      if (e.isOcean) return 30;
+      const val = Math.max(0, metrics[e.id][state.sizeMetric] || 0);
+      const norm = Math.sqrt(val / maxVal);
+      return 11 + norm * 22;
+    }
+
+    // Track pair counts to curve bidirectional / parallel edges cleanly
+    const pairCounts = {};
+    visibleTxs.forEach(tx => {
+      const key = [tx.payer, tx.receiver].sort().join("--");
+      pairCounts[key] = (pairCounts[key] || 0) + 1;
+    });
+    const pairIdx = {};
+
+    const tooltip = document.getElementById("tooltip");
+
+    // Draw Edges
+    edgeLayer.selectAll("*").remove();
+    visibleTxs.forEach(tx => {
+      const pPos = state.nodePositions[tx.payer];
+      const rPos = state.nodePositions[tx.receiver];
+      if (!pPos || !rPos) return;
+
+      const vis = Engine.getEdgeVisual(tx, state.selectedNodeId, q);
+      const isHighlight = !state.selectedNodeId || tx.payer === state.selectedNodeId || tx.receiver === state.selectedNodeId ||
+        (state.hopDepth > 1 && neighbors && neighbors.has(tx.payer) && neighbors.has(tx.receiver));
+
+      const key = [tx.payer, tx.receiver].sort().join("--");
+      const totalInPair = pairCounts[key] || 1;
+      const idx = pairIdx[key] || 0;
+      pairIdx[key] = idx + 1;
+
+      const dx = rPos.x - pPos.x;
+      const dy = rPos.y - pPos.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const curveOffset = totalInPair > 1 ? ((idx % 2 === 0 ? 1 : -1) * (24 + Math.floor(idx / 2) * 18)) : 14;
+      const mx = (pPos.x + rPos.x) / 2 - (dy / dist) * curveOffset;
+      const my = (pPos.y + rPos.y) / 2 + (dx / dist) * curveOffset;
+
+      const markerId = vis.role === "outflow" ? "url(#arrow-red)"
+        : vis.role === "inflow" ? "url(#arrow-green)"
+        : isHighlight ? "url(#arrow-neutral)" : "url(#arrow-dim)";
+
+      const path = edgeLayer.append("path")
+        .attr("class", "edge-path")
+        .attr("d", `M${pPos.x},${pPos.y} Q${mx},${my} ${rPos.x},${rPos.y}`)
+        .attr("fill", "none")
+        .attr("stroke", isHighlight ? vis.color : "#334155")
+        .attr("stroke-width", isHighlight ? vis.strokeWidth : 1)
+        .attr("stroke-dasharray", vis.dashArray || null)
+        .attr("opacity", isHighlight ? vis.opacity : 0.1)
+        .attr("marker-end", markerId);
+
+      path.on("mousemove", (event) => {
+        tooltip.classList.remove("hidden");
+        tooltip.style.left = (event.clientX + 14) + "px";
+        tooltip.style.top = (event.clientY + 14) + "px";
+        const dirBadge = vis.role === "outflow" ? '<span class="text-rose-400 font-semibold">流出 (Outflow)</span>'
+          : vis.role === "inflow" ? '<span class="text-emerald-400 font-semibold">流入 (Inflow)</span>'
+          : '<span class="text-slate-300">有向资金流</span>';
+        tooltip.innerHTML = `
+          <div class="font-bold text-white mb-1">${tx.payer} → ${tx.receiver}</div>
+          <div class="flex justify-between gap-3"><span class="text-slate-400">性质:</span><span class="text-sky-300">${tx.type}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-400">方向状态:</span>${dirBadge}</div>
+          <div class="flex justify-between gap-3"><span class="text-slate-400">总承诺 / 已提款:</span><span class="mono text-white">${fmtB(tx.totalCommitment)} / ${tx.amountDrawn !== null ? fmtB(tx.amountDrawn) : 'Unknown'}</span></div>
+          <div class="flex justify-between gap-3"><span class="text-slate-400">线型 / 置信度:</span><span class="mono text-slate-200">${vis.lineKind} · Conf ${tx.confidence}</span></div>
+          <div class="text-[10px] text-slate-400 mt-1 truncate">来源: ${tx.sourceDoc}</div>
+        `;
+      }).on("mouseleave", () => tooltip.classList.add("hidden"));
+    });
+
+    // Draw Nodes
+    nodeLayer.selectAll("*").remove();
+    const drag = d3.drag()
+      .on("drag", (event, d) => {
+        state.nodePositions[d.id] = { x: event.x, y: event.y };
+        renderNetwork();
+      });
+
+    state.entities.forEach(e => {
+      const pos = state.nodePositions[e.id];
+      if (!pos) return;
+      const st = qData.entities[e.id] || {};
+      const r = nodeRadius(e);
+      const isSelected = state.selectedNodeId === e.id;
+      const isDimmed = neighbors && !neighbors.has(e.id);
+      const fill = SECTOR_COLORS[e.sector] || "#64748B";
+
+      const distressStroke = st.distressLevel === 3 ? "#F43F5E"
+        : st.distressLevel === 2 ? "#FB923C"
+        : st.distressLevel === 1 ? "#FBBF24"
+        : isSelected ? "#FFFFFF" : "#0F172A";
+
+      const g = nodeLayer.append("g")
+        .datum(e)
+        .attr("transform", `translate(${pos.x},${pos.y})`)
+        .attr("opacity", isDimmed ? 0.2 : 1)
+        .call(drag);
+
+      const circle = g.append("circle")
+        .attr("class", "node-circle")
+        .attr("r", isSelected ? r * 1.18 : r)
+        .attr("fill", fill)
+        .attr("fill-opacity", e.isOcean ? 0.28 : 0.88)
+        .attr("stroke", distressStroke)
+        .attr("stroke-width", st.distressLevel >= 2 || isSelected ? 3.5 : (state.pinnedNodes.has(e.id) ? 2.5 : 1.5))
+        .attr("stroke-dasharray", e.isOcean ? "5,3" : null);
+
+      g.append("text")
+        .attr("class", "node-label")
+        .attr("y", r + 13)
+        .attr("text-anchor", "middle")
+        .attr("fill", isSelected ? "#FFFFFF" : "#E2E8F0")
+        .attr("font-size", isSelected ? "12px" : "10.5px")
+        .attr("font-weight", isSelected || e.ring === 1 ? "600" : "500")
+        .text(e.isOcean ? "Private Credit Ocean" : e.id);
+
+      g.on("mouseenter", function (event) {
+        circle.transition().duration(120).attr("r", r * 1.22);
+        tooltip.classList.remove("hidden");
+        tooltip.style.left = (event.clientX + 14) + "px";
+        tooltip.style.top = (event.clientY + 14) + "px";
+        tooltip.innerHTML = `
+          <div class="font-bold text-white">${e.name} <span class="mono text-sky-400">(${e.ticker})</span></div>
+          <div class="text-[11px] text-slate-400 mb-1">${e.sector} · 系统重要性 ${metrics[e.id].systemic}</div>
+          <div class="flex justify-between gap-4"><span class="text-slate-400">${q} 营收:</span><span class="mono text-white">${fmtB(st.revenue)}</span></div>
+          <div class="flex justify-between gap-4"><span class="text-slate-400">现金余额:</span><span class="mono text-emerald-300">${fmtB(st.cash)}</span></div>
+          <div class="flex justify-between gap-4"><span class="text-slate-400">总债务:</span><span class="mono text-amber-300">${fmtB(st.debt)}</span></div>
+          <div class="flex justify-between gap-4"><span class="text-slate-400">风险状态:</span><span class="mono ${st.distressLevel >= 2 ? 'text-rose-400' : 'text-emerald-400'}">${st.distressLabel || 'Normal'}</span></div>
+        `;
+      }).on("mousemove", (event) => {
+        tooltip.style.left = (event.clientX + 14) + "px";
+        tooltip.style.top = (event.clientY + 14) + "px";
+      }).on("mouseleave", function () {
+        circle.transition().duration(120).attr("r", isSelected ? r * 1.18 : r);
+        tooltip.classList.add("hidden");
+      }).on("click", (event) => {
+        event.stopPropagation();
+        state.selectedNodeId = e.id;
+        renderAll();
+      }).on("dblclick", (event) => {
+        event.stopPropagation();
+        if (state.pinnedNodes.has(e.id)) state.pinnedNodes.delete(e.id);
+        else state.pinnedNodes.add(e.id);
+        renderNetwork();
+      });
+    });
+  }
+
+  // --- LEFT SIDEBAR SUMMARY & CONTAGION FEED ---
+  function renderLeftMonitor() {
+    const qData = state.simResult.timeline[state.currentQuarter];
+    let n = 0, w = 0, c = 0, d = 0;
+    state.entities.forEach(e => {
+      if (e.isOcean) return;
+      const lvl = (qData.entities[e.id] && qData.entities[e.id].distressLevel) || 0;
+      if (lvl === 0) n++;
+      else if (lvl === 1) w++;
+      else if (lvl === 2) c++;
+      else d++;
+    });
+    document.getElementById("cntNormal").textContent = n;
+    document.getElementById("cntWarn").textContent = w;
+    document.getElementById("cntCrisis").textContent = c;
+    document.getElementById("cntDefault").textContent = d;
+
+    const feed = document.getElementById("contagionFeed");
+    const logs = qData.contagionLog || [];
+    const totalLoss = logs.reduce((s, l) => s + (l.impactB || 0), 0);
+    document.getElementById("contagionTotalBadge").textContent = fmtB(totalLoss);
+
+    if (logs.length === 0) {
+      feed.innerHTML = `<div class="text-slate-500 italic">当前季度 (${state.currentQuarter}) 无触发传染事件。切换至未来季度或点击顶部「模拟 OpenAI 违约」查看多跳传染链。</div>`;
+      return;
+    }
+
+    feed.innerHTML = logs.map(l => `
+      <div data-focus="${l.to}" class="contagion-item cursor-pointer bg-slate-950 hover:bg-slate-800 border border-rose-900/50 rounded p-2">
+        <div class="flex items-center justify-between">
+          <span class="mono text-[10px] px-1 rounded bg-rose-950 text-rose-300">Hop ${l.hop}</span>
+          <span class="mono text-rose-400 font-semibold">-${fmtB(l.impactB)}</span>
+        </div>
+        <div class="font-medium text-slate-200 mt-1">${l.from} → ${l.to}</div>
+        <div class="text-[10px] text-slate-400">${l.channel}</div>
+      </div>
+    `).join("");
+
+    feed.querySelectorAll(".contagion-item").forEach(el => {
+      el.addEventListener("click", () => {
+        state.selectedNodeId = el.getAttribute("data-focus");
+        renderAll();
+      });
+    });
+  }
+
+  // --- RIGHT DETAIL DRAWER ---
+  function renderDrawer() {
+    const id = state.selectedNodeId || "OPENAI";
+    const entity = state.entities.find(e => e.id === id) || state.entities[0];
+    const q = state.currentQuarter;
+    const qData = state.simResult.timeline[q];
+    const st = qData.entities[entity.id] || {};
+
+    document.getElementById("detailName").textContent = entity.name;
+    document.getElementById("detailTicker").textContent = entity.ticker;
+    document.getElementById("detailMeta").textContent = `${entity.sector} · Ring ${entity.ring}${entity.cik ? ' · CIK ' + entity.cik : ''}`;
+
+    const badge = document.getElementById("detailDistressBadge");
+    badge.textContent = st.distressLabel || "Normal";
+    badge.className = "mono text-[10px] px-2 py-0.5 rounded shrink-0 border " + (
+      st.distressLevel === 3 ? "bg-rose-950 text-rose-300 border-rose-700"
+      : st.distressLevel === 2 ? "bg-orange-950 text-orange-300 border-orange-700"
+      : st.distressLevel === 1 ? "bg-amber-950 text-amber-300 border-amber-700"
+      : "bg-emerald-950 text-emerald-300 border-emerald-800"
+    );
+
+    document.getElementById("detailDataType").textContent = `数据口径: ${st.dataType || entity.dataType} · 置信度 ${entity.confidence}`;
+
+    const defBtn = document.getElementById("toggleDefaultBtn");
+    if (entity.isOcean) {
+      defBtn.classList.add("hidden");
+    } else {
+      defBtn.classList.remove("hidden");
+      const isForced = state.forcedDefaults.has(entity.id);
+      defBtn.textContent = isForced ? "解除模拟违约" : "触发模拟违约 (Simulated)";
+      defBtn.className = isForced
+        ? "px-2.5 py-1 rounded text-[11px] font-medium bg-emerald-900 hover:bg-emerald-800 text-emerald-100 border border-emerald-700"
+        : "px-2.5 py-1 rounded text-[11px] font-medium bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800";
+    }
+
+    // KPI Grid
+    const kpis = [
+      { label: `${q} 营收`, val: fmtB(st.revenue), cls: "text-white" },
+      { label: "期末现金余额", val: fmtB(st.cash), cls: (st.cash ?? 0) < 0 ? "text-rose-400" : "text-emerald-300" },
+      { label: "总债务余额", val: fmtB(st.debt), cls: "text-amber-300" },
+      { label: "经营现金流 (OCF)", val: fmtB(st.ocf), cls: (st.ocf ?? 0) < 0 ? "text-rose-300" : "text-slate-100" },
+      { label: "资本开支 (CapEx)", val: fmtB(st.capex), cls: "text-slate-200" },
+      { label: "自由现金流 (FCF)", val: fmtB(st.fcf), cls: (st.fcf ?? 0) < 0 ? "text-rose-300" : "text-emerald-300" },
+      { label: "合同承诺 / RPO", val: fmtB(st.rpo), cls: "text-sky-300" },
+      { label: "传染损失 / 坏账", val: fmtB((st.lostReceipts || 0) + (st.creditLoss || 0)), cls: ((st.lostReceipts || 0) + (st.creditLoss || 0)) > 0 ? "text-rose-400" : "text-slate-400" }
+    ];
+    document.getElementById("kpiGrid").innerHTML = kpis.map(k => `
+      <div class="bg-slate-950 border border-slate-800 rounded p-2">
+        <div class="text-[10px] text-slate-400">${k.label}</div>
+        <div class="mono text-xs font-semibold mt-0.5 ${k.cls}">${k.val}</div>
+      </div>
+    `).join("");
+
+    document.getElementById("detailCoverage").textContent = entity.filingCoverage;
+    const srcLink = document.getElementById("detailSourceLink");
+    srcLink.href = entity.sourceUrl || "#";
+
+    // Cash & Debt Trajectory Chart (2026Q1 - 2028Q4)
+    const chartQs = ["2026Q1","2026Q2","2026Q3","2026Q4","2027Q1","2027Q2","2027Q3","2027Q4","2028Q1","2028Q2","2028Q3","2028Q4"];
+    const cashSeries = chartQs.map(cq => {
+      const v = state.simResult.timeline[cq]?.entities[entity.id]?.cash;
+      return v !== null && v !== undefined ? Number(v) : null;
+    });
+    const debtSeries = chartQs.map(cq => {
+      const v = state.simResult.timeline[cq]?.entities[entity.id]?.debt;
+      return v !== null && v !== undefined ? Number(v) : null;
+    });
+
+    const ctx = document.getElementById("entityCashChart").getContext("2d");
+    if (cashChart) cashChart.destroy();
+    cashChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: chartQs,
+        datasets: [
+          { label: "Cash ($B)", data: cashSeries, borderColor: "#10B981", backgroundColor: "rgba(16,185,129,0.12)", tension: 0.25, fill: true, pointRadius: 2.5 },
+          { label: "Debt ($B)", data: debtSeries, borderColor: "#F59E0B", backgroundColor: "transparent", borderDash: [4, 3], tension: 0.25, pointRadius: 2 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: "#94A3B8", font: { size: 10 } } } },
+        scales: {
+          x: { ticks: { color: "#64748B", font: { size: 9 } }, grid: { color: "#1E293B" } },
+          y: { ticks: { color: "#64748B", font: { size: 9 } }, grid: { color: "#1E293B" } }
+        }
+      }
+    });
+
+    // TAB 2: Transactions & Audit
+    const visibleTxs = Engine.getVisibleTransactions(state.transactions, q)
+      .filter(t => t.payer === entity.id || t.receiver === entity.id);
+    document.getElementById("txCountBadge").textContent = `${visibleTxs.length} 笔`;
+
+    document.getElementById("detailTxList").innerHTML = visibleTxs.length === 0
+      ? '<div class="text-slate-500 italic">当前季度无已披露关联交易。</div>'
+      : visibleTxs.map(tx => {
+          const isOut = tx.payer === entity.id;
+          const borderCls = isOut ? "border-l-rose-500" : "border-l-emerald-500";
+          const dirLabel = isOut ? `<span class="text-rose-400 font-semibold">流出 → ${tx.receiver}</span>` : `<span class="text-emerald-400 font-semibold">流入 ← ${tx.payer}</span>`;
+          return `
+            <div class="bg-slate-950 border border-slate-800 border-l-4 ${borderCls} rounded p-2.5 space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                ${dirLabel}
+                <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">Conf ${tx.confidence}</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-sky-300 font-medium">${tx.type}</span>
+                <span class="mono text-white font-semibold">${fmtB(tx.totalCommitment)}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 grid grid-cols-2 gap-x-2 gap-y-0.5 pt-0.5">
+                <span>状态: ${tx.status}</span>
+                <span>已提款: ${tx.amountDrawn !== null ? fmtB(tx.amountDrawn) : 'Unknown'}</span>
+                <span>利率: ${tx.interestRate || 'N/A'}</span>
+                <span>到期: ${tx.maturityDate || 'N/A'}</span>
+                <span class="col-span-2 truncate">SPV / 安排行: ${tx.spv !== 'None' ? tx.spv : tx.arranger}</span>
+                <span class="col-span-2 truncate">实际放贷/对手: ${tx.actualLender}</span>
+              </div>
+              <div class="pt-1 border-t border-slate-800/80 flex justify-between items-center text-[10px]">
+                <span class="text-slate-500 truncate max-w-[180px]">${tx.sourceDoc}</span>
+                <a href="${tx.sourceUrl}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:underline shrink-0">原始来源 ↗</a>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+    // TAB 3: Parameters
+    const p = Object.assign({}, entity.defaults || {}, state.overrides[entity.id] || {});
+    document.getElementById("paramMode").value = p.mode || "B";
+    document.getElementById("modeAReqRev").textContent = st.requiredRevenue !== null && st.requiredRevenue !== undefined
+      ? fmtB(st.requiredRevenue) + " / 季"
+      : "需切换至预测季 (2027Q1+)";
+
+    const fields = [
+      { key: "revGrowth", label: "预期季度增速", val: p.revGrowth, step: 0.01 },
+      { key: "grossMargin", label: "毛利率 (GM)", val: p.grossMargin, step: 0.02 },
+      { key: "opex", label: "经营费用 ($B)", val: p.opex, step: 0.2 },
+      { key: "capex", label: "资本开支 ($B)", val: p.capex, step: 0.5 },
+      { key: "computePay", label: "算力/租赁支付 ($B)", val: p.computePay, step: 0.5 },
+      { key: "interestRate", label: "债务利率", val: p.interestRate, step: 0.005 },
+      { key: "newDebt", label: "新增债务 ($B)", val: p.newDebt, step: 0.5 },
+      { key: "equityInflow", label: "股权融资 ($B)", val: p.equityInflow, step: 0.5 },
+      { key: "debtRepay", label: "本金偿还 ($B)", val: p.debtRepay, step: 0.2 },
+      { key: "refiSuccess", label: "再融资成功率", val: p.refiSuccess, step: 0.05 },
+      { key: "cashConv", label: "现金转化率", val: p.cashConv, step: 0.02 },
+      { key: "minCash", label: "安全现金储备 ($B)", val: p.minCash, step: 0.5 }
+    ];
+    document.getElementById("paramControls").innerHTML = fields.map(f => `
+      <label class="block">
+        <span class="text-[10px] text-slate-400 block mb-0.5">${f.label}</span>
+        <input data-param="${f.key}" type="number" step="${f.step}" value="${f.val ?? 0}" class="param-input w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 mono text-xs text-white focus:outline-none focus:border-sky-500">
+      </label>
+    `).join("");
+  }
+
+  function renderHeader() {
+    const q = state.currentQuarter;
+    const st = Engine.quarterStatus(q);
+    const badge = document.getElementById("quarterHeaderBadge");
+    badge.textContent = `${q} · ${st}`;
+    badge.className = "mono text-[11px] px-2 py-0.5 rounded border " + (
+      st === "HISTORICAL" ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+      : st === "PARTIAL" ? "bg-amber-950 text-amber-300 border-amber-700"
+      : "bg-sky-950 text-sky-300 border-sky-700"
+    );
+    document.getElementById("versionBadge").textContent = state.version.split("-")[0];
+    document.getElementById("timelineSlider").value = Engine.ALL_QUARTERS.indexOf(q);
+  }
+
+  function renderAll() {
+    renderHeader();
+    renderNetwork();
+    renderLeftMonitor();
+    renderDrawer();
+  }
+
+  // --- EVENT BINDINGS ---
+  function bindEvents() {
+    document.getElementById("sizeMetricSelect").addEventListener("change", (e) => {
+      state.sizeMetric = e.target.value;
+      renderNetwork();
+    });
+    document.getElementById("txTypeFilter").addEventListener("change", (e) => {
+      state.txTypeFilter = e.target.value;
+      renderNetwork();
+    });
+    document.getElementById("minAmountSlider").addEventListener("input", (e) => {
+      state.minAmount = Number(e.target.value);
+      document.getElementById("minAmountVal").textContent = `$${state.minAmount}B`;
+      renderNetwork();
+    });
+    document.getElementById("hopDepthSelect").addEventListener("change", (e) => {
+      state.hopDepth = Number(e.target.value);
+      renderNetwork();
+    });
+
+    // Presets
+    document.getElementById("presetBaselineBtn").addEventListener("click", () => {
+      state.forcedDefaults.clear();
+      state.ocean = { fundingAvailability: 100, interestRate: 7.5, refiSuccessRate: 85, maxCapacity: 250, creditTighteningBps: 0 };
+      syncOceanInputs();
+      state.currentQuarter = "2026Q3";
+      recompute();
+    });
+    document.getElementById("presetOpenAIBtn").addEventListener("click", () => {
+      state.forcedDefaults.clear();
+      state.forcedDefaults.add("OPENAI");
+      state.currentQuarter = "2027Q2";
+      state.selectedNodeId = "OPENAI";
+      recompute();
+    });
+    document.getElementById("presetOceanBtn").addEventListener("click", () => {
+      state.forcedDefaults.clear();
+      state.ocean = { fundingAvailability: 25, interestRate: 12.5, refiSuccessRate: 35, maxCapacity: 40, creditTighteningBps: 350 };
+      syncOceanInputs();
+      state.currentQuarter = "2027Q4";
+      recompute();
+    });
+
+    document.getElementById("resetLayoutBtn").addEventListener("click", () => {
+      state.nodePositions = {};
+      state.pinnedNodes.clear();
+      computeInitialPositions(width, height);
+      svg.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity);
+      renderNetwork();
+    });
+
+    // Ocean Sliders
+    function syncOceanInputs() {
+      document.getElementById("oceanAvail").value = state.ocean.fundingAvailability;
+      document.getElementById("oceanAvailVal").textContent = state.ocean.fundingAvailability + "%";
+      document.getElementById("oceanRate").value = state.ocean.interestRate;
+      document.getElementById("oceanRateVal").textContent = state.ocean.interestRate + "%";
+      document.getElementById("oceanRefi").value = state.ocean.refiSuccessRate;
+      document.getElementById("oceanRefiVal").textContent = state.ocean.refiSuccessRate + "%";
+      document.getElementById("oceanCap").value = state.ocean.maxCapacity;
+      document.getElementById("oceanCapVal").textContent = "$" + state.ocean.maxCapacity + "B";
+      document.getElementById("oceanTight").value = state.ocean.creditTighteningBps;
+      document.getElementById("oceanTightVal").textContent = "+" + state.ocean.creditTighteningBps + " bps";
+    }
+
+    [["oceanAvail", "fundingAvailability"], ["oceanRate", "interestRate"], ["oceanRefi", "refiSuccessRate"], ["oceanCap", "maxCapacity"], ["oceanTight", "creditTighteningBps"]].forEach(([elId, key]) => {
+      document.getElementById(elId).addEventListener("input", (e) => {
+        state.ocean[key] = Number(e.target.value);
+        syncOceanInputs();
+        recompute();
+      });
+    });
+
+    // Drawer Tabs
+    document.querySelectorAll(".drawer-tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-tab");
+        document.querySelectorAll(".drawer-tab").forEach(b => {
+          const active = b.getAttribute("data-tab") === target;
+          b.className = "drawer-tab flex-1 py-2 font-medium border-b-2 " + (active ? "text-sky-400 border-sky-400" : "text-slate-400 hover:text-slate-200 border-transparent");
+        });
+        ["overview", "transactions", "params"].forEach(t => {
+          document.getElementById("tab-" + t).classList.toggle("hidden", t !== target);
+        });
+      });
+    });
+
+    // Toggle Default for Selected Entity
+    document.getElementById("toggleDefaultBtn").addEventListener("click", () => {
+      const id = state.selectedNodeId || "OPENAI";
+      if (state.forcedDefaults.has(id)) state.forcedDefaults.delete(id);
+      else {
+        state.forcedDefaults.add(id);
+        if (Engine.quarterStatus(state.currentQuarter) === "HISTORICAL") {
+          state.currentQuarter = "2027Q1";
+        }
+      }
+      recompute();
+    });
+
+    // Apply / Reset Parameters
+    document.getElementById("applyParamsBtn").addEventListener("click", () => {
+      const id = state.selectedNodeId || "OPENAI";
+      const ov = { mode: document.getElementById("paramMode").value };
+      document.querySelectorAll(".param-input").forEach(inp => {
+        ov[inp.getAttribute("data-param")] = Number(inp.value);
+      });
+      state.overrides[id] = ov;
+      if (Engine.quarterStatus(state.currentQuarter) === "HISTORICAL") {
+        state.currentQuarter = "2027Q1";
+      }
+      recompute();
+    });
+    document.getElementById("resetParamsBtn").addEventListener("click", () => {
+      const id = state.selectedNodeId || "OPENAI";
+      delete state.overrides[id];
+      recompute();
+    });
+
+    // Timeline Controls
+    document.getElementById("timelineSlider").addEventListener("input", (e) => {
+      state.currentQuarter = Engine.ALL_QUARTERS[Number(e.target.value)];
+      renderAll();
+    });
+    document.getElementById("stepBackBtn").addEventListener("click", () => {
+      const idx = Math.max(0, Engine.ALL_QUARTERS.indexOf(state.currentQuarter) - 1);
+      state.currentQuarter = Engine.ALL_QUARTERS[idx];
+      renderAll();
+    });
+    document.getElementById("stepFwdBtn").addEventListener("click", () => {
+      const idx = Math.min(Engine.ALL_QUARTERS.length - 1, Engine.ALL_QUARTERS.indexOf(state.currentQuarter) + 1);
+      state.currentQuarter = Engine.ALL_QUARTERS[idx];
+      renderAll();
+    });
+    document.getElementById("playTimelineBtn").addEventListener("click", (e) => {
+      if (state.playTimer) {
+        clearInterval(state.playTimer);
+        state.playTimer = null;
+        e.target.textContent = "▶ 播放";
+      } else {
+        e.target.textContent = "⏸ 暂停";
+        state.playTimer = setInterval(() => {
+          const next = (Engine.ALL_QUARTERS.indexOf(state.currentQuarter) + 1) % Engine.ALL_QUARTERS.length;
+          state.currentQuarter = Engine.ALL_QUARTERS[next];
+          renderAll();
+        }, 900);
+      }
+    });
+    document.getElementById("jumpActualBtn").addEventListener("click", () => { state.currentQuarter = "2026Q3"; renderAll(); });
+    document.getElementById("jumpPartialBtn").addEventListener("click", () => { state.currentQuarter = "2026Q4"; renderAll(); });
+    document.getElementById("jumpForecastBtn").addEventListener("click", () => { state.currentQuarter = "2027Q4"; renderAll(); });
+
+    // Import Modal & Versioning
+    const importModal = document.getElementById("importModal");
+    function refreshVersionSelect() {
+      const sel = document.getElementById("versionHistorySelect");
+      sel.innerHTML = state.versions.map((v, i) => `<option value="${i}">${v.version} (${v.timestamp})</option>`).join("");
+      sel.value = state.versions.length - 1;
+    }
+    document.getElementById("openImportBtn").addEventListener("click", () => {
+      refreshVersionSelect();
+      document.getElementById("importFeedback").classList.add("hidden");
+      importModal.classList.remove("hidden");
+    });
+    document.getElementById("closeImportBtn").addEventListener("click", () => importModal.classList.add("hidden"));
+
+    document.getElementById("loadSampleUpdateBtn").addEventListener("click", () => {
+      document.getElementById("importTextarea").value =
+`id,payer,receiver,type,status,announcedDate,totalCommitment,amountDrawn,interestRate,actualLender,sourceUrl
+TX27,BX_FUNDS,CRWV,GPU-backed Financing,Actual,2024-05-17,10.0,10.0,SOFR + 600 bps,Blackstone & Magnetar Verified (Bloomberg DLEN),https://www.bloomberg.com/company/press/bloomberg-introduces-comprehensive-private-direct-lending-data-for-deeper-private-credit-market-insights/`;
+    });
+
+    document.getElementById("importFileInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { document.getElementById("importTextarea").value = reader.result; };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("executeImportBtn").addEventListener("click", () => {
+      const raw = document.getElementById("importTextarea").value.trim();
+      const fb = document.getElementById("importFeedback");
+      if (!raw) {
+        fb.textContent = "请先粘贴或选择 CSV/TSV/JSON 数据。";
+        fb.className = "text-xs px-3 py-2 rounded bg-rose-950 text-rose-200 border border-rose-800";
+        return;
+      }
+      try {
+        let rows = [];
+        if (raw.startsWith("[") || raw.startsWith("{")) {
+          const parsed = JSON.parse(raw);
+          rows = Array.isArray(parsed) ? parsed : (parsed.transactions || []);
+        } else {
+          const lines = raw.split(/\r?\n/).filter(Boolean);
+          const sep = lines[0].includes("\t") ? "\t" : ",";
+          const headers = lines[0].split(sep).map(h => h.trim());
+          rows = lines.slice(1).map(line => {
+            const vals = line.split(sep).map(v => v.trim());
+            const obj = {};
+            headers.forEach((h, i) => { obj[h] = vals[i]; });
+            return obj;
+          });
+        }
+        let updated = 0, added = 0;
+        rows.forEach(r => {
+          if (!r.payer || !r.receiver) return;
+          const idx = state.transactions.findIndex(t => t.id === r.id);
+          const clean = {
+            id: r.id || ("TX_USR_" + (state.transactions.length + 1)),
+            payer: r.payer,
+            receiver: r.receiver,
+            type: r.type || "Direct Loan",
+            status: r.status || "Actual",
+            announcedDate: r.announcedDate || "2026-11-24",
+            totalCommitment: r.totalCommitment ? Number(r.totalCommitment) : null,
+            amountDrawn: r.amountDrawn ? Number(r.amountDrawn) : null,
+            interestRate: r.interestRate || "Undisclosed",
+            actualLender: r.actualLender || "User Imported",
+            sourceDoc: r.sourceDoc || "User / Bloomberg Import",
+            sourceUrl: r.sourceUrl || "https://www.sec.gov/edgar/search/",
+            confidence: r.confidence || "A",
+            spv: r.spv || "None",
+            arranger: r.arranger || "User Updated",
+            collateral: r.collateral || "Undisclosed",
+            guarantor: r.guarantor || "None",
+            maturityDate: r.maturityDate || null,
+            quarterlyPayment: r.quarterlyPayment ? Number(r.quarterlyPayment) : 0.25
+          };
+          if (idx >= 0) {
+            state.transactions[idx] = Object.assign({}, state.transactions[idx], clean);
+            updated++;
+          } else {
+            state.transactions.push(clean);
+            added++;
+          }
+        });
+        const nextVer = `v1.${state.versions.length}-user-update`;
+        state.version = nextVer;
+        state.versions.push({
+          version: nextVer,
+          timestamp: new Date().toISOString().slice(0, 16).replace("T", " "),
+          entities: JSON.parse(JSON.stringify(state.entities)),
+          transactions: JSON.parse(JSON.stringify(state.transactions))
+        });
+        refreshVersionSelect();
+        recompute();
+        fb.textContent = `导入成功：更新 ${updated} 笔、新增 ${added} 笔交易，已升级至 ${nextVer} 并重算全网。`;
+        fb.className = "text-xs px-3 py-2 rounded bg-emerald-950 text-emerald-200 border border-emerald-800";
+      } catch (err) {
+        fb.textContent = "解析失败：" + err.message;
+        fb.className = "text-xs px-3 py-2 rounded bg-rose-950 text-rose-200 border border-rose-800";
+      }
+    });
+
+    document.getElementById("rollbackVersionBtn").addEventListener("click", () => {
+      const idx = Number(document.getElementById("versionHistorySelect").value);
+      const snap = state.versions[idx];
+      if (!snap) return;
+      state.version = snap.version;
+      state.entities = JSON.parse(JSON.stringify(snap.entities));
+      state.transactions = JSON.parse(JSON.stringify(snap.transactions));
+      recompute();
+      const fb = document.getElementById("importFeedback");
+      fb.textContent = `已回滚至版本 ${snap.version}。`;
+      fb.className = "text-xs px-3 py-2 rounded bg-amber-950 text-amber-200 border border-amber-800";
+    });
+
+    // Export Modal
+    const exportModal = document.getElementById("exportModal");
+    document.getElementById("openExportBtn").addEventListener("click", () => exportModal.classList.remove("hidden"));
+    document.getElementById("closeExportBtn").addEventListener("click", () => exportModal.classList.add("hidden"));
+
+    function triggerDownload(filename, content, mime) {
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    document.getElementById("dlEntitiesCsv").addEventListener("click", () => {
+      const qData = state.simResult.timeline[state.currentQuarter];
+      const rows = [["id","name","ticker","sector","ring","quarter","revenue_B","cash_B","debt_B","fcf_B","distressLabel","sourceUrl"]];
+      state.entities.forEach(e => {
+        const s = qData.entities[e.id] || {};
+        rows.push([e.id, `"${e.name}"`, e.ticker, e.sector, e.ring, state.currentQuarter, s.revenue ?? "", s.cash ?? "", s.debt ?? "", s.fcf ?? "", `"${s.distressLabel || ''}"`, e.sourceUrl]);
+      });
+      triggerDownload(`entities_${state.currentQuarter}.csv`, rows.map(r => r.join(",")).join("\n"), "text/csv;charset=utf-8");
+    });
+    document.getElementById("dlTxCsv").addEventListener("click", () => {
+      const rows = [["id","payer","receiver","type","status","announcedDate","totalCommitment_B","amountDrawn_B","interestRate","actualLender","spv","confidence","sourceUrl"]];
+      state.transactions.forEach(t => {
+        rows.push([t.id, t.payer, t.receiver, `"${t.type}"`, t.status, t.announcedDate, t.totalCommitment ?? "", t.amountDrawn ?? "", `"${t.interestRate || ''}"`, `"${t.actualLender || ''}"`, `"${t.spv || ''}"`, t.confidence, t.sourceUrl]);
+      });
+      triggerDownload("transactions.csv", rows.map(r => r.join(",")).join("\n"), "text/csv;charset=utf-8");
+    });
+    document.getElementById("dlForecastCsv").addEventListener("click", () => {
+      const rows = [["quarter","entityId","revenue_B","cash_B","debt_B","fcf_B","distressLevel","lostReceipts_B","creditLoss_B"]];
+      Engine.ALL_QUARTERS.slice(18).forEach(q => {
+        const qd = state.simResult.timeline[q];
+        state.entities.forEach(e => {
+          const s = qd.entities[e.id] || {};
+          rows.push([q, e.id, s.revenue ?? "", s.cash ?? "", s.debt ?? "", s.fcf ?? "", s.distressLevel ?? 0, s.lostReceipts ?? 0, s.creditLoss ?? 0]);
+        });
+      });
+      triggerDownload("forecast_contagion_results.csv", rows.map(r => r.join(",")).join("\n"), "text/csv;charset=utf-8");
+    });
+    document.getElementById("dlSnapshotJson").addEventListener("click", () => {
+      const snap = { version: state.version, exportedAt: new Date().toISOString(), ocean: state.ocean, entities: state.entities, transactions: state.transactions };
+      triggerDownload("ai_credit_network_snapshot.json", JSON.stringify(snap, null, 2), "application/json");
+    });
+
+    window.addEventListener("resize", () => {
+      const container = document.getElementById("networkContainer");
+      width = container.clientWidth || 800;
+      height = container.clientHeight || 600;
+      svg.attr("viewBox", [0, 0, width, height]);
+      renderNetwork();
+    });
+  }
+
+  // Boot
+  window.addEventListener("DOMContentLoaded", () => {
+    initSvg();
+    bindEvents();
+    recompute();
+  });
+})();
+</script>
+</body>
+</html>

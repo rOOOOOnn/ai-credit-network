@@ -1,0 +1,50 @@
+{
+  "version": "v1.0-phase1.5-public-2026-11-24",
+  "retrievedAt": "2026-11-24",
+  "currency": "USD",
+  "unit": "Billions",
+  "entityCount": 44,
+  "transactionCount": 52,
+  "quarters": {
+    "historical": [
+      "2022Q1",
+      "2022Q2",
+      "2022Q3",
+      "2022Q4",
+      "2023Q1",
+      "2023Q2",
+      "2023Q3",
+      "2023Q4",
+      "2024Q1",
+      "2024Q2",
+      "2024Q3",
+      "2024Q4",
+      "2025Q1",
+      "2025Q2",
+      "2025Q3",
+      "2025Q4",
+      "2026Q1",
+      "2026Q2",
+      "2026Q3"
+    ],
+    "partial": "2026Q4",
+    "forecast": [
+      "2027Q1",
+      "2027Q2",
+      "2027Q3",
+      "2027Q4",
+      "2028Q1",
+      "2028Q2",
+      "2028Q3",
+      "2028Q4"
+    ]
+  },
+  "antiDoubleCountingRules": [
+    "Google DeepMind consolidated into Alphabet (GOOGL); Meta AI consolidated into Meta Platforms (META).",
+    "AirTrunk 2025 A$16B SLL explicitly replaces 2024 A$5.5B LBO loan (not double-counted).",
+    "Meta Beignet ($27.3B) & Sopaipilla ($12.55B) debt kept on unconsolidated SPV nodes; Meta holds 20% equity + $41.5B RVG.",
+    "NVIDIA $105B SB Energy guarantee and $32B contingent neocloud commitments separated from balance-sheet debt.",
+    "Unidentified private credit lenders & 144A bondholders routed to PRIVATE_CREDIT_OCEAN (never deleted, never set to 0).",
+    "Bidirectional cash flows (e.g. Google <-> Anthropic, MSFT <-> OpenAI, NVDA <-> CoreWeave) stored as separate directed edges."
+  ]
+}
