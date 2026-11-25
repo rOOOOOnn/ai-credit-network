@@ -1,5 +1,5 @@
 {
-  "version": "v3.0-audit2-remediated-2026-11-25",
+  "version": "v3.0-audit3-remediated-2026-11-25",
   "retrievedAt": "2026-11-25",
   "currency": "USD",
   "unit": "Billions",
@@ -53,6 +53,7 @@
     "P0-3: Fixed 2026Q4 OCF double-deduction cliff, RCF auto-draw accounting, ocean.interestRate wiring, removed SPV_JUPITER +14 hardcode & -35% revGrowth floor.",
     "P0-4: Corrected CRWV debt ($46.9B) & interest ($0.846B), META capex ($34.9B)/OCF ($32.8B)/RVG separation ($41.5B), Anthropic Q3 OCF ($2.64B) & Q4 IPO ($107.3B).",
     "P1: Split multi-year bundled TXs (TX04/TX05/TX12/TX14), split syndicates (TX06/TX17/TX35), moved TX10 to EXTERNAL_EQUITY_POOL, split Meta Sopaipilla SPV (TX40A-D), fixed TX48 Asset Acquisition.",
-    "Audit 2.0 (v3.0): True one-time LGD/guarantee deduplication (defaultedTxIds), Layer 3 operational contagion (supplier->customer switching & disruption), decaying nextQGrowthPenalty, A1/A3/AR deduplication, 100% maturity wall w/ refi rollover, CRWV nonRecourseDebt/AP & ORCL $288B leases + exact periodEnd, 0 false Base Case L3 defaults, verified power/OEM/DC intermediaries (VERTIV/CEG/VST/CORZ)."
+    "Audit 2.0 (v3.0): True one-time LGD/guarantee deduplication (defaultedTxIds), Layer 3 operational contagion (supplier->customer switching & disruption), decaying nextQGrowthPenalty, A1/A3/AR deduplication, 100% maturity wall w/ refi rollover, CRWV nonRecourseDebt/AP & ORCL $288B leases + exact periodEnd, 0 false Base Case L3 defaults, verified power/OEM/DC intermediaries (VERTIV/CEG/VST/CORZ).",
+    "Audit 3.0 (v3.0): Fixed PIT fallback lookahead & chronological sorting (P0-1); separated announcedDate/startQ/endQ active vs future commitments (P0-2); rebuilt Funded/Undrawn/Guarantee EAD & CCF with strict 0 vs null distinction (P0-3); expanded Layer 3 Operational Contagion to 7 categories incl. DELL/VERTIV/CEG/VST/CORZ (P0-4); added dynamic phased Guarantee Exposure Schedule for TX11 FY29+ (P0-5); reconciled CRWV/SPV_CRWV8/TX26 debt with consolidation elimination (P0-6); fixed partial-override Insufficient Data guard (P1-1); added minimal verifiable L4 Secondary Contagion (P1-2); removed forced-zero-default regression test (P1-3); added 33 verified SEC quarterly actuals & full 50-entity coverage matrix (P1-4)."
   ]
 }

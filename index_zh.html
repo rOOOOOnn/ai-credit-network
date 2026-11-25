@@ -317,13 +317,16 @@
 
 <script>
 /**
- * AI Credit Network — Audit 2.0 Remediated Cash Flow, Supply Chain & 4-Layer Contagion Engine (v3.0)
- * Remediations implemented on branch audit-remediation-v3:
- * - P0-1: True One-Time LGD & Guarantee Deduplication via defaultedTxIds (45% LGD stays 45%, never 100%)
- * - P0-2: Layer 3 Operational Dependency Contagion (Supplier Default -> Downstream Customer Switching Cost & Disruption)
- * - P0-3: Decaying nextQGrowthPenalty (50%/qtr), A1/A3 CapEx Cut Deduplication, AR Balance Decrement, 100% Maturity Wall w/ Refi Rollover
- * - P0-4: Insufficient-Data Non-Simulation Guard (eliminates 11 false Base Case L3 defaults) + Consolidated SPV Double-Count Prevention
- * - P1: Dynamic Multi-Hop Convergence (up to 5 hops) + Explicit 4-Layer Tagging (L1 Financial, L2 Commercial, L3 Operational, L4 Secondary)
+ * AI Credit Network — v3.0 Full Audit Remediated Cash Flow, Supply Chain & 4-Layer Contagion Engine
+ * Remediations implemented on branch fix/audit-v3-remediation:
+ * - P0-1: Strict Point-in-Time Financial Snapshot (disclosedDate <= cutoff on BOTH exact & fallback; chronological sort)
+ * - P0-2: Separation of announcedDate, startQ, endQ (announced-not-yet-active commitments never generate active cash/op flows)
+ * - P0-3: Full Basel-style EAD / LGD / Expected Loss accounting (Funded EAD, Undrawn CCF EAD, Guarantee EAD; strict 0 vs null)
+ * - P0-4: Complete Layer 3 Operational Contagion across 7 service categories (incl. DELL, VERTIV, CEG, VST, CORZ)
+ * - P0-5: Dynamic Phased Guarantee Exposure Schedule (TX11 NVIDIA $105B activates FY29 / 2028Q1+, amortizes with rent)
+ * - P0-6: Parent / SPV Debt Reconciliation (Consolidated vs Standalone vs Recourse/Non-Recourse, zero double-counting)
+ * - P1-1: Strict Insufficient Data Guard (partial overrides never bypass missing core financials)
+ * - P1-2: Minimal Verifiable Layer 4 Secondary Contagion (secondary market spread widening & collateral tightening, zero double-count)
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -343,6 +346,33 @@
   const QUARTERS_FORECAST = ["2027Q1","2027Q2","2027Q3","2027Q4","2028Q1","2028Q2","2028Q3","2028Q4"];
   const ALL_QUARTERS = [...QUARTERS_HIST, QUARTER_PARTIAL, ...QUARTERS_FORECAST];
 
+  const DEBT_TX_TYPES = [
+    "Direct Loan",
+    "Corporate Bond",
+    "Project Finance",
+    "GPU-backed Financing",
+    "Equipment Financing",
+    "Convertible Debt"
+  ];
+
+  const OPERATIONAL_TX_TYPES = [
+    "Cloud Computing Purchase",
+    "Take-or-Pay Contract",
+    "Data Center Lease",
+    "Power Purchase Agreement",
+    "GPU / Server Purchase",
+    "Cooling / Electrical Infrastructure",
+    "Critical Infrastructure"
+  ];
+
+  function parseQuarterNumber(q) {
+    if (!q || typeof q !== "string" || q.length < 6) return -1;
+    const y = parseInt(q.slice(0, 4), 10);
+    const n = parseInt(q.slice(5), 10);
+    if (Number.isNaN(y) || Number.isNaN(n)) return -1;
+    return y * 4 + (n - 1);
+  }
+
   function quarterEndDate(q) {
     const y = parseInt(q.slice(0, 4), 10);
     const n = parseInt(q.slice(5), 10);
@@ -361,6 +391,9 @@
 
   function compareQuarter(a, b) {
     if (!a || !b) return 0;
+    const na = parseQuarterNumber(a);
+    const nb = parseQuarterNumber(b);
+    if (na >= 0 && nb >= 0) return na - nb;
     return a.localeCompare(b);
   }
 
@@ -368,26 +401,305 @@
     return id === "PRIVATE_CREDIT_OCEAN" || id === "EXTERNAL_EQUITY_POOL";
   }
 
-  function getVisibleTransactions(transactions, quarter, layerFilter = null) {
+  /**
+   * P0-2: Transaction lifecycle classifier separating announcedDate, startQ, and endQ.
+   * Returns { phase, isVisible, isActive }.
+   */
+  function getTransactionLifecycle(tx, quarter) {
     const endDate = quarterEndDate(quarter);
     const isForecast = quarterStatus(quarter) === "FORECAST";
+
+    if (!isForecast && tx.announcedDate && tx.announcedDate > endDate) {
+      return { phase: "NOT_ANNOUNCED", isVisible: false, isActive: false };
+    }
+
+    if (tx.type === "Equity Investment" || tx.type === "Asset Acquisition") {
+      const hasStarted = !tx.startQ || compareQuarter(quarter, tx.startQ) >= 0;
+      return {
+        phase: hasStarted ? "ACTIVE" : "ANNOUNCED_FUTURE",
+        isVisible: true,
+        isActive: hasStarted
+      };
+    }
+
+    if (tx.endQ && compareQuarter(quarter, tx.endQ) > 0) {
+      const rem = tx.remainingCommitment ?? 0;
+      const unpaid = (tx.amountDrawn ?? 0) - (tx.amountRepaid ?? 0);
+      if (rem <= 0 && unpaid <= 0) {
+        return { phase: "EXPIRED", isVisible: false, isActive: false };
+      }
+    }
+
+    if (tx.startQ && compareQuarter(quarter, tx.startQ) < 0) {
+      return { phase: "ANNOUNCED_FUTURE", isVisible: true, isActive: false };
+    }
+
+    return { phase: "ACTIVE", isVisible: true, isActive: true };
+  }
+
+  function isTransactionActive(tx, quarter) {
+    return getTransactionLifecycle(tx, quarter).isActive;
+  }
+
+  function getVisibleTransactions(transactions, quarter, layerFilter = null, opts = {}) {
+    const activeOnly = Boolean(opts && opts.activeOnly);
     return transactions.filter(tx => {
       if (layerFilter && layerFilter !== "ALL" && tx.networkLayer && tx.networkLayer !== layerFilter) {
         return false;
       }
-      if (!isForecast && tx.announcedDate && tx.announcedDate > endDate) {
-        return false;
-      }
-      if (tx.type === "Equity Investment" || tx.type === "Asset Acquisition") {
-        return true;
-      }
-      if (tx.endQ && compareQuarter(quarter, tx.endQ) > 0) {
-        const rem = tx.remainingCommitment ?? 0;
-        const unpaid = (tx.amountDrawn ?? 0) - (tx.amountRepaid ?? 0);
-        if (rem <= 0 && unpaid <= 0) return false;
-      }
+      const lc = getTransactionLifecycle(tx, quarter);
+      if (!lc.isVisible) return false;
+      if (activeOnly && !lc.isActive) return false;
       return true;
     });
+  }
+
+  /**
+   * P0-5: Dynamic Phased Guarantee Exposure Schedule
+   * Returns active guarantee exposure ($B) in a given quarter (0 before activation/startQ).
+   */
+  function getActiveGuaranteeExposure(tx, quarter) {
+    if (!tx || tx.type !== "Loan Guarantee") return 0;
+    if (!isTransactionActive(tx, quarter)) return 0;
+
+    const maxCap = Number(tx.totalCommitment || 0);
+    const sched = tx.guaranteeSchedule;
+    if (!sched) return maxCap;
+
+    const actQ = sched.activationQuarter || tx.startQ;
+    if (actQ && compareQuarter(quarter, actQ) < 0) return 0;
+
+    const endQ = sched.endQuarter || tx.endQ;
+    if (endQ && compareQuarter(quarter, endQ) > 0) return 0;
+
+    if (sched.phases && sched.phases[quarter] !== undefined) {
+      return Number(Math.min(maxCap, Math.max(0, sched.phases[quarter])).toFixed(4));
+    }
+
+    const peakQ = sched.peakQuarter || actQ;
+    const qNum = parseQuarterNumber(quarter);
+    const peakNum = parseQuarterNumber(peakQ);
+    const endNum = parseQuarterNumber(endQ);
+
+    if (peakNum >= 0 && qNum < peakNum && sched.phases) {
+      const sortedPhaseQs = Object.keys(sched.phases).sort(compareQuarter);
+      let prevVal = 0;
+      for (const pq of sortedPhaseQs) {
+        if (compareQuarter(pq, quarter) <= 0) prevVal = sched.phases[pq];
+      }
+      return Number(Math.min(maxCap, Math.max(0, prevVal)).toFixed(4));
+    }
+
+    if (peakNum >= 0 && endNum > peakNum && qNum > peakNum) {
+      const peakVal = (sched.phases && sched.phases[peakQ] !== undefined) ? sched.phases[peakQ] : maxCap;
+      const totalAmortQs = endNum - peakNum;
+      const elapsed = qNum - peakNum;
+      const remainingFrac = Math.max(0, 1 - elapsed / totalAmortQs);
+      return Number(Math.min(maxCap, peakVal * remainingFrac).toFixed(4));
+    }
+
+    return maxCap;
+  }
+
+  /**
+   * P0-3: Strict Basel-style EAD / LGD / Expected Loss calculator.
+   * Explicitly distinguishes amountDrawn === 0 (never substitutes totalCommitment!) vs amountDrawn === null.
+   */
+  function computeTransactionEAD(tx, quarter, options = {}) {
+    const defaultLgd = options.lgd ?? 0.45;
+    const defaultPd = options.pd ?? 0.05;
+    const defaultGuarCallRate = options.guaranteeCallRate ?? 0.25;
+    const txLgd = tx.lgd !== undefined && tx.lgd !== null ? Number(tx.lgd) : defaultLgd;
+    const txPd = tx.pd !== undefined && tx.pd !== null ? Number(tx.pd) : defaultPd;
+
+    if (!isTransactionActive(tx, quarter)) {
+      return {
+        txId: tx.id, quarter, isActive: false,
+        fundedEAD: 0, undrawnCommitment: 0, ccf: 0, undrawnEAD: 0, guaranteeEAD: 0,
+        totalEAD: 0, lgd: txLgd, pd: txPd, expectedLoss: 0, creditLossAtDefault: 0,
+        eadBasis: "Not Yet Active"
+      };
+    }
+
+    if (tx.type === "Loan Guarantee") {
+      const guaranteeEAD = getActiveGuaranteeExposure(tx, quarter);
+      const callRate = tx.guaranteeCallRate !== undefined && tx.guaranteeCallRate !== null
+        ? Number(tx.guaranteeCallRate)
+        : defaultGuarCallRate;
+      const creditLossAtDefault = Number((guaranteeEAD * callRate).toFixed(4));
+      const expectedLoss = Number((creditLossAtDefault * txPd).toFixed(4));
+      return {
+        txId: tx.id, quarter, isActive: true,
+        fundedEAD: 0, undrawnCommitment: 0, ccf: 0, undrawnEAD: 0,
+        guaranteeEAD, totalEAD: guaranteeEAD,
+        lgd: callRate, pd: txPd, expectedLoss, creditLossAtDefault,
+        eadBasis: tx.guaranteeSchedule ? "Dynamic Phased Guarantee Schedule" : "Active Guarantee Cap"
+      };
+    }
+
+    if (DEBT_TX_TYPES.includes(tx.type)) {
+      const commit = Number(tx.totalCommitment || 0);
+      const repaid = Number(tx.amountRepaid || 0);
+      const defaultCcf = tx.type === "Direct Loan" ? 0.40 : 0.25;
+      const ccf = tx.ccf !== undefined && tx.ccf !== null ? Number(tx.ccf) : defaultCcf;
+
+      let fundedEAD = 0;
+      let undrawnCommitment = 0;
+      let undrawnEAD = 0;
+      let eadBasis = "";
+
+      if (tx.amountDrawn === 0) {
+        // Strict P0-3: amountDrawn === 0 MUST NEVER substitute totalCommitment into fundedEAD
+        fundedEAD = 0;
+        undrawnCommitment = Number(Math.max(0, commit).toFixed(4));
+        undrawnEAD = Number((undrawnCommitment * ccf).toFixed(4));
+        eadBasis = "Undrawn Facility (amountDrawn=0, CCF Applied)";
+      } else if (tx.amountDrawn !== null && tx.amountDrawn !== undefined && tx.amountDrawn > 0) {
+        const drawn = Number(tx.amountDrawn);
+        fundedEAD = Number(Math.max(0, drawn - repaid).toFixed(4));
+        undrawnCommitment = Number(Math.max(0, commit - drawn).toFixed(4));
+        undrawnEAD = Number((undrawnCommitment * (undrawnCommitment > 0 ? ccf : 0)).toFixed(4));
+        eadBasis = undrawnCommitment > 0 ? "Funded + Undrawn CCF" : "Funded Principal";
+      } else {
+        // amountDrawn === null or undefined: unverified drawn amount -> conservative CCF only, never assume 100% funded
+        fundedEAD = 0;
+        undrawnCommitment = Number(Math.max(0, commit).toFixed(4));
+        undrawnEAD = Number((undrawnCommitment * ccf).toFixed(4));
+        eadBasis = "Unverified Drawn (amountDrawn=null, Conservative CCF)";
+      }
+
+      const totalEAD = Number((fundedEAD + undrawnEAD).toFixed(4));
+      const creditLossAtDefault = Number((totalEAD * txLgd).toFixed(4));
+      const expectedLoss = Number((totalEAD * txPd * txLgd).toFixed(4));
+      return {
+        txId: tx.id, quarter, isActive: true,
+        fundedEAD, undrawnCommitment, ccf, undrawnEAD, guaranteeEAD: 0,
+        totalEAD, lgd: txLgd, pd: txPd, expectedLoss, creditLossAtDefault, eadBasis
+      };
+    }
+
+    return {
+      txId: tx.id, quarter, isActive: true,
+      fundedEAD: 0, undrawnCommitment: 0, ccf: 0, undrawnEAD: 0, guaranteeEAD: 0,
+      totalEAD: 0, lgd: 0, pd: 0, expectedLoss: 0, creditLossAtDefault: 0,
+      eadBasis: "Non-Debt / Commercial"
+    };
+  }
+
+  /**
+   * P0-1: Point-in-Time Financial Snapshot
+   * Strictly enforces (period <= target) AND (if pointInTimeBacktest: disclosedDate <= quarterEndDate(q))
+   * on BOTH exact match and fallback, sorting chronologically rather than by JSON key insertion order.
+   */
+  function getHistoricalSnapshot(entity, q, pointInTimeBacktest = false) {
+    const targetNum = parseQuarterNumber(q);
+    const qEnd = quarterEndDate(q);
+    const financials = entity && entity.financials ? entity.financials : null;
+
+    if (financials) {
+      const eligible = [];
+      for (const [fq, vals] of Object.entries(financials)) {
+        if (!vals || typeof vals !== "object") continue;
+        const fqNum = parseQuarterNumber(fq);
+        if (fqNum < 0 || fqNum > targetNum) continue;
+        if (pointInTimeBacktest && vals.disclosedDate && vals.disclosedDate > qEnd) {
+          continue; // Strict PIT guard on BOTH exact match and fallback!
+        }
+        eligible.push({ fq, fqNum, vals });
+      }
+
+      // Sort strictly chronologically descending (latest eligible period first)
+      eligible.sort((a, b) => b.fqNum - a.fqNum);
+
+      if (eligible.length > 0) {
+        const best = eligible[0];
+        const isExact = best.fq === q;
+        const origType = best.vals.dataType || (isExact ? "Actual" : "Estimated");
+        const resolvedDataType = isExact
+          ? origType
+          : (origType === "Actual" ? "Carry-Forward (Prior Actual)" : origType);
+        return Object.assign(
+          {
+            quarter: q,
+            sourceQuarter: best.fq,
+            hasActual: isExact && origType === "Actual",
+            isCarryForward: !isExact,
+            isSimulatedEvent: false,
+            distressLevel: 0
+          },
+          best.vals,
+          { dataType: resolvedDataType }
+        );
+      }
+    }
+
+    return {
+      quarter: q,
+      sourceQuarter: null,
+      revenue: null, cash: null, debt: null, ocf: null, capex: null, fcf: null,
+      rpo: null, interestExp: null, undrawnCredit: null,
+      dataType: entity && entity.isOcean ? "System Pool" : "Unavailable",
+      hasActual: false,
+      isCarryForward: false,
+      isSimulatedEvent: false,
+      distressLevel: 0,
+      insufficientData: Boolean(entity && !entity.isOcean && !entity.lossAbsorbingInvestor)
+    };
+  }
+
+  /**
+   * P0-6: Parent / SPV Debt Reconciliation (Consolidated vs Standalone vs Recourse/Non-Recourse)
+   */
+  function reconcileParentSpvDebt(entities, transactions, quarter = "2026Q3") {
+    const byId = Object.fromEntries(entities.map(e => [e.id, e]));
+    const spvs = entities.filter(e => e.parentEntity || e.consolidatedInParent || e.id.startsWith("SPV_"));
+    const rows = [];
+
+    spvs.forEach(spv => {
+      const parentId = spv.consolidatedInParent || spv.parentEntity || null;
+      const parent = parentId ? byId[parentId] : null;
+      const pFin = (parent && parent.financials && parent.financials[quarter]) || {};
+      const sFin = (spv.financials && spv.financials[quarter]) || {};
+      const spvDebtTxs = transactions.filter(t => t.receiver === spv.id && DEBT_TX_TYPES.includes(t.type));
+
+      const facilityCommitment = spvDebtTxs.length > 0
+        ? Number(spvDebtTxs.reduce((s, t) => s + Number(t.totalCommitment || 0), 0).toFixed(3))
+        : Number(sFin.facilityCommitment ?? sFin.debt ?? 0);
+      const fundedDebt = spvDebtTxs.length > 0
+        ? Number(spvDebtTxs.reduce((s, t) => s + Math.max(0, Number(t.amountDrawn ?? 0) - Number(t.amountRepaid ?? 0)), 0).toFixed(3))
+        : Number(sFin.fundedDebt ?? sFin.debt ?? 0);
+      const undrawnCommitment = Number(Math.max(0, facilityCommitment - fundedDebt).toFixed(3));
+      const isConsolidated = Boolean(spv.consolidatedInParent || spv.isConsolidatedSubsidiary);
+      const parentConsolidatedDebt = pFin.debt !== undefined && pFin.debt !== null ? Number(pFin.debt) : null;
+      const parentRecourseDebt = pFin.recourseDebt !== undefined && pFin.recourseDebt !== null ? Number(pFin.recourseDebt) : null;
+      const parentNonRecourseDebt = pFin.nonRecourseDebt !== undefined && pFin.nonRecourseDebt !== null ? Number(pFin.nonRecourseDebt) : null;
+
+      // Zero double-counting rule:
+      // Consolidated SPV debt is ALREADY inside parentConsolidatedDebt -> elimination = fundedDebt
+      // Unconsolidated SPV debt is off-parent balance sheet -> elimination = 0
+      const consolidationElimination = isConsolidated ? fundedDebt : 0;
+      const netSystemWideDebt = parentConsolidatedDebt !== null
+        ? Number((parentConsolidatedDebt + fundedDebt - consolidationElimination).toFixed(3))
+        : fundedDebt;
+
+      rows.push({
+        parentId,
+        spvId: spv.id,
+        spvName: spv.name,
+        consolidationStatus: isConsolidated ? "Consolidated" : "Unconsolidated",
+        parentConsolidatedDebt,
+        parentRecourseDebt,
+        parentNonRecourseDebt,
+        spvFacilityCommitment: facilityCommitment,
+        spvFundedDebt: fundedDebt,
+        spvUndrawnCommitment: undrawnCommitment,
+        consolidationElimination,
+        netSystemWideDebt,
+        txIds: spvDebtTxs.map(t => t.id)
+      });
+    });
+
+    return rows;
   }
 
   function analyzeConnectivity(entities, activeTxs) {
@@ -434,6 +746,7 @@
 
   function getEdgeVisual(tx, selectedNodeId, quarter) {
     const isForecastQ = quarterStatus(quarter) === "FORECAST";
+    const lc = getTransactionLifecycle(tx, quarter);
     let color = "url(#grad-out-in)";
     let role = "neutral";
     if (selectedNodeId) {
@@ -454,7 +767,11 @@
     let opacity = role === "dimmed" ? 0.14 : 0.85;
     let lineKind = "Actual";
 
-    if (amt === null || amt === undefined || Number.isNaN(Number(amt))) {
+    if (lc.phase === "ANNOUNCED_FUTURE") {
+      dashArray = "8,4";
+      opacity = role === "dimmed" ? 0.10 : 0.62;
+      lineKind = "Committed";
+    } else if (amt === null || amt === undefined || Number.isNaN(Number(amt))) {
       dashArray = "2,4";
       opacity = role === "dimmed" ? 0.08 : 0.55;
       lineKind = "Unknown";
@@ -475,7 +792,7 @@
     }
 
     const strokeWidth = amt ? Math.max(1.4, Math.min(8.5, 1.2 + Math.log10(1 + amt) * 2.8)) : 1.2;
-    return { color, role, dashArray, opacity, strokeWidth, lineKind };
+    return { color, role, dashArray, opacity, strokeWidth, lineKind, lifecyclePhase: lc.phase, isActive: lc.isActive };
   }
 
   function computeFragilityScore(entity, st, ocean, entityTxs = []) {
@@ -590,19 +907,22 @@
     const maxCapexCutShare = options.maxCapexCutShare ?? 0.65;
     const gpuCollateralHaircut = options.gpuCollateralHaircut ?? 0.0;
     const pointInTimeBacktest = Boolean(options.pointInTimeBacktest);
+    const enableSecondaryContagion = options.enableSecondaryContagion !== false;
 
     const entityById = Object.fromEntries(entities.map(e => [e.id, e]));
     const timeline = {};
 
-    // Global cross-quarter deduplication trackers (TRUE one-time default firing!)
-    const defaultedTxIds = new Set();        // P0-1: guarantees each defaulted debt/guarantee fires ONCE
+    // Global cross-quarter deduplication trackers
+    const defaultedTxIds = new Set();        // Guarantees each defaulted debt/guarantee fires ONCE
     const cumCreditLossByTx = {};
+    const creditEvents = [];                 // Structured credit event ledger (EAD, LGD, Recovery, Remaining)
     const arWrittenOffPairs = new Set();
-    const systemicArHitEntities = new Set(); // P0-3: one-time systemic AR shock per hardware supplier
+    const systemicArHitEntities = new Set();
     const equityImpairedTxIds = new Set();
-    const operationalMigPairs = new Set();   // P0-2: one-time migration cost per supplier->customer pair
-    const operationalStartQ = {};            // tracks quarter when supplier operational outage began
-    const nextQGrowthPenalty = {};           // P0-3: decays 50% each quarter!
+    const operationalMigPairs = new Set();
+    const operationalStartQByTx = {};        // Tracks when operational outage began for each active supplier tx
+    const nextQGrowthPenalty = {};
+    const secondarySpreadBpsById = {};       // P1-2: Layer 4 secondary spread widening (bps)
 
     // Pre-compute historical baseline OCF calibration & insufficient-data flags
     const ocfCalibById = {};
@@ -629,40 +949,12 @@
       }
     });
 
-    function getHistoricalSnapshot(entity, q) {
-      const targetIdx = qIndex(q);
-      const qEnd = quarterEndDate(q);
-      const exact = entity.financials && entity.financials[q];
-      if (exact) {
-        const pitOk = !pointInTimeBacktest || !exact.disclosedDate || exact.disclosedDate <= qEnd;
-        if (pitOk) {
-          return Object.assign({ quarter: q, hasActual: true, isSimulatedEvent: false, distressLevel: 0 }, exact);
-        }
-      }
-      let best = null;
-      if (entity.financials) {
-        for (const [fq, vals] of Object.entries(entity.financials)) {
-          if (qIndex(fq) <= targetIdx) best = vals;
-        }
-      }
-      if (!best) {
-        return {
-          quarter: q, revenue: null, cash: null, debt: null, ocf: null, capex: null, fcf: null,
-          rpo: null, interestExp: null, undrawnCredit: null,
-          dataType: entity.isOcean ? "System Pool" : "Unavailable",
-          hasActual: false, isSimulatedEvent: false, distressLevel: 0,
-          insufficientData: !entity.isOcean && !entity.lossAbsorbingInvestor
-        };
-      }
-      return Object.assign({ quarter: q, hasActual: false, isSimulatedEvent: false, distressLevel: 0 }, best, { dataType: best.dataType || "Estimated" });
-    }
-
-    // 1. Historical Quarters
+    // 1. Historical Quarters (strict P0-1 PIT)
     QUARTERS_HIST.forEach(q => {
       const visTxs = getVisibleTransactions(transactions, q);
       const states = {};
       entities.forEach(e => {
-        const snap = getHistoricalSnapshot(e, q);
+        const snap = getHistoricalSnapshot(e, q, pointInTimeBacktest);
         snap.distressLevel = 0;
         snap.distressLabel = e.isOcean ? "External Pool (Non-Defaulting)" : (snap.insufficientData ? "Insufficient Data" : "Normal");
         snap.creditLoss = 0;
@@ -671,6 +963,7 @@
         snap.arCashHit = 0;
         snap.operationalCostHit = 0;
         snap.operationalRevDelay = 0;
+        snap.secondaryFinancingHit = 0;
         snap.inducedCapexCut = 0;
         snap.rcfDraw = 0;
         snap.requiredRevenue = null;
@@ -689,13 +982,18 @@
     forwardQs.forEach((q, stepIdx) => {
       const status = quarterStatus(q);
       const visibleTxs = getVisibleTransactions(transactions, q);
+      const activeTxs = visibleTxs.filter(tx => isTransactionActive(tx, q));
       const states = {};
       let oceanUsedThisQ = 0;
 
-      // Decay prior growth penalties by 50% each quarter so shocks don't permanently zero out revenue
+      // Decay prior growth penalties & secondary spreads by 50% each quarter
       Object.keys(nextQGrowthPenalty).forEach(id => {
         nextQGrowthPenalty[id] = Number((nextQGrowthPenalty[id] * 0.5).toFixed(4));
         if (Math.abs(nextQGrowthPenalty[id]) < 0.002) nextQGrowthPenalty[id] = 0;
+      });
+      Object.keys(secondarySpreadBpsById).forEach(id => {
+        secondarySpreadBpsById[id] = Math.round(secondarySpreadBpsById[id] * 0.5);
+        if (secondarySpreadBpsById[id] < 5) secondarySpreadBpsById[id] = 0;
       });
 
       // Step 2A: Standalone Quarterly Cash Flow Projection
@@ -707,15 +1005,19 @@
             rpo: 0, interestExp: 0, undrawnCredit: ocean.maxCapacity,
             dataType: "System Pool", distressLevel: 0, distressLabel: "External Pool (Non-Defaulting)",
             isSimulatedEvent: false, creditLoss: 0, equityImpairment: 0, lostReceipts: 0, arCashHit: 0,
-            operationalCostHit: 0, operationalRevDelay: 0, inducedCapexCut: 0, rcfDraw: 0,
+            operationalCostHit: 0, operationalRevDelay: 0, secondaryFinancingHit: 0,
+            inducedCapexCut: 0, rcfDraw: 0,
             requiredRevenue: null, fragilityScore: 0, fragilityDrivers: []
           };
           return;
         }
 
-        // P0-4: Entities without disclosed cash/revenue (e.g. private CRUSOE/LAMBDA/VANTAGE/QTS/AIRTRUNK)
-        // are NOT fabricated into synthetic L3 bankruptcies in Base Case unless explicitly forced to default!
-        const isInsufficient = !e.lossAbsorbingInvestor && !hasCoreFinancials[e.id] && !overrides[e.id];
+        // P1-1: Strict Insufficient Data protection!
+        // Partial overrides (e.g. only revGrowth) MUST NOT bypass missing core financials.
+        const ov = overrides[e.id];
+        const overrideSuppliesCore = Boolean(ov && ov.cash !== undefined && ov.cash !== null && ov.revenue !== undefined && ov.revenue !== null);
+        const isInsufficient = !e.lossAbsorbingInvestor && !hasCoreFinancials[e.id] && !overrideSuppliesCore;
+
         if (isInsufficient) {
           const forced = forcedDefaults.has(e.id);
           states[e.id] = {
@@ -729,29 +1031,33 @@
             distressLabel: forced ? "Level 3: Forced Simulated Default" : "Insufficient Data (Non-Simulated)",
             isSimulatedEvent: forced,
             creditLoss: 0, equityImpairment: 0, lostReceipts: 0, arCashHit: 0,
-            operationalCostHit: 0, operationalRevDelay: 0, inducedCapexCut: 0,
+            operationalCostHit: 0, operationalRevDelay: 0, secondaryFinancingHit: 0,
+            inducedCapexCut: 0,
             fragilityScore: 0, fragilityDrivers: []
           };
           return;
         }
 
-        const p = Object.assign({}, e.defaults || {}, overrides[e.id] || {});
-        const begCash = prev.cash !== null && prev.cash !== undefined ? prev.cash : (p.minCash ? p.minCash * 2 : 1.0);
-        const begDebt = prev.debt !== null && prev.debt !== undefined ? prev.debt : 0;
-        const prevRev = prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : Math.max(0.2, (p.opex || 0.2) * 1.6);
+        const p = Object.assign({}, e.defaults || {}, ov || {});
+        const begCash = prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
+        const begDebt = prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
+        const prevRev = prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6));
         const undrawn = prev.undrawnCredit !== null && prev.undrawnCredit !== undefined ? prev.undrawnCredit : 0.0;
 
-        // Floating-rate debt share + Ocean base rate wiring
-        const myDebtTxs = visibleTxs.filter(tx => tx.receiver === e.id && ["Direct Loan","Corporate Bond","Project Finance","GPU-backed Financing","Equipment Financing"].includes(tx.type));
-        const floatingPrincipal = myDebtTxs.filter(tx => tx.isFloatingRate).reduce((s, tx) => s + (tx.amountDrawn ?? tx.totalCommitment ?? 0), 0);
-        const totalTxPrincipal = myDebtTxs.reduce((s, tx) => s + (tx.amountDrawn ?? tx.totalCommitment ?? 0), 0);
+        // Floating-rate debt share + Ocean base rate + L4 secondary spread wiring (strictly on ACTIVE debt txs!)
+        const myDebtTxs = activeTxs.filter(tx => tx.receiver === e.id && DEBT_TX_TYPES.includes(tx.type));
+        const floatingPrincipal = myDebtTxs.filter(tx => tx.isFloatingRate).reduce((s, tx) => s + computeTransactionEAD(tx, q, options).fundedEAD, 0);
+        const totalTxPrincipal = myDebtTxs.reduce((s, tx) => s + computeTransactionEAD(tx, q, options).fundedEAD, 0);
         const floatShare = totalTxPrincipal > 0 ? Math.min(1, floatingPrincipal / totalTxPrincipal) : 0.35;
 
         const baseFixedRate = p.interestRate ?? 0.06;
         const oceanBaseRate = (ocean.interestRate ?? 7.5) / 100;
-        const tightening = (ocean.creditTighteningBps ?? 0) / 10000;
+        const tightening = ((ocean.creditTighteningBps ?? 0) + (secondarySpreadBpsById[e.id] || 0)) / 10000;
         const effectiveRate = (1 - floatShare) * baseFixedRate + floatShare * Math.max(0.01, oceanBaseRate + tightening);
         const interestPaid = Number(((begDebt * effectiveRate) / 4).toFixed(4));
+        const secondaryIntAdd = secondarySpreadBpsById[e.id]
+          ? Number(((begDebt * floatShare * (secondarySpreadBpsById[e.id] / 10000)) / 4).toFixed(4))
+          : 0;
 
         // Case H: GPU Collateral Haircut & LTV Trigger
         const gpuDebtTxs = myDebtTxs.filter(tx => tx.type === "GPU-backed Financing" || tx.type === "Equipment Financing");
@@ -761,19 +1067,20 @@
           const baseLtv = 0.65;
           const stressedLtv = baseLtv / Math.max(0.2, 1 - gpuCollateralHaircut);
           if (stressedLtv > 0.85) {
-            const gpuDrawn = gpuDebtTxs.reduce((s, tx) => s + (tx.amountDrawn ?? 0), 0);
+            const gpuDrawn = gpuDebtTxs.reduce((s, tx) => s + computeTransactionEAD(tx, q, options).fundedEAD, 0);
             gpuMarginCall = Number((gpuDrawn * 0.12 * gpuCollateralHaircut).toFixed(4));
             gpuRefiPenalty = Math.max(0.2, 1 - gpuCollateralHaircut * 1.2);
           }
         }
 
         const availFactor = Math.max(0, Math.min(1, ocean.fundingAvailability / 100));
-        const refiFactor = Math.max(0, Math.min(1, (p.refiSuccess ?? 0.85) * (ocean.refiSuccessRate / 100) * gpuRefiPenalty));
+        const secRefiPenalty = secondarySpreadBpsById[e.id] ? Math.max(0.70, 1 - (secondarySpreadBpsById[e.id] / 1000)) : 1.0;
+        const refiFactor = Math.max(0, Math.min(1, (p.refiSuccess ?? 0.85) * (ocean.refiSuccessRate / 100) * gpuRefiPenalty * secRefiPenalty));
 
-        // P1-4 True 100% Maturity Wall with Refinancing Rollover
+        // 100% Maturity Wall with Refinancing Rollover (strictly on fundedEAD of maturing ACTIVE debt)
         const maturingPrincipal = myDebtTxs
           .filter(tx => tx.endQ === q)
-          .reduce((s, tx) => s + Math.max(0, (tx.amountDrawn ?? tx.totalCommitment ?? 0) - (tx.amountRepaid ?? 0)), 0);
+          .reduce((s, tx) => s + computeTransactionEAD(tx, q, options).fundedEAD, 0);
         const refiRollover = Number((maturingPrincipal * availFactor * refiFactor).toFixed(4));
         const principalRepay = Number(((p.debtRepay ?? 0) + maturingPrincipal).toFixed(4));
 
@@ -789,14 +1096,14 @@
         const cashConv = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
         const minCash = p.minCash ?? 1.0;
 
-        // Revenue Forecast: Mode A (Contract-Driven) vs Mode B (Unclamped Downside Growth)
+        // Revenue Forecast: Mode A (strictly ACTIVE contracts!) vs Mode B
         const growthPen = nextQGrowthPenalty[e.id] || 0;
         const rawG = (p.revGrowth ?? 0.05) - (p.revDecel ?? 0.005) * stepIdx + growthPen;
-        const boundedG = Math.max(-0.85, rawG); // allows -50% Case D faithfully without negative rev
+        const boundedG = Math.max(-0.85, rawG);
 
         let projRev;
         if (p.mode === "A") {
-          const incomingContractQ = visibleTxs
+          const incomingContractQ = activeTxs
             .filter(tx => tx.receiver === e.id && ["Cloud Computing Purchase","Take-or-Pay Contract","Data Center Lease","GPU / Server Purchase"].includes(tx.type))
             .reduce((s, tx) => s + (tx.quarterlyPayment || 0), 0);
           const rpoConversion = (prev.rpo || 0) * 0.02;
@@ -806,12 +1113,12 @@
           projRev = Number(Math.max(0, prevRev * (1 + boundedG)).toFixed(4));
         }
 
-        // Calibrated OCF (zero double-deduction, smooth Q3->Q4 continuity)
+        // Calibrated OCF
         const calib = ocfCalibById[e.id];
         const grossProfitCash = projRev * grossMargin * cashConv;
         let ocf;
-        const incrementalCompute = overrides[e.id]?.computePay !== undefined ? Number(overrides[e.id].computePay) : 0;
-        if (calib && calib.hasCalib && overrides[e.id]?.opex === undefined) {
+        const incrementalCompute = ov?.computePay !== undefined ? Number(ov.computePay) : 0;
+        if (calib && calib.hasCalib && ov?.opex === undefined) {
           const fixedOp = calib.impliedFixedOpCash;
           const preTaxDelta = (grossProfitCash - fixedOp - incrementalCompute - interestPaid);
           const incrementalTax = preTaxDelta > (calib.baseRev * grossMargin * cashConv - fixedOp)
@@ -869,6 +1176,7 @@
           insufficientData: false,
           distressLevel: 0,
           distressLabel: "Normal",
+          defaultCause: null,
           isSimulatedEvent: false,
           creditLoss: 0,
           equityImpairment: 0,
@@ -876,6 +1184,7 @@
           arCashHit: 0,
           operationalCostHit: 0,
           operationalRevDelay: 0,
+          secondaryFinancingHit: secondaryIntAdd,
           inducedCapexCut: 0
         };
       });
@@ -905,39 +1214,50 @@
         if (e.lossAbsorbingInvestor) {
           st.distressLevel = st.creditLoss > 5 ? 1 : 0;
           st.distressLabel = st.creditLoss > 5 ? "Level 1: Fund NAV Drawdown" : "Normal";
+          st.defaultCause = null;
           st.isSimulatedEvent = false;
           return;
         }
         const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0);
         const totalLiq = (st.cash || 0) + (st.undrawnCredit || 0);
 
-        if (forcedDefaults.has(entityId) || totalLiq < 0) {
+        if (forcedDefaults.has(entityId)) {
           st.distressLevel = 3;
           st.distressLabel = "Level 3: Simulated Default";
+          st.defaultCause = "Forced Scenario Default";
+          st.isSimulatedEvent = true;
+        } else if (totalLiq < 0) {
+          st.distressLevel = 3;
+          st.distressLabel = "Level 3: Simulated Default";
+          st.defaultCause = `Liquidity Exhausted (Cash+RCF=${totalLiq.toFixed(2)}B < 0)`;
           st.isSimulatedEvent = true;
         } else if (totalLiq < mandatoryNextQ && mandatoryNextQ > 0) {
           st.distressLevel = 2;
           st.distressLabel = "Level 2: Liquidity Crisis";
+          st.defaultCause = `Debt Service Shortfall (Liq=${totalLiq.toFixed(2)}B < Oblig=${mandatoryNextQ.toFixed(2)}B)`;
           st.isSimulatedEvent = true;
         } else if (st.cash < st.minCash) {
           st.distressLevel = 1;
           st.distressLabel = "Level 1: Liquidity Warning";
+          st.defaultCause = null;
           st.isSimulatedEvent = false;
         } else {
           st.distressLevel = 0;
           st.distressLabel = "Normal";
+          st.defaultCause = null;
           st.isSimulatedEvent = false;
         }
       }
 
       entities.forEach(e => evaluateDistress(e.id));
 
-      // Step 2B: Dynamic Multi-Hop 4-Layer Contagion (up to 5 hops until convergence)
+      // Step 2B: Dynamic Multi-Hop 4-Layer Contagion (strictly on activeTxs!)
       const contagionLog = [];
       const propagatedDefaults = new Set();
       const propagatedCrisisCuts = new Set();
+      const secondaryHitPeersThisQ = new Set();
       const cloudRevLossThisQ = {};
-      const directHwCutByCloudThisQ = {}; // P0-3: prevents A1 + A3 double-counting
+      const directHwCutByCloudThisQ = {};
 
       for (let hop = 1; hop <= 5; hop++) {
         const newDefaulters = entities
@@ -953,7 +1273,7 @@
         // Layer 2 (Commercial): L2 Crisis Defensive Hardware Cut
         newCrisisBuyers.forEach(buyerId => {
           propagatedCrisisCuts.add(buyerId);
-          visibleTxs.forEach(tx => {
+          activeTxs.forEach(tx => {
             if (tx.payer === buyerId && tx.type === "GPU / Server Purchase") {
               const supId = tx.receiver;
               if (isPoolId(supId) || !states[supId] || states[supId].insufficientData) return;
@@ -972,14 +1292,13 @@
           });
         });
 
-        // Level 3 Defaults across Layers 1, 2, and 3
+        // Level 3 Defaults across Layers 1, 2, 3, and 4
         newDefaulters.forEach(defId => {
           propagatedDefaults.add(defId);
-          if (operationalStartQ[defId] === undefined) operationalStartQ[defId] = stepIdx;
 
-          visibleTxs.forEach(tx => {
+          activeTxs.forEach(tx => {
             // Layer 2 (Commercial) + Layer 1 (AR Bad-Debt): Defaulter is PAYER (Customer Defaults -> Supplier Loses Revenue & AR)
-            if (tx.payer === defId && ["Cloud Computing Purchase","Take-or-Pay Contract","Data Center Lease","GPU / Server Purchase","Power Purchase Agreement"].includes(tx.type)) {
+            if (tx.payer === defId && OPERATIONAL_TX_TYPES.includes(tx.type)) {
               const supId = tx.receiver;
               if (isPoolId(supId) || !states[supId] || states[supId].insufficientData) return;
               const qPay = tx.quarterlyPayment || (tx.totalCommitment ? tx.totalCommitment / 20 : 0);
@@ -1016,75 +1335,139 @@
               }
             }
 
-            // P0-2 Layer 3 (Operational Impact): Defaulter is RECEIVER (Supplier/DC/Power Defaults -> Downstream Customer Disruption & Switching Cost!)
-            if (tx.receiver === defId && ["Cloud Computing Purchase","Take-or-Pay Contract","Data Center Lease","Power Purchase Agreement"].includes(tx.type)) {
+            // P0-4 Layer 3 (Operational Contagion): Defaulter is RECEIVER (Supplier/OEM/Cooling/DC/Power Defaults -> Downstream Customer!)
+            // Covers ALL 7 service categories, including undisclosed-value contracts via operationalExposureShare
+            if (tx.receiver === defId && OPERATIONAL_TX_TYPES.includes(tx.type)) {
               const custId = tx.payer;
               if (isPoolId(custId) || !states[custId] || states[custId].insufficientData) return;
               const cust = states[custId];
-              const qPay = tx.quarterlyPayment || (tx.totalCommitment ? tx.totalCommitment / 20 : 0);
-              const subAvail = tx.substitutionAvailability ?? 0.65; // 0 = no substitute, 1 = seamless
-              const switchWks = tx.switchingTimeWeeks ?? 8;
-              const costPrem = tx.replacementCostPremium ?? 0.28;
+              const opCat = tx.operationalCategory || tx.type;
+              const subAvail = tx.substitutionAvailability ?? 0.60;
+              const switchWks = tx.switchingTimeWeeks ?? 12;
+              const costPrem = tx.replacementCostPremium ?? 0.25;
+              const disruptionMult = tx.disruptionMode === "FULL" ? 1.0 : 0.70;
               const friction = Math.max(0.05, 1 - subAvail);
 
-              // One-time migration / switching cost cash outflow
+              // Anchor operational exposure: disclosed quarterlyPayment if > 0; else operationalExposureShare * customer CapEx/Rev
+              const qPay = tx.quarterlyPayment || (tx.totalCommitment ? tx.totalCommitment / 20 : 0);
+              const opBase = qPay > 0
+                ? qPay
+                : Number(Math.max(0.05, ((cust.capex > 0 ? cust.capex : cust.revenue * 0.25) || 0.5) * (tx.operationalExposureShare || 0.04)).toFixed(4));
+
+              if (operationalStartQByTx[tx.id] === undefined) {
+                operationalStartQByTx[tx.id] = stepIdx;
+              }
+
+              // One-time migration / switching cost cash outflow (strictly L3_OPERATIONAL, never double-counted with L1)
               const migKey = `${defId}->${custId}:${tx.id}`;
-              if (qPay > 0 && !operationalMigPairs.has(migKey)) {
+              if (opBase > 0 && !operationalMigPairs.has(migKey)) {
                 operationalMigPairs.add(migKey);
-                const migCost = Number((qPay * costPrem * friction).toFixed(4));
+                const migCost = Number((opBase * costPrem * friction).toFixed(4));
                 if (migCost > 0) {
                   cust.operationalCostHit = Number((cust.operationalCostHit + migCost).toFixed(4));
                   applyCashDelta(custId, -migCost, 0);
-                  contagionLog.push({ hop, layer: "L3_OPERATIONAL", from: defId, to: custId, txId: tx.id, channel: `L3 Operational: Compute/Infra Migration Cost (Sub ${Math.round(subAvail * 100)}%)`, impactB: migCost });
+                  contagionLog.push({
+                    hop, layer: "L3_OPERATIONAL", operationalCategory: opCat,
+                    from: defId, to: custId, txId: tx.id,
+                    channel: `L3 Operational (${opCat}): Switching/Migration Cost (Sub ${Math.round(subAvail * 100)}%)`,
+                    impactB: migCost
+                  });
                 }
               }
 
-              // Temporary revenue/service delay during switching window (decays over 2 quarters)
-              const quartersElapsed = stepIdx - operationalStartQ[defId];
-              const switchQuarters = Math.max(1, Math.ceil(switchWks / 13));
-              if (qPay > 0 && quartersElapsed < switchQuarters) {
+              // Temporary revenue/capacity disruption during switching window (decays 50%/qtr, recovers after switchQuarters)
+              const quartersElapsed = stepIdx - operationalStartQByTx[tx.id];
+              const switchQuarters = Math.min(4, Math.max(1, Math.ceil(switchWks / 13)));
+              if (opBase > 0 && quartersElapsed < switchQuarters) {
                 const decay = Math.pow(0.5, quartersElapsed);
-                const revDelay = Number((qPay * Math.min(1, switchWks / 13) * friction * 0.45 * decay).toFixed(4));
+                const revDelay = Number((opBase * Math.min(1, switchWks / 13) * friction * 0.45 * disruptionMult * decay).toFixed(4));
                 if (revDelay > 0) {
                   cust.operationalRevDelay = Number((cust.operationalRevDelay + revDelay).toFixed(4));
                   cust.revenue = Number(Math.max(0, cust.revenue - revDelay).toFixed(4));
                   applyCashDelta(custId, -(revDelay * cust.grossMargin * cust.cashConv), 0);
-                  contagionLog.push({ hop, layer: "L3_OPERATIONAL", from: defId, to: custId, txId: tx.id, channel: `L3 Operational: Service Disruption (${switchWks}w switch)`, impactB: revDelay });
+                  contagionLog.push({
+                    hop, layer: "L3_OPERATIONAL", operationalCategory: opCat,
+                    from: defId, to: custId, txId: tx.id,
+                    channel: `L3 Operational (${opCat}): Capacity/Service Disruption (${switchWks}w switch)`,
+                    impactB: revDelay
+                  });
                 }
               }
               evaluateDistress(custId);
             }
 
-            // P0-1 Layer 1 (Direct Financial): TRUE ONE-TIME Debt Credit Loss (fires ONCE per tx.id!)
-            if (tx.receiver === defId && ["Direct Loan","Corporate Bond","Project Finance","GPU-backed Financing","Equipment Financing","Convertible Debt"].includes(tx.type)) {
+            // P0-3 Layer 1 (Direct Financial): TRUE ONE-TIME Debt Credit Loss using computeTransactionEAD
+            if (tx.receiver === defId && DEBT_TX_TYPES.includes(tx.type)) {
               if (defaultedTxIds.has(tx.id)) return;
               const lenderId = tx.payer;
               if (!states[lenderId]) return;
-              const principal = (tx.amountDrawn && tx.amountDrawn > 0) ? tx.amountDrawn : (tx.totalCommitment || 0);
-              const cLoss = Number((principal * lgd).toFixed(4));
+              const eadInfo = computeTransactionEAD(tx, q, { lgd, guaranteeCallRate });
+              const cLoss = eadInfo.creditLossAtDefault;
               if (cLoss > 0) {
                 defaultedTxIds.add(tx.id);
                 cumCreditLossByTx[tx.id] = cLoss;
+                creditEvents.push({
+                  defaultEventId: `DEF-${q}-${tx.id}`,
+                  quarter: q,
+                  txId: tx.id,
+                  borrower: defId,
+                  lender: lenderId,
+                  type: tx.type,
+                  fundedEAD: eadInfo.fundedEAD,
+                  undrawnEAD: eadInfo.undrawnEAD,
+                  guaranteeEAD: 0,
+                  totalEAD: eadInfo.totalEAD,
+                  lgd: eadInfo.lgd,
+                  recognizedLoss: cLoss,
+                  expectedRecovery: Number((eadInfo.totalEAD - cLoss).toFixed(4)),
+                  remainingExposure: 0,
+                  eadBasis: eadInfo.eadBasis
+                });
                 states[lenderId].creditLoss = Number((states[lenderId].creditLoss + cLoss).toFixed(4));
                 evaluateDistress(lenderId);
-                contagionLog.push({ hop, layer: "L1_FINANCIAL", from: defId, to: lenderId, txId: tx.id, channel: `L1 Direct Financial: ${tx.type} Credit Loss (One-Time ${Math.round(lgd * 100)}% LGD)`, impactB: cLoss });
+                contagionLog.push({
+                  hop, layer: "L1_FINANCIAL", from: defId, to: lenderId, txId: tx.id,
+                  channel: `L1 Direct Financial: ${tx.type} Credit Loss (EAD $${eadInfo.totalEAD.toFixed(2)}B x ${Math.round(eadInfo.lgd * 100)}% LGD)`,
+                  impactB: cLoss
+                });
               }
             }
 
-            // P0-1 Layer 1 (Direct Financial): TRUE ONE-TIME Guarantee Call (fires ONCE per tx.id!)
+            // P0-5 Layer 1 (Direct Financial): Dynamic Phased Guarantee Call (fires ONCE when active!)
             if (tx.receiver === defId && tx.type === "Loan Guarantee") {
               if (defaultedTxIds.has(tx.id)) return;
               const guarId = tx.payer;
               if (isPoolId(guarId) || !states[guarId] || states[guarId].insufficientData) return;
-              const cap = tx.totalCommitment || 0;
-              const callAmt = Number((cap * guaranteeCallRate).toFixed(4));
+              const eadInfo = computeTransactionEAD(tx, q, { lgd, guaranteeCallRate });
+              const callAmt = eadInfo.creditLossAtDefault;
               if (callAmt > 0) {
                 defaultedTxIds.add(tx.id);
                 cumCreditLossByTx[tx.id] = callAmt;
+                creditEvents.push({
+                  defaultEventId: `GUAR-${q}-${tx.id}`,
+                  quarter: q,
+                  txId: tx.id,
+                  borrower: defId,
+                  lender: guarId,
+                  type: tx.type,
+                  fundedEAD: 0,
+                  undrawnEAD: 0,
+                  guaranteeEAD: eadInfo.guaranteeEAD,
+                  totalEAD: eadInfo.totalEAD,
+                  lgd: eadInfo.lgd,
+                  recognizedLoss: callAmt,
+                  expectedRecovery: Number((eadInfo.guaranteeEAD - callAmt).toFixed(4)),
+                  remainingExposure: 0,
+                  eadBasis: eadInfo.eadBasis
+                });
                 states[guarId].creditLoss = Number((states[guarId].creditLoss + callAmt).toFixed(4));
                 applyCashDelta(guarId, -callAmt, 0);
                 evaluateDistress(guarId);
-                contagionLog.push({ hop, layer: "L1_FINANCIAL", from: defId, to: guarId, txId: tx.id, channel: `L1 Direct Financial: Guarantee / RVG Cash Call (One-Time ${Math.round(guaranteeCallRate * 100)}%)`, impactB: callAmt });
+                contagionLog.push({
+                  hop, layer: "L1_FINANCIAL", from: defId, to: guarId, txId: tx.id,
+                  channel: `L1 Direct Financial: Guarantee Call (Active Exposure $${eadInfo.guaranteeEAD.toFixed(2)}B x ${Math.round(eadInfo.lgd * 100)}%)`,
+                  impactB: callAmt
+                });
               }
             }
 
@@ -1092,7 +1475,7 @@
             if (tx.receiver === defId && tx.type === "Equity Investment" && !equityImpairedTxIds.has(tx.id)) {
               const invId = tx.payer;
               if (!isPoolId(invId) && states[invId]) {
-                const eqAmt = (tx.amountDrawn && tx.amountDrawn > 0) ? tx.amountDrawn : (tx.totalCommitment || 0);
+                const eqAmt = (tx.amountDrawn !== null && tx.amountDrawn !== undefined && tx.amountDrawn > 0) ? tx.amountDrawn : (tx.totalCommitment || 0);
                 if (eqAmt > 0) {
                   equityImpairedTxIds.add(tx.id);
                   const imp = Number((eqAmt * 0.80).toFixed(4));
@@ -1102,6 +1485,42 @@
               }
             }
           });
+
+          // P1-2 Layer 4 (Secondary Market Contagion):
+          // Default of a leveraged AI infra/lab/cloud issuer widens secondary spreads for leveraged peers
+          // (bounded +100 bps next-quarter refinancing spread, zero double-counting of L1/L2/L3 losses)
+          if (enableSecondaryContagion) {
+            const defEnt = entityById[defId];
+            entities.forEach(peer => {
+              if (peer.id === defId || peer.isOcean || peer.lossAbsorbingInvestor) return;
+              if (secondaryHitPeersThisQ.has(peer.id)) return;
+              const pst = states[peer.id];
+              if (!pst || pst.insufficientData || pst.debt <= 1.0) return;
+              const sameTier = peer.type === defEnt.type || (peer.isCloudOrNeocloud && defEnt.isCloudOrNeocloud);
+              const peerLiq = Math.max(0.5, (pst.cash || 0) + (pst.undrawnCredit || 0));
+              const highLeverage = (pst.debt / peerLiq) >= 1.5;
+              if (sameTier && highLeverage) {
+                secondaryHitPeersThisQ.add(peer.id);
+                const spreadWideningBps = 100; // +100 bps secondary market spread shock
+                secondarySpreadBpsById[peer.id] = Math.min(250, (secondarySpreadBpsById[peer.id] || 0) + spreadWideningBps);
+                const quarterlySpreadCost = Number(((pst.debt * 0.35 * (spreadWideningBps / 10000)) / 4).toFixed(4));
+                if (quarterlySpreadCost > 0) {
+                  pst.secondaryFinancingHit = Number((pst.secondaryFinancingHit + quarterlySpreadCost).toFixed(4));
+                  applyCashDelta(peer.id, -quarterlySpreadCost, 0);
+                  evaluateDistress(peer.id);
+                  contagionLog.push({
+                    hop: Math.min(5, hop + 1),
+                    layer: "L4_SECONDARY",
+                    from: defId,
+                    to: peer.id,
+                    txId: "L4_SPREAD",
+                    channel: `L4 Secondary Contagion: Peer Credit Spread Widening (+${spreadWideningBps} bps)`,
+                    impactB: quarterlySpreadCost
+                  });
+                }
+              }
+            });
+          }
         });
 
         // Layer 2 (Commercial): Deduplicated Induced Cloud CapEx Contraction -> Upstream Hardware Demand Shock
@@ -1113,7 +1532,6 @@
             cst.inducedCapexCut = cut;
             applyCashDelta(cloudId, 0, -cut);
             evaluateDistress(cloudId);
-            // P0-3: Subtract hardware cuts already directly transmitted via A1 to prevent double-counting!
             const rawHwPortion = cut * gpuShareOfAiCapex;
             const alreadyDirect = directHwCutByCloudThisQ[cloudId] || 0;
             const netHw = Math.max(0, rawHwPortion - alreadyDirect);
@@ -1133,7 +1551,6 @@
               hst.revenue = Number(Math.max(0, hst.revenue - revHit).toFixed(4));
               applyCashDelta(hw.id, -(revHit * hst.grossMargin * hst.cashConv), 0);
 
-              // One-time systemic AR deterioration with AR balance decrement
               if (hst.ar && !systemicArHitEntities.has(hw.id) && revHit / prevHwRev >= 0.025) {
                 systemicArHitEntities.add(hw.id);
                 const arHit = Number((hst.ar * Math.min(0.18, (revHit / prevHwRev) * 0.75) * lgd).toFixed(4));
@@ -1145,7 +1562,6 @@
                 }
               }
 
-              // Bounded, decaying growth suppression (capped at -25% penalty, decays 50%/qtr!)
               const pctHit = revHit / prevHwRev;
               nextQGrowthPenalty[hw.id] = Math.max(-0.25, (nextQGrowthPenalty[hw.id] || 0) - pctHit * 0.85);
 
@@ -1166,7 +1582,8 @@
       prevStates = states;
     });
 
-    return { timeline, allQuarters: ALL_QUARTERS, cumCreditLossByTx };
+    const parentSpvReconciliation = reconcileParentSpvDebt(entities, transactions);
+    return { timeline, allQuarters: ALL_QUARTERS, cumCreditLossByTx, creditEvents, parentSpvReconciliation };
   }
 
   return {
@@ -1174,9 +1591,18 @@
     QUARTER_PARTIAL,
     QUARTERS_FORECAST,
     ALL_QUARTERS,
+    DEBT_TX_TYPES,
+    OPERATIONAL_TX_TYPES,
     quarterEndDate,
     quarterStatus,
+    compareQuarter,
+    getTransactionLifecycle,
+    isTransactionActive,
     getVisibleTransactions,
+    getActiveGuaranteeExposure,
+    computeTransactionEAD,
+    getHistoricalSnapshot,
+    reconcileParentSpvDebt,
     analyzeConnectivity,
     getEdgeVisual,
     computeFragilityScore,
@@ -1203,6 +1629,96 @@ const INITIAL_ENTITIES = [
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-11-17",
     "financials": {
+      "2024Q4": {
+        "fiscalPeriod": "Q4 FY25",
+        "calendarPeriod": "2024Q4",
+        "periodEnd": "2025-01-26",
+        "publicationDate": "2025-02-26",
+        "disclosedDate": "2025-02-26",
+        "accessionNumber": "0001045810-26-000019",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 39.331,
+        "ocf": 16.628,
+        "capex": 1.077,
+        "fcf": 15.551,
+        "cash": 43.21,
+        "debt": 8.463,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000019/q4fy26pr.htm"
+      },
+      "2025Q1": {
+        "fiscalPeriod": "Q1 FY26",
+        "calendarPeriod": "2025Q1",
+        "periodEnd": "2025-04-27",
+        "publicationDate": "2025-05-28",
+        "disclosedDate": "2025-05-28",
+        "accessionNumber": "0001045810-25-000115",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 44.062,
+        "ocf": 27.414,
+        "capex": 1.227,
+        "fcf": 26.187,
+        "cash": 53.691,
+        "debt": 8.464,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000115/q1fy26pr.htm"
+      },
+      "2025Q2": {
+        "fiscalPeriod": "Q2 FY26",
+        "calendarPeriod": "2025Q2",
+        "periodEnd": "2025-07-27",
+        "publicationDate": "2025-08-27",
+        "disclosedDate": "2025-08-27",
+        "accessionNumber": "0001045810-25-000207",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 46.743,
+        "ocf": 15.365,
+        "capex": 1.894,
+        "fcf": 13.471,
+        "cash": 56.791,
+        "debt": 8.466,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000207/q2fy26pr.htm"
+      },
+      "2025Q3": {
+        "fiscalPeriod": "Q3 FY26",
+        "calendarPeriod": "2025Q3",
+        "periodEnd": "2025-10-26",
+        "publicationDate": "2025-11-19",
+        "disclosedDate": "2025-11-19",
+        "accessionNumber": "0001045810-25-000228",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 57.006,
+        "ocf": 23.75,
+        "capex": 1.637,
+        "fcf": 22.113,
+        "cash": 60.608,
+        "debt": 8.467,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000228/q3fy26pr.htm"
+      },
+      "2025Q4": {
+        "fiscalPeriod": "Q4 FY26",
+        "calendarPeriod": "2025Q4",
+        "periodEnd": "2026-01-25",
+        "publicationDate": "2026-02-25",
+        "disclosedDate": "2026-02-25",
+        "accessionNumber": "0001045810-26-000019",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 68.127,
+        "ocf": 36.19,
+        "capex": 1.284,
+        "fcf": 34.906,
+        "cash": 62.556,
+        "debt": 8.468,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000019/q4fy26pr.htm"
+      },
       "2026Q1": {
         "revenue": 81.62,
         "cash": 22.44,
@@ -1320,6 +1836,96 @@ const INITIAL_ENTITIES = [
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-10-28",
     "financials": {
+      "2024Q4": {
+        "fiscalPeriod": "Q2 FY25",
+        "calendarPeriod": "2024Q4",
+        "periodEnd": "2024-12-31",
+        "publicationDate": "2025-01-29",
+        "disclosedDate": "2025-01-29",
+        "accessionNumber": "0000950170-25-010484",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 69.632,
+        "ocf": 22.291,
+        "capex": 15.804,
+        "fcf": 6.487,
+        "cash": 71.555,
+        "debt": 44.97,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000095017025010484/msft-ex99_1.htm"
+      },
+      "2025Q1": {
+        "fiscalPeriod": "Q3 FY25",
+        "calendarPeriod": "2025Q1",
+        "periodEnd": "2025-03-31",
+        "publicationDate": "2025-04-30",
+        "disclosedDate": "2025-04-30",
+        "accessionNumber": "0000950170-25-061032",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 70.066,
+        "ocf": 37.044,
+        "capex": 16.745,
+        "fcf": 20.299,
+        "cash": 79.618,
+        "debt": 42.881,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000095017025061032/msft-ex99_1.htm"
+      },
+      "2025Q2": {
+        "fiscalPeriod": "Q4 FY25",
+        "calendarPeriod": "2025Q2",
+        "periodEnd": "2025-06-30",
+        "publicationDate": "2025-07-30",
+        "disclosedDate": "2025-07-30",
+        "accessionNumber": "0000950170-25-100226",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 76.441,
+        "ocf": 42.647,
+        "capex": 17.079,
+        "fcf": 25.568,
+        "cash": 94.565,
+        "debt": 43.151,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100226/msft-ex99_1.htm"
+      },
+      "2025Q3": {
+        "fiscalPeriod": "Q1 FY26",
+        "calendarPeriod": "2025Q3",
+        "periodEnd": "2025-09-30",
+        "publicationDate": "2025-10-29",
+        "disclosedDate": "2025-10-29",
+        "accessionNumber": "0001193125-25-256310",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 77.673,
+        "ocf": 45.057,
+        "capex": 19.394,
+        "fcf": 25.663,
+        "cash": 102.012,
+        "debt": 43.208,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000119312525256310/msft-ex99_1.htm"
+      },
+      "2025Q4": {
+        "fiscalPeriod": "Q2 FY26",
+        "calendarPeriod": "2025Q4",
+        "periodEnd": "2025-12-31",
+        "publicationDate": "2026-01-28",
+        "disclosedDate": "2026-01-28",
+        "accessionNumber": "0001193125-26-027198",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 81.273,
+        "ocf": 35.758,
+        "capex": 29.876,
+        "fcf": 5.882,
+        "cash": 89.462,
+        "debt": 40.262,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000119312526027198/msft-ex99_1.htm"
+      },
       "2026Q3": {
         "revenue": 92.3,
         "cash": 60.5,
@@ -1384,6 +1990,96 @@ const INITIAL_ENTITIES = [
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-10-28",
     "financials": {
+      "2024Q4": {
+        "fiscalPeriod": "Q4 2024",
+        "calendarPeriod": "2024Q4",
+        "periodEnd": "2024-12-31",
+        "publicationDate": "2026-02-04",
+        "disclosedDate": "2026-02-04",
+        "accessionNumber": "0001652044-26-000012",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 96.469,
+        "ocf": 39.113,
+        "capex": 14.276,
+        "fcf": 24.837,
+        "cash": 95.657,
+        "debt": 10.883,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000012/googexhibit991q42025.htm"
+      },
+      "2025Q1": {
+        "fiscalPeriod": "Q1 2025",
+        "calendarPeriod": "2025Q1",
+        "periodEnd": "2025-03-31",
+        "publicationDate": "2025-04-24",
+        "disclosedDate": "2025-04-24",
+        "accessionNumber": "0001652044-25-000040",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 90.234,
+        "ocf": 36.15,
+        "capex": 17.197,
+        "fcf": 18.953,
+        "cash": 95.328,
+        "debt": 10.886,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1652044/000165204425000040/googexhibit991q12025.htm"
+      },
+      "2025Q2": {
+        "fiscalPeriod": "Q2 2025",
+        "calendarPeriod": "2025Q2",
+        "periodEnd": "2025-06-30",
+        "publicationDate": "2025-07-23",
+        "disclosedDate": "2025-07-23",
+        "accessionNumber": "0001652044-25-000056",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 96.428,
+        "ocf": 27.747,
+        "capex": 22.446,
+        "fcf": 5.301,
+        "cash": 95.148,
+        "debt": 23.607,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1652044/000165204425000056/googexhibit991q22025.htm"
+      },
+      "2025Q3": {
+        "fiscalPeriod": "Q3 2025",
+        "calendarPeriod": "2025Q3",
+        "periodEnd": "2025-09-30",
+        "publicationDate": "2025-10-29",
+        "disclosedDate": "2025-10-29",
+        "accessionNumber": "0001652044-25-000087",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 102.346,
+        "ocf": 48.414,
+        "capex": 23.953,
+        "fcf": 24.461,
+        "cash": 98.496,
+        "debt": 21.607,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1652044/000165204425000087/googexhibit991q32025.htm"
+      },
+      "2025Q4": {
+        "fiscalPeriod": "Q4 2025",
+        "calendarPeriod": "2025Q4",
+        "periodEnd": "2025-12-31",
+        "publicationDate": "2026-02-04",
+        "disclosedDate": "2026-02-04",
+        "accessionNumber": "0001652044-26-000012",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 113.828,
+        "ocf": 52.402,
+        "capex": 27.851,
+        "fcf": 24.551,
+        "cash": 126.843,
+        "debt": 46.547,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000012/googexhibit991q42025.htm"
+      },
       "2026Q2": {
         "revenue": 118.0,
         "cash": 260.0,
@@ -1474,6 +2170,96 @@ const INITIAL_ENTITIES = [
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-10-29",
     "financials": {
+      "2024Q4": {
+        "fiscalPeriod": "Q4 2024",
+        "calendarPeriod": "2024Q4",
+        "periodEnd": "2024-12-31",
+        "publicationDate": "2026-02-05",
+        "disclosedDate": "2026-02-05",
+        "accessionNumber": "0001018724-26-000002",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 187.792,
+        "ocf": 45.636,
+        "capex": 27.834,
+        "fcf": 17.802,
+        "cash": 101.202,
+        "debt": 52.623,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000002/amzn-20251231xex991.htm"
+      },
+      "2025Q1": {
+        "fiscalPeriod": "Q1 2025",
+        "calendarPeriod": "2025Q1",
+        "periodEnd": "2025-03-31",
+        "publicationDate": "2025-05-01",
+        "disclosedDate": "2025-05-01",
+        "accessionNumber": "0001018724-25-000034",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 155.667,
+        "ocf": 17.015,
+        "capex": 25.019,
+        "fcf": -8.004,
+        "cash": 94.565,
+        "debt": 53.374,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872425000034/amzn-20250331xex991.htm"
+      },
+      "2025Q2": {
+        "fiscalPeriod": "Q2 2025",
+        "calendarPeriod": "2025Q2",
+        "periodEnd": "2025-06-30",
+        "publicationDate": "2025-07-31",
+        "disclosedDate": "2025-07-31",
+        "accessionNumber": "0001018724-25-000084",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 167.702,
+        "ocf": 32.515,
+        "capex": 32.183,
+        "fcf": 0.332,
+        "cash": 93.18,
+        "debt": 50.718,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872425000084/amzn-20250630xex991.htm"
+      },
+      "2025Q3": {
+        "fiscalPeriod": "Q3 2025",
+        "calendarPeriod": "2025Q3",
+        "periodEnd": "2025-09-30",
+        "publicationDate": "2025-10-30",
+        "disclosedDate": "2025-10-30",
+        "accessionNumber": "0001018724-25-000121",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 180.169,
+        "ocf": 35.525,
+        "capex": 35.095,
+        "fcf": 0.43,
+        "cash": 94.197,
+        "debt": 50.742,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872425000121/amzn-20250930xex991.htm"
+      },
+      "2025Q4": {
+        "fiscalPeriod": "Q4 2025",
+        "calendarPeriod": "2025Q4",
+        "periodEnd": "2025-12-31",
+        "publicationDate": "2026-02-05",
+        "disclosedDate": "2026-02-05",
+        "accessionNumber": "0001018724-26-000002",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 213.386,
+        "ocf": 54.459,
+        "capex": 39.522,
+        "fcf": 14.937,
+        "cash": 123.029,
+        "debt": 65.648,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000002/amzn-20251231xex991.htm"
+      },
       "2026Q3": {
         "revenue": 201.9,
         "cash": 114.2,
@@ -1538,6 +2324,96 @@ const INITIAL_ENTITIES = [
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-09-10",
     "financials": {
+      "2024Q4": {
+        "fiscalPeriod": "Q2 FY25",
+        "calendarPeriod": "2024Q4",
+        "periodEnd": "2024-11-30",
+        "publicationDate": "2024-12-09",
+        "disclosedDate": "2024-12-09",
+        "accessionNumber": "0000950170-24-134537",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 14.059,
+        "ocf": 1.304,
+        "capex": 3.97,
+        "fcf": -2.666,
+        "cash": 11.311,
+        "debt": 88.624,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000095017024134537/orcl-ex99_1.htm"
+      },
+      "2025Q1": {
+        "fiscalPeriod": "Q3 FY25",
+        "calendarPeriod": "2025Q1",
+        "periodEnd": "2025-02-28",
+        "publicationDate": "2025-03-10",
+        "disclosedDate": "2025-03-10",
+        "accessionNumber": "0000950170-25-036295",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 14.13,
+        "ocf": 5.933,
+        "capex": 5.862,
+        "fcf": 0.071,
+        "cash": 17.823,
+        "debt": 96.276,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000095017025036295/orcl-ex99_1.htm"
+      },
+      "2025Q2": {
+        "fiscalPeriod": "Q4 FY25",
+        "calendarPeriod": "2025Q2",
+        "periodEnd": "2025-05-31",
+        "publicationDate": "2025-06-11",
+        "disclosedDate": "2025-06-11",
+        "accessionNumber": "0000950170-25-084831",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 15.903,
+        "ocf": 6.157,
+        "capex": 9.08,
+        "fcf": -2.923,
+        "cash": 11.203,
+        "debt": 92.568,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000095017025084831/orcl-ex99_1.htm"
+      },
+      "2025Q3": {
+        "fiscalPeriod": "Q1 FY26",
+        "calendarPeriod": "2025Q3",
+        "periodEnd": "2025-08-31",
+        "publicationDate": "2025-09-09",
+        "disclosedDate": "2025-09-09",
+        "accessionNumber": "0001193125-25-199175",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 14.926,
+        "ocf": 8.14,
+        "capex": 8.502,
+        "fcf": -0.362,
+        "cash": 11.005,
+        "debt": 91.315,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000119312525199175/orcl-ex99_1.htm"
+      },
+      "2025Q4": {
+        "fiscalPeriod": "Q2 FY26",
+        "calendarPeriod": "2025Q4",
+        "periodEnd": "2025-11-30",
+        "publicationDate": "2025-12-10",
+        "disclosedDate": "2025-12-10",
+        "accessionNumber": "0001193125-25-314207",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 16.058,
+        "ocf": 2.066,
+        "capex": 12.033,
+        "fcf": -9.967,
+        "cash": 19.766,
+        "debt": 108.075,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000119312525314207/orcl-ex99_1.htm"
+      },
       "2026Q3": {
         "revenue": 17.16,
         "cash": 36.37,
@@ -1603,6 +2479,96 @@ const INITIAL_ENTITIES = [
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-10-21",
     "financials": {
+      "2024Q4": {
+        "fiscalPeriod": "Q4 2024",
+        "calendarPeriod": "2024Q4",
+        "periodEnd": "2024-12-31",
+        "publicationDate": "2026-01-28",
+        "disclosedDate": "2026-01-28",
+        "accessionNumber": "0001628280-26-003832",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 48.385,
+        "ocf": 27.988,
+        "capex": 14.425,
+        "fcf": 13.563,
+        "cash": 77.815,
+        "debt": 28.826,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003832/meta-12312025xexhibit991.htm"
+      },
+      "2025Q1": {
+        "fiscalPeriod": "Q1 2025",
+        "calendarPeriod": "2025Q1",
+        "periodEnd": "2025-03-31",
+        "publicationDate": "2025-04-30",
+        "disclosedDate": "2025-04-30",
+        "accessionNumber": "0001326801-25-000050",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 42.314,
+        "ocf": 24.026,
+        "capex": 12.941,
+        "fcf": 11.085,
+        "cash": 70.23,
+        "debt": 28.829,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000132680125000050/meta-03312025xexhibit991.htm"
+      },
+      "2025Q2": {
+        "fiscalPeriod": "Q2 2025",
+        "calendarPeriod": "2025Q2",
+        "periodEnd": "2025-06-30",
+        "publicationDate": "2025-07-30",
+        "disclosedDate": "2025-07-30",
+        "accessionNumber": "0001628280-25-036719",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 47.516,
+        "ocf": 25.561,
+        "capex": 16.538,
+        "fcf": 9.023,
+        "cash": 47.071,
+        "debt": 28.832,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000162828025036719/meta-06302025xexhibit991.htm"
+      },
+      "2025Q3": {
+        "fiscalPeriod": "Q3 2025",
+        "calendarPeriod": "2025Q3",
+        "periodEnd": "2025-09-30",
+        "publicationDate": "2025-10-29",
+        "disclosedDate": "2025-10-29",
+        "accessionNumber": "0001628280-25-047114",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 51.242,
+        "ocf": 29.999,
+        "capex": 18.829,
+        "fcf": 11.17,
+        "cash": 44.448,
+        "debt": 28.834,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000162828025047114/meta-09302025xexhibit991.htm"
+      },
+      "2025Q4": {
+        "fiscalPeriod": "Q4 2025",
+        "calendarPeriod": "2025Q4",
+        "periodEnd": "2025-12-31",
+        "publicationDate": "2026-01-28",
+        "disclosedDate": "2026-01-28",
+        "accessionNumber": "0001628280-26-003832",
+        "currency": "USD",
+        "unit": "Billions",
+        "revenue": 59.893,
+        "ocf": 36.214,
+        "capex": 21.383,
+        "fcf": 14.831,
+        "cash": 81.592,
+        "debt": 58.744,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026003832/meta-12312025xexhibit991.htm"
+      },
       "2026Q3": {
         "revenue": 64.6,
         "cash": 45.0,
@@ -1881,33 +2847,40 @@ const INITIAL_ENTITIES = [
       "2026Q3": {
         "revenue": 3.66,
         "cash": 4.2,
-        "debt": 46.9,
+        "debt": 46.873,
         "ocf": 1.1,
         "capex": 5.8,
         "fcf": -4.7,
         "ar": null,
         "rpo": 132.5,
-        "leaseLiab": 18.7,
+        "leaseLiab": 18.697,
         "interestExp": 0.846,
         "undrawnCredit": 3.5,
         "dataType": "Actual",
         "disclosedDate": "2026-11-10",
-        "shortTermDebt": null,
-        "longTermDebt": null,
+        "shortTermDebt": 10.572,
+        "longTermDebt": 36.301,
         "restrictedCash": 2.28,
         "debtMaturity": "2027-2032 (DDTLs + Senior Notes)",
-        "note": "Includes $41.63B recourse + $5.27B non-recourse debt (consolidates SPV_CRWV8)",
+        "note": "Exact Q3 2026 10-Q carrying debt $46.873B = $41.600B recourse + $5.273B non-recourse (short-term $10.572B + long-term $36.301B); consolidates SPV_CRWV8.",
         "fiscalPeriod": "2026Q3",
         "calendarPeriod": "2026Q3",
         "periodStart": "2026-07-01",
         "periodEnd": "2026-09-30",
-        "accountsPayable": null,
+        "accountsPayable": 2.928,
         "offBalanceGuarantees": 0.0,
         "revenueGrowth": null,
-        "nonRecourseDebt": 5.27,
-        "recourseDebt": 41.63,
+        "nonRecourseDebt": 5.273,
+        "recourseDebt": 41.6,
         "ap": 2.928,
-        "customerConcentration": "Microsoft 67% (FY25)"
+        "customerConcentration": "Microsoft 67% (FY25)",
+        "shortTermRecourseDebt": 9.183,
+        "shortTermNonRecourseDebt": 1.389,
+        "longTermRecourseDebt": 32.417,
+        "longTermNonRecourseDebt": 3.884,
+        "financeLeaseLiab": 0.649,
+        "accessionNumber": "0001769628-26-000465",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm"
       }
     },
     "defaults": {
@@ -3346,7 +4319,9 @@ const INITIAL_ENTITIES = [
     "hardwareSupplyShare": 0.0,
     "isHardwareSupplier": false,
     "isCloudOrNeocloud": false,
-    "lossAbsorbingInvestor": false
+    "lossAbsorbingInvestor": false,
+    "parentEntity": "META",
+    "isConsolidatedSubsidiary": false
   },
   {
     "id": "SPV_JUPITER",
@@ -3410,7 +4385,9 @@ const INITIAL_ENTITIES = [
     "hardwareSupplyShare": 0.0,
     "isHardwareSupplier": false,
     "isCloudOrNeocloud": false,
-    "lossAbsorbingInvestor": false
+    "lossAbsorbingInvestor": false,
+    "parentEntity": "ORCL",
+    "isConsolidatedSubsidiary": false
   },
   {
     "id": "SPV_ABILENE",
@@ -3474,7 +4451,9 @@ const INITIAL_ENTITIES = [
     "hardwareSupplyShare": 0.0,
     "isHardwareSupplier": false,
     "isCloudOrNeocloud": false,
-    "lossAbsorbingInvestor": false
+    "lossAbsorbingInvestor": false,
+    "parentEntity": "ORCL",
+    "isConsolidatedSubsidiary": false
   },
   {
     "id": "SPV_CRWV8",
@@ -3495,7 +4474,7 @@ const INITIAL_ENTITIES = [
       "2026Q3": {
         "revenue": 0.55,
         "cash": 0.7,
-        "debt": 8.5,
+        "debt": 6.0,
         "ocf": 0.45,
         "capex": 0.3,
         "fcf": 0.15,
@@ -3503,7 +4482,7 @@ const INITIAL_ENTITIES = [
         "rpo": 8.5,
         "leaseLiab": null,
         "interestExp": 0.13,
-        "undrawnCredit": 1.0,
+        "undrawnCredit": 2.5,
         "dataType": "Estimated",
         "disclosedDate": "2026-03-31",
         "fiscalPeriod": "2026Q3",
@@ -3511,12 +4490,16 @@ const INITIAL_ENTITIES = [
         "periodStart": "2026-07-01",
         "periodEnd": "2026-09-30",
         "restrictedCash": null,
-        "shortTermDebt": null,
-        "longTermDebt": 8.5,
+        "shortTermDebt": 0.0,
+        "longTermDebt": 6.0,
         "debtMaturity": null,
         "accountsPayable": null,
         "offBalanceGuarantees": 0.0,
-        "revenueGrowth": null
+        "revenueGrowth": null,
+        "facilityCommitment": 8.5,
+        "fundedDebt": 6.0,
+        "sourceUrl": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Closes-Landmark-8-5-Billion-Financing-Facility-Achieving-First-Investment-Grade-Rated-GPU-backed-Financing/default.aspx",
+        "note": "DDTL 4.0 $8.5B facility ($6.0B funded, $2.5B undrawn); consolidated in CRWV non-recourse debt ($5.273B carrying net of issuance costs / draw timing)."
       }
     },
     "defaults": {
@@ -3540,7 +4523,10 @@ const INITIAL_ENTITIES = [
     "isHardwareSupplier": false,
     "isCloudOrNeocloud": false,
     "lossAbsorbingInvestor": false,
-    "consolidatedIntoParent": "CRWV"
+    "consolidatedIntoParent": "CRWV",
+    "parentEntity": "CRWV",
+    "isConsolidatedSubsidiary": true,
+    "consolidationNote": "Bankruptcy-remote consolidated subsidiary of CoreWeave (CRWV); debt is consolidated inside CRWV Non-Recourse Debt ($5.273B carrying value as of Sep 30, 2026). Excluded from system-wide debt sum to prevent double-counting."
   },
   {
     "id": "SPV_XPV",
@@ -3604,7 +4590,9 @@ const INITIAL_ENTITIES = [
     "hardwareSupplyShare": 0.0,
     "isHardwareSupplier": false,
     "isCloudOrNeocloud": false,
-    "lossAbsorbingInvestor": false
+    "lossAbsorbingInvestor": false,
+    "parentEntity": "AVGO",
+    "isConsolidatedSubsidiary": false
   },
   {
     "id": "SPV_VALOR",
@@ -3668,7 +4656,9 @@ const INITIAL_ENTITIES = [
     "hardwareSupplyShare": 0.0,
     "isHardwareSupplier": false,
     "isCloudOrNeocloud": false,
-    "lossAbsorbingInvestor": false
+    "lossAbsorbingInvestor": false,
+    "parentEntity": "SPCX_XAI",
+    "isConsolidatedSubsidiary": false
   },
   {
     "id": "BX_FUNDS",
@@ -4105,7 +5095,9 @@ const INITIAL_ENTITIES = [
     "hardwareSupplyShare": 0.0,
     "isHardwareSupplier": false,
     "isCloudOrNeocloud": false,
-    "lossAbsorbingInvestor": false
+    "lossAbsorbingInvestor": false,
+    "parentEntity": "META",
+    "isConsolidatedSubsidiary": false
   },
   {
     "id": "VERTIV",
@@ -4122,7 +5114,27 @@ const INITIAL_ENTITIES = [
     "dataType": "Unavailable",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-06-19",
-    "financials": {},
+    "financials": {
+      "2026Q3": {
+        "fiscalPeriod": "Q3 2026",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "disclosedDate": "2026-10-28",
+        "publicationDate": "2026-10-28",
+        "accessionNumber": "0001628280-26-067707",
+        "revenue": 4.313,
+        "cash": 3.513,
+        "debt": 2.929,
+        "ocf": 0.72,
+        "capex": 0.11,
+        "fcf": 0.61,
+        "interestExp": 0.042,
+        "undrawnCredit": 0.8,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1674101/000162828026067707/q32026exhibit991vrt10282026.htm"
+      }
+    },
     "defaults": {
       "mode": "B",
       "revGrowth": 0.06,
@@ -4155,7 +5167,28 @@ const INITIAL_ENTITIES = [
     "dataType": "Unavailable",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-01-09",
-    "financials": {},
+    "financials": {
+      "2026Q3": {
+        "fiscalPeriod": "Q3 2026",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "disclosedDate": "2026-11-09",
+        "publicationDate": "2026-11-09",
+        "accessionNumber": "0001868275-26-000116",
+        "revenue": 9.55,
+        "cash": 0.603,
+        "restrictedCash": 0.406,
+        "debt": 23.387,
+        "ocf": 1.65,
+        "capex": 0.85,
+        "fcf": 0.8,
+        "interestExp": 0.285,
+        "undrawnCredit": 3.5,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1868275/000186827526000116/ceg-20261109991.htm"
+      }
+    },
     "defaults": {
       "mode": "B",
       "revGrowth": 0.04,
@@ -4221,7 +5254,28 @@ const INITIAL_ENTITIES = [
     "dataType": "Unavailable",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2025-07-07",
-    "financials": {},
+    "financials": {
+      "2026Q3": {
+        "fiscalPeriod": "Q3 2026",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "disclosedDate": "2026-11-04",
+        "publicationDate": "2026-11-04",
+        "accessionNumber": "0001839341-26-000028",
+        "revenue": 0.233,
+        "cash": 0.804,
+        "restrictedCash": 0.838,
+        "debt": 4.302,
+        "ocf": 0.045,
+        "capex": 0.29,
+        "fcf": -0.245,
+        "interestExp": 0.068,
+        "undrawnCredit": 0.0,
+        "dataType": "Actual",
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1839341/000183934126000028/q32026corescientificinc-ea.htm"
+      }
+    },
     "defaults": {
       "mode": "B",
       "revGrowth": 0.05,
@@ -4299,7 +5353,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX03",
@@ -4331,7 +5386,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX07",
@@ -4427,7 +5483,7 @@ const INITIAL_TRANSACTIONS = [
     "startQ": "2028Q1",
     "endQ": "2035Q4",
     "totalCommitment": 105.0,
-    "amountDrawn": 0.0,
+    "amountDrawn": 0,
     "amountRepaid": 0.0,
     "remainingCommitment": 105.0,
     "interestRate": null,
@@ -4443,7 +5499,20 @@ const INITIAL_TRANSACTIONS = [
     "sourceUrl": "https://www.stocktitan.net/sec-filings/NVDA/8-k-nvidia-corp-reports-material-event-1b8846aa7232.html",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "guaranteeSchedule": {
+      "basis": "NVIDIA Q3 FY27 8-K: Up to $105.0B credit support guarantee for SB Energy Corp. / OpenAI Ohio 4.25 GW campus; $0 paid; takes effect phase-by-phase starting FY29 (2028Q1) and amortizes with rent over lease term.",
+      "activationQuarter": "2028Q1",
+      "peakQuarter": "2028Q4",
+      "endQuarter": "2035Q4",
+      "phases": {
+        "2028Q1": 25.0,
+        "2028Q2": 50.0,
+        "2028Q3": 75.0,
+        "2028Q4": 105.0
+      },
+      "amortizationMethod": "linear_to_zero_by_endQ"
+    }
   },
   {
     "id": "TX13",
@@ -4475,7 +5544,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX15",
@@ -4507,7 +5577,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX16",
@@ -4623,7 +5694,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX21",
@@ -4711,7 +5783,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX24",
@@ -4740,7 +5813,12 @@ const INITIAL_TRANSACTIONS = [
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000461/coreweave3q26earningspress.htm",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX25",
@@ -4772,7 +5850,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX26",
@@ -4800,7 +5879,10 @@ const INITIAL_TRANSACTIONS = [
     "sourceUrl": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Closes-Landmark-8-5-Billion-Financing-Facility-Achieving-First-Investment-Grade-Rated-GPU-backed-Financing/default.aspx",
     "currency": "USD",
     "isFloatingRate": true,
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.25,
+    "consolidatedInParent": "CRWV",
+    "reconciliationNote": "DDTL 4.0 $8.5B facility ($6.0B funded + $2.5B undrawn) at SPV_CRWV8, consolidated inside CRWV Non-Recourse Debt ($5.273B carrying value)."
   },
   {
     "id": "TX27",
@@ -4860,7 +5942,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX29",
@@ -4892,7 +5975,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX30",
@@ -4980,7 +6064,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX33",
@@ -5210,7 +6295,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX43",
@@ -5239,7 +6325,8 @@ const INITIAL_TRANSACTIONS = [
     "sourceUrl": "https://mlq.ai/news/spacex-commits-to-40-billion-apollo-gpu-lease-with-deliveries-planned-for-early-2027/",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.25
   },
   {
     "id": "TX44",
@@ -5411,7 +6498,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX51",
@@ -5495,7 +6583,12 @@ const INITIAL_TRANSACTIONS = [
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2488/000119312525230895/d28189dex991.htm",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.55,
+    "switchingTimeWeeks": 14,
+    "replacementCostPremium": 0.18,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX54",
@@ -5523,7 +6616,12 @@ const INITIAL_TRANSACTIONS = [
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000045/amd-20260223.htm",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.55,
+    "switchingTimeWeeks": 14,
+    "replacementCostPremium": 0.18,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX55",
@@ -5551,7 +6649,12 @@ const INITIAL_TRANSACTIONS = [
     "sourceUrl": "https://investors.broadcom.com/news-releases/news-release-details/openai-and-broadcom-announce-strategic-collaboration-deploy-10",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.55,
+    "switchingTimeWeeks": 14,
+    "replacementCostPremium": 0.18,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX56",
@@ -5638,7 +6741,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX04B",
@@ -5669,7 +6773,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX05A",
@@ -5700,7 +6805,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX05B",
@@ -5731,7 +6837,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX05C",
@@ -5762,7 +6869,8 @@ const INITIAL_TRANSACTIONS = [
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX06A",
@@ -5790,7 +6898,8 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "OpenAI Credit Facility (Oct 2024 / Mar 2026)",
     "sourceUrl": "https://openai.com/index/accelerating-the-next-phase-ai/",
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.4
   },
   {
     "id": "TX06B",
@@ -5818,7 +6927,8 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "OpenAI Credit Facility (Oct 2024 / Mar 2026)",
     "sourceUrl": "https://openai.com/index/accelerating-the-next-phase-ai/",
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.4
   },
   {
     "id": "TX10",
@@ -6035,7 +7145,8 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "Anthropic RCF (May 2025 / Sep 2026)",
     "sourceUrl": "https://www.pymnts.com/news/artificial-intelligence/2026/anthropic-expands-credit-facility-to-15-billion-ahead-of-mega-ipo/",
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.4
   },
   {
     "id": "TX17B",
@@ -6063,7 +7174,8 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "Anthropic $15B RCF Expansion (Sep 4, 2026)",
     "sourceUrl": "https://www.pymnts.com/news/artificial-intelligence/2026/anthropic-expands-credit-facility-to-15-billion-ahead-of-mega-ipo/",
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.4
   },
   {
     "id": "TX35A",
@@ -6285,7 +7397,12 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "MSFT FY27 Q1 CapEx & NVDA Q2 FY27 10-Q Concentration",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX59",
@@ -6313,7 +7430,12 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "AMZN Q3 2026 8-K & NVDA Q2 FY27 10-Q",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000038/amzn-20260930xex991.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX60",
@@ -6341,7 +7463,12 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "Alphabet Q3 2026 10-Q & NVDA Q2 FY27 10-Q",
     "sourceUrl": "https://s206.q4cdn.com/479360582/files/doc_financials/2026/q3/GOOG-10-Q-Q3-2026.pdf",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX61",
@@ -6369,7 +7496,12 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "Meta Q3 2026 8-K & NVDA Q2 FY27 10-Q",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026066700/meta-09302026xexhibit991.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX62",
@@ -6397,7 +7529,12 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "Oracle Q1 FY27 10-Q & Stargate Disclosures",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX63",
@@ -6425,7 +7562,12 @@ const INITIAL_TRANSACTIONS = [
     "currency": "USD",
     "sourceDoc": "Broadcom Q3 FY26 10-Q & Alphabet Q3 2026 10-Q",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.55,
+    "switchingTimeWeeks": 14,
+    "replacementCostPremium": 0.18,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX64",
@@ -6454,7 +7596,10 @@ const INITIAL_TRANSACTIONS = [
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Vertiv / CoreWeave / Dell GB300 NVL72 Deployment PR",
-    "sourceUrl": "https://www.vertiv.com/en-in/insights/articles/blog-posts/how-vertiv-and-coreweave-are-orchestrating-ai-innovation/"
+    "sourceUrl": "https://www.vertiv.com/en-in/insights/articles/blog-posts/how-vertiv-and-coreweave-are-orchestrating-ai-innovation/",
+    "operationalCategory": "GPU / Server Supply",
+    "operationalExposureShare": 0.08,
+    "disruptionMode": "PARTIAL"
   },
   {
     "id": "TX65",
@@ -6483,7 +7628,10 @@ const INITIAL_TRANSACTIONS = [
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Vertiv & CoreWeave GB300 NVL72 Liquid Cooling PR (Jun 19, 2026)",
-    "sourceUrl": "https://www.vertiv.com/en-in/insights/articles/blog-posts/how-vertiv-and-coreweave-are-orchestrating-ai-innovation/"
+    "sourceUrl": "https://www.vertiv.com/en-in/insights/articles/blog-posts/how-vertiv-and-coreweave-are-orchestrating-ai-innovation/",
+    "operationalCategory": "Cooling / Electrical Infrastructure",
+    "operationalExposureShare": 0.06,
+    "disruptionMode": "PARTIAL"
   },
   {
     "id": "TX66",
@@ -6512,7 +7660,11 @@ const INITIAL_TRANSACTIONS = [
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "CoreWeave IR: Core Scientific Hosting & Acquisition (Jul 7, 2025)",
-    "sourceUrl": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-to-Acquire-Core-Scientific/default.aspx"
+    "sourceUrl": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-to-Acquire-Core-Scientific/default.aspx",
+    "operationalCategory": "Data Center Lease",
+    "operationalExposureShare": 0.1,
+    "capacityMW": 590,
+    "disruptionMode": "FULL"
   },
   {
     "id": "TX67",
@@ -6541,7 +7693,11 @@ const INITIAL_TRANSACTIONS = [
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Constellation Energy Crane Clean Energy Center 20-Yr PPA PR (Sep 20, 2024)",
-    "sourceUrl": "https://www.constellationenergy.com/news/2024/Constellation-to-Launch-Crane-Clean-Energy-Center-Restoring-Jobs-and-Carbon-Free-Power-to-The-Grid.html"
+    "sourceUrl": "https://www.constellationenergy.com/news/2024/Constellation-to-Launch-Crane-Clean-Energy-Center-Restoring-Jobs-and-Carbon-Free-Power-to-The-Grid.html",
+    "operationalCategory": "Power Purchase Agreement",
+    "operationalExposureShare": 0.015,
+    "capacityMW": 835,
+    "disruptionMode": "PARTIAL"
   },
   {
     "id": "TX68",
@@ -6570,7 +7726,11 @@ const INITIAL_TRANSACTIONS = [
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Meta Nuclear Energy Projects PR (Jan 9, 2026)",
-    "sourceUrl": "https://about.fb.com/news/2026/01/meta-nuclear-energy-projects-power-american-ai-leadership/"
+    "sourceUrl": "https://about.fb.com/news/2026/01/meta-nuclear-energy-projects-power-american-ai-leadership/",
+    "operationalCategory": "Power Purchase Agreement",
+    "operationalExposureShare": 0.02,
+    "capacityMW": 1121,
+    "disruptionMode": "PARTIAL"
   },
   {
     "id": "TX69",
@@ -6599,11 +7759,15 @@ const INITIAL_TRANSACTIONS = [
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Meta 6.6 GW Nuclear Energy Projects PR (Jan 9, 2026)",
-    "sourceUrl": "https://about.fb.com/news/2026/01/meta-nuclear-energy-projects-power-american-ai-leadership/"
+    "sourceUrl": "https://about.fb.com/news/2026/01/meta-nuclear-energy-projects-power-american-ai-leadership/",
+    "operationalCategory": "Power Purchase Agreement",
+    "operationalExposureShare": 0.03,
+    "capacityMW": 2609,
+    "disruptionMode": "PARTIAL"
   }
 ];
 const INITIAL_SCHEMA = {
-  "version": "v3.0-audit2-remediated-2026-11-25",
+  "version": "v3.0-audit3-remediated-2026-11-25",
   "retrievedAt": "2026-11-25",
   "currency": "USD",
   "unit": "Billions",
@@ -6657,7 +7821,8 @@ const INITIAL_SCHEMA = {
     "P0-3: Fixed 2026Q4 OCF double-deduction cliff, RCF auto-draw accounting, ocean.interestRate wiring, removed SPV_JUPITER +14 hardcode & -35% revGrowth floor.",
     "P0-4: Corrected CRWV debt ($46.9B) & interest ($0.846B), META capex ($34.9B)/OCF ($32.8B)/RVG separation ($41.5B), Anthropic Q3 OCF ($2.64B) & Q4 IPO ($107.3B).",
     "P1: Split multi-year bundled TXs (TX04/TX05/TX12/TX14), split syndicates (TX06/TX17/TX35), moved TX10 to EXTERNAL_EQUITY_POOL, split Meta Sopaipilla SPV (TX40A-D), fixed TX48 Asset Acquisition.",
-    "Audit 2.0 (v3.0): True one-time LGD/guarantee deduplication (defaultedTxIds), Layer 3 operational contagion (supplier->customer switching & disruption), decaying nextQGrowthPenalty, A1/A3/AR deduplication, 100% maturity wall w/ refi rollover, CRWV nonRecourseDebt/AP & ORCL $288B leases + exact periodEnd, 0 false Base Case L3 defaults, verified power/OEM/DC intermediaries (VERTIV/CEG/VST/CORZ)."
+    "Audit 2.0 (v3.0): True one-time LGD/guarantee deduplication (defaultedTxIds), Layer 3 operational contagion (supplier->customer switching & disruption), decaying nextQGrowthPenalty, A1/A3/AR deduplication, 100% maturity wall w/ refi rollover, CRWV nonRecourseDebt/AP & ORCL $288B leases + exact periodEnd, 0 false Base Case L3 defaults, verified power/OEM/DC intermediaries (VERTIV/CEG/VST/CORZ).",
+    "Audit 3.0 (v3.0): Fixed PIT fallback lookahead & chronological sorting (P0-1); separated announcedDate/startQ/endQ active vs future commitments (P0-2); rebuilt Funded/Undrawn/Guarantee EAD & CCF with strict 0 vs null distinction (P0-3); expanded Layer 3 Operational Contagion to 7 categories incl. DELL/VERTIV/CEG/VST/CORZ (P0-4); added dynamic phased Guarantee Exposure Schedule for TX11 FY29+ (P0-5); reconciled CRWV/SPV_CRWV8/TX26 debt with consolidation elimination (P0-6); fixed partial-override Insufficient Data guard (P1-1); added minimal verifiable L4 Secondary Contagion (P1-2); removed forced-zero-default regression test (P1-3); added 33 verified SEC quarterly actuals & full 50-entity coverage matrix (P1-4)."
   ]
 };
 const DEFAULT_LANG = "zh";

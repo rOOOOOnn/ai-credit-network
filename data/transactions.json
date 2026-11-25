@@ -57,7 +57,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX03",
@@ -89,7 +90,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX07",
@@ -185,7 +187,7 @@
     "startQ": "2028Q1",
     "endQ": "2035Q4",
     "totalCommitment": 105.0,
-    "amountDrawn": 0.0,
+    "amountDrawn": 0,
     "amountRepaid": 0.0,
     "remainingCommitment": 105.0,
     "interestRate": null,
@@ -201,7 +203,20 @@
     "sourceUrl": "https://www.stocktitan.net/sec-filings/NVDA/8-k-nvidia-corp-reports-material-event-1b8846aa7232.html",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "guaranteeSchedule": {
+      "basis": "NVIDIA Q3 FY27 8-K: Up to $105.0B credit support guarantee for SB Energy Corp. / OpenAI Ohio 4.25 GW campus; $0 paid; takes effect phase-by-phase starting FY29 (2028Q1) and amortizes with rent over lease term.",
+      "activationQuarter": "2028Q1",
+      "peakQuarter": "2028Q4",
+      "endQuarter": "2035Q4",
+      "phases": {
+        "2028Q1": 25.0,
+        "2028Q2": 50.0,
+        "2028Q3": 75.0,
+        "2028Q4": 105.0
+      },
+      "amortizationMethod": "linear_to_zero_by_endQ"
+    }
   },
   {
     "id": "TX13",
@@ -233,7 +248,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX15",
@@ -265,7 +281,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX16",
@@ -381,7 +398,8 @@
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX21",
@@ -469,7 +487,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX24",
@@ -498,7 +517,12 @@
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000461/coreweave3q26earningspress.htm",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX25",
@@ -530,7 +554,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX26",
@@ -558,7 +583,10 @@
     "sourceUrl": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Closes-Landmark-8-5-Billion-Financing-Facility-Achieving-First-Investment-Grade-Rated-GPU-backed-Financing/default.aspx",
     "currency": "USD",
     "isFloatingRate": true,
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.25,
+    "consolidatedInParent": "CRWV",
+    "reconciliationNote": "DDTL 4.0 $8.5B facility ($6.0B funded + $2.5B undrawn) at SPV_CRWV8, consolidated inside CRWV Non-Recourse Debt ($5.273B carrying value)."
   },
   {
     "id": "TX27",
@@ -618,7 +646,8 @@
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX29",
@@ -650,7 +679,8 @@
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX30",
@@ -738,7 +768,8 @@
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX33",
@@ -968,7 +999,8 @@
     "networkLayer": "Operational",
     "substitutionAvailability": 0.3,
     "switchingTimeWeeks": 26,
-    "replacementCostPremium": 0.35
+    "replacementCostPremium": 0.35,
+    "operationalCategory": "Data Center Lease"
   },
   {
     "id": "TX43",
@@ -997,7 +1029,8 @@
     "sourceUrl": "https://mlq.ai/news/spacex-commits-to-40-billion-apollo-gpu-lease-with-deliveries-planned-for-early-2027/",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.25
   },
   {
     "id": "TX44",
@@ -1169,7 +1202,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX51",
@@ -1253,7 +1287,12 @@
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2488/000119312525230895/d28189dex991.htm",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.55,
+    "switchingTimeWeeks": 14,
+    "replacementCostPremium": 0.18,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX54",
@@ -1281,7 +1320,12 @@
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000045/amd-20260223.htm",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.55,
+    "switchingTimeWeeks": 14,
+    "replacementCostPremium": 0.18,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX55",
@@ -1309,7 +1353,12 @@
     "sourceUrl": "https://investors.broadcom.com/news-releases/news-release-details/openai-and-broadcom-announce-strategic-collaboration-deploy-10",
     "currency": "USD",
     "isFloatingRate": false,
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.55,
+    "switchingTimeWeeks": 14,
+    "replacementCostPremium": 0.18,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX56",
@@ -1396,7 +1445,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX04B",
@@ -1427,7 +1477,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.65,
     "switchingTimeWeeks": 12,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Cloud Computing"
   },
   {
     "id": "TX05A",
@@ -1458,7 +1509,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX05B",
@@ -1489,7 +1541,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX05C",
@@ -1520,7 +1573,8 @@
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
-    "replacementCostPremium": 0.3
+    "replacementCostPremium": 0.3,
+    "operationalCategory": "Take-or-Pay"
   },
   {
     "id": "TX06A",
@@ -1548,7 +1602,8 @@
     "currency": "USD",
     "sourceDoc": "OpenAI Credit Facility (Oct 2024 / Mar 2026)",
     "sourceUrl": "https://openai.com/index/accelerating-the-next-phase-ai/",
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.4
   },
   {
     "id": "TX06B",
@@ -1576,7 +1631,8 @@
     "currency": "USD",
     "sourceDoc": "OpenAI Credit Facility (Oct 2024 / Mar 2026)",
     "sourceUrl": "https://openai.com/index/accelerating-the-next-phase-ai/",
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.4
   },
   {
     "id": "TX10",
@@ -1793,7 +1849,8 @@
     "currency": "USD",
     "sourceDoc": "Anthropic RCF (May 2025 / Sep 2026)",
     "sourceUrl": "https://www.pymnts.com/news/artificial-intelligence/2026/anthropic-expands-credit-facility-to-15-billion-ahead-of-mega-ipo/",
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.4
   },
   {
     "id": "TX17B",
@@ -1821,7 +1878,8 @@
     "currency": "USD",
     "sourceDoc": "Anthropic $15B RCF Expansion (Sep 4, 2026)",
     "sourceUrl": "https://www.pymnts.com/news/artificial-intelligence/2026/anthropic-expands-credit-facility-to-15-billion-ahead-of-mega-ipo/",
-    "networkLayer": "Financial"
+    "networkLayer": "Financial",
+    "ccf": 0.4
   },
   {
     "id": "TX35A",
@@ -2043,7 +2101,12 @@
     "currency": "USD",
     "sourceDoc": "MSFT FY27 Q1 CapEx & NVDA Q2 FY27 10-Q Concentration",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX59",
@@ -2071,7 +2134,12 @@
     "currency": "USD",
     "sourceDoc": "AMZN Q3 2026 8-K & NVDA Q2 FY27 10-Q",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000038/amzn-20260930xex991.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX60",
@@ -2099,7 +2167,12 @@
     "currency": "USD",
     "sourceDoc": "Alphabet Q3 2026 10-Q & NVDA Q2 FY27 10-Q",
     "sourceUrl": "https://s206.q4cdn.com/479360582/files/doc_financials/2026/q3/GOOG-10-Q-Q3-2026.pdf",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX61",
@@ -2127,7 +2200,12 @@
     "currency": "USD",
     "sourceDoc": "Meta Q3 2026 8-K & NVDA Q2 FY27 10-Q",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026066700/meta-09302026xexhibit991.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX62",
@@ -2155,7 +2233,12 @@
     "currency": "USD",
     "sourceDoc": "Oracle Q1 FY27 10-Q & Stargate Disclosures",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.3,
+    "switchingTimeWeeks": 26,
+    "replacementCostPremium": 0.3,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX63",
@@ -2183,7 +2266,12 @@
     "currency": "USD",
     "sourceDoc": "Broadcom Q3 FY26 10-Q & Alphabet Q3 2026 10-Q",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm",
-    "networkLayer": "Commercial"
+    "networkLayer": "Commercial",
+    "operationalCategory": "GPU / Server Supply",
+    "substitutionAvailability": 0.55,
+    "switchingTimeWeeks": 14,
+    "replacementCostPremium": 0.18,
+    "operationalExposureShare": 0.08
   },
   {
     "id": "TX64",
@@ -2212,7 +2300,10 @@
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Vertiv / CoreWeave / Dell GB300 NVL72 Deployment PR",
-    "sourceUrl": "https://www.vertiv.com/en-in/insights/articles/blog-posts/how-vertiv-and-coreweave-are-orchestrating-ai-innovation/"
+    "sourceUrl": "https://www.vertiv.com/en-in/insights/articles/blog-posts/how-vertiv-and-coreweave-are-orchestrating-ai-innovation/",
+    "operationalCategory": "GPU / Server Supply",
+    "operationalExposureShare": 0.08,
+    "disruptionMode": "PARTIAL"
   },
   {
     "id": "TX65",
@@ -2241,7 +2332,10 @@
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Vertiv & CoreWeave GB300 NVL72 Liquid Cooling PR (Jun 19, 2026)",
-    "sourceUrl": "https://www.vertiv.com/en-in/insights/articles/blog-posts/how-vertiv-and-coreweave-are-orchestrating-ai-innovation/"
+    "sourceUrl": "https://www.vertiv.com/en-in/insights/articles/blog-posts/how-vertiv-and-coreweave-are-orchestrating-ai-innovation/",
+    "operationalCategory": "Cooling / Electrical Infrastructure",
+    "operationalExposureShare": 0.06,
+    "disruptionMode": "PARTIAL"
   },
   {
     "id": "TX66",
@@ -2270,7 +2364,11 @@
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "CoreWeave IR: Core Scientific Hosting & Acquisition (Jul 7, 2025)",
-    "sourceUrl": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-to-Acquire-Core-Scientific/default.aspx"
+    "sourceUrl": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-to-Acquire-Core-Scientific/default.aspx",
+    "operationalCategory": "Data Center Lease",
+    "operationalExposureShare": 0.1,
+    "capacityMW": 590,
+    "disruptionMode": "FULL"
   },
   {
     "id": "TX67",
@@ -2299,7 +2397,11 @@
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Constellation Energy Crane Clean Energy Center 20-Yr PPA PR (Sep 20, 2024)",
-    "sourceUrl": "https://www.constellationenergy.com/news/2024/Constellation-to-Launch-Crane-Clean-Energy-Center-Restoring-Jobs-and-Carbon-Free-Power-to-The-Grid.html"
+    "sourceUrl": "https://www.constellationenergy.com/news/2024/Constellation-to-Launch-Crane-Clean-Energy-Center-Restoring-Jobs-and-Carbon-Free-Power-to-The-Grid.html",
+    "operationalCategory": "Power Purchase Agreement",
+    "operationalExposureShare": 0.015,
+    "capacityMW": 835,
+    "disruptionMode": "PARTIAL"
   },
   {
     "id": "TX68",
@@ -2328,7 +2430,11 @@
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Meta Nuclear Energy Projects PR (Jan 9, 2026)",
-    "sourceUrl": "https://about.fb.com/news/2026/01/meta-nuclear-energy-projects-power-american-ai-leadership/"
+    "sourceUrl": "https://about.fb.com/news/2026/01/meta-nuclear-energy-projects-power-american-ai-leadership/",
+    "operationalCategory": "Power Purchase Agreement",
+    "operationalExposureShare": 0.02,
+    "capacityMW": 1121,
+    "disruptionMode": "PARTIAL"
   },
   {
     "id": "TX69",
@@ -2357,6 +2463,10 @@
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Meta 6.6 GW Nuclear Energy Projects PR (Jan 9, 2026)",
-    "sourceUrl": "https://about.fb.com/news/2026/01/meta-nuclear-energy-projects-power-american-ai-leadership/"
+    "sourceUrl": "https://about.fb.com/news/2026/01/meta-nuclear-energy-projects-power-american-ai-leadership/",
+    "operationalCategory": "Power Purchase Agreement",
+    "operationalExposureShare": 0.03,
+    "capacityMW": 2609,
+    "disruptionMode": "PARTIAL"
   }
 ]

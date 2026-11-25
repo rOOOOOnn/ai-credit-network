@@ -1,0 +1,38 @@
+name: AI Credit Network v3.0 CI
+
+on:
+  push:
+    branches: [ main, "fix/**" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [20.x]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Validate JSON schema & data consistency
+        run: node tests/validate_schema_and_data.cjs
+
+      - name: Run 16 standard functional tests
+        run: node tests/run_16_tests.cjs
+
+      - name: Run 12 Audit 2.0 regression tests
+        run: node tests/audit_regression.cjs
+
+      - name: Run 20 v3.0 independent audit tests (T01-T20)
+        run: node tests/v3_independent_audit_tests.cjs

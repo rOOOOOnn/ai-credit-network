@@ -48,23 +48,21 @@ check('Audit-1: Accounting Conservation & RCF Auto-Draw', () => {
   return `Verified ${checks} simulated entity-quarters with <0.01 error & 0 RCF violations`;
 });
 
-// 2. TRUE One-Time LGD & Guarantee Ceiling (45% LGD stays 45%, 25% Guarantee stays 25% — NEVER 100%!)
-check('Audit-2: True One-Time LGD (<=45.1%) & Guarantee (<=25.1%)', () => {
+// 2. TRUE One-Time LGD & Guarantee Ceiling on Active EAD (45% LGD on EAD, 25% Call on Active Guarantee EAD)
+check('Audit-2: True One-Time LGD (<=45.1% EAD) & Guarantee (<=25.1% Active EAD)', () => {
   let maxDebtPct = 0, maxGuarPct = 0;
-  Object.entries(shockOAI.cumCreditLossByTx).forEach(([txId, loss]) => {
-    const tx = transactions.find(t => t.id === txId);
-    const cap = (tx.amountDrawn && tx.amountDrawn > 0) ? tx.amountDrawn : (tx.totalCommitment || 1);
-    const pct = (loss / cap) * 100;
-    if (tx.type === 'Loan Guarantee') {
+  shockOAI.creditEvents.forEach(ev => {
+    const pct = (ev.recognizedLoss / Math.max(0.0001, ev.totalEAD)) * 100;
+    if (ev.type === 'Loan Guarantee') {
       if (pct > maxGuarPct) maxGuarPct = pct;
-      assert(pct <= 25.1, `${txId} guarantee cumLoss=${pct.toFixed(1)}% exceeded one-time 25% call!`);
+      assert(pct <= 25.1, `${ev.txId} guarantee loss=${pct.toFixed(1)}% exceeded one-time 25% call!`);
     } else {
       if (pct > maxDebtPct) maxDebtPct = pct;
-      assert(pct <= 45.1, `${txId} debt cumLoss=${pct.toFixed(1)}% exceeded one-time 45% LGD!`);
+      assert(pct <= 45.1, `${ev.txId} debt loss=${pct.toFixed(1)}% exceeded one-time 45% LGD!`);
     }
   });
-  assert(maxDebtPct > 44.0 && maxGuarPct > 24.0, 'Expected active one-time LGD & guarantee hits');
-  return `Max 9-Qtr Debt LGD=${maxDebtPct.toFixed(1)}% (exact 45%), Max Guarantee Call=${maxGuarPct.toFixed(1)}% (exact 25%)`;
+  assert(maxDebtPct > 44.0 && maxGuarPct > 24.0, 'Expected active one-time LGD & guarantee hits on EAD');
+  return `Max 9-Qtr Debt LGD=${maxDebtPct.toFixed(1)}% of EAD, Max Guarantee Call=${maxGuarPct.toFixed(1)}% of Active FY29 EAD`;
 });
 
 // 3. Managed Private Funds Non-Bankruptcy
@@ -79,11 +77,16 @@ check('Audit-3: Private Funds Non-Bankruptcy (lossAbsorbingInvestor)', () => {
   return 'All 5 managed fund complexes absorbed losses without corporate L3 bankruptcy';
 });
 
-// 4. Clean Baseline Stability (ZERO false L3 defaults in Base Case through 2027Q4!)
-check('Audit-4: Clean Baseline Stability (0 False L3 Defaults @ 2027Q4)', () => {
-  const baseL3 = entities.filter(e => !e.isOcean && base.timeline['2027Q4'].entities[e.id].distressLevel === 3).map(e => e.id);
-  assert.strictEqual(baseL3.length, 0, `Baseline still has false L3 defaults: ${baseL3.join(', ')}`);
-  return '0 false L3 defaults in unstressed Base Case through 2027Q4';
+// 4. P1-3 Baseline Integrity: Zero Insufficient-Data False Defaults; Any Real L3 Default Has Explicit Financial Cause
+check('Audit-4: Baseline Integrity (0 Insufficient-Data False Defaults; Transparent Real Causes)', () => {
+  const insL3 = entities.filter(e => !e.isOcean && base.timeline['2027Q4'].entities[e.id].insufficientData && base.timeline['2027Q4'].entities[e.id].distressLevel === 3);
+  assert.strictEqual(insL3.length, 0, 'Insufficient-Data entities must never default in Base Case');
+  const realL3 = entities.filter(e => !e.isOcean && base.timeline['2027Q4'].entities[e.id].distressLevel === 3);
+  realL3.forEach(e => {
+    const s = base.timeline['2027Q4'].entities[e.id];
+    assert(s.defaultCause && (s.cash + s.undrawnCredit) < 0, `${e.id} L3 default lacks explicit negative-liquidity cause`);
+  });
+  return `0 Insufficient-Data false defaults; ${realL3.length} data-backed L3 default(s) @ 2027Q4 (${realL3.map(e => e.id).join(', ') || 'None'})`;
 });
 
 // 5. Layer 3 Operational Dependency Contagion (CoreWeave Default -> Downstream Customers OPENAI & MSFT!)
@@ -136,8 +139,8 @@ check('Audit-9: Audit 2.0 Financial Data & PeriodEnd Corrections', () => {
   const crwv = entities.find(e => e.id === 'CRWV').financials['2026Q3'];
   const orcl = entities.find(e => e.id === 'ORCL').financials['2026Q3'];
   const nvda = entities.find(e => e.id === 'NVDA').financials['2026Q3'];
-  assert.strictEqual(crwv.shortTermDebt, null, 'CRWV shortTermDebt must not be 5.27 non-recourse');
-  assert.strictEqual(crwv.nonRecourseDebt, 5.27);
+  assert.strictEqual(crwv.shortTermDebt, 10.572, 'CRWV Q3 2026 10-Q shortTermDebt must be $10.572B (not non-recourse)');
+  assert.strictEqual(crwv.nonRecourseDebt, 5.273);
   assert.strictEqual(crwv.ap, 2.928);
   assert.strictEqual(orcl.periodEnd, '2026-08-31');
   assert.strictEqual(orcl.offBalanceLeases, 288.0);
