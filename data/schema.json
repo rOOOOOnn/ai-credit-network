@@ -1,10 +1,10 @@
 {
-  "version": "v1.0-phase1.5-public-2026-11-24",
+  "version": "v2.0-audit-remediated-2026-11-25",
   "retrievedAt": "2026-11-24",
   "currency": "USD",
   "unit": "Billions",
-  "entityCount": 44,
-  "transactionCount": 57,
+  "entityCount": 46,
+  "transactionCount": 76,
   "quarters": {
     "historical": [
       "2022Q1",
@@ -46,5 +46,12 @@
     "NVIDIA $105B SB Energy guarantee and $32B contingent neocloud commitments separated from balance-sheet debt.",
     "Unidentified private credit lenders & 144A bondholders routed to PRIVATE_CREDIT_OCEAN (never deleted, never set to 0).",
     "Bidirectional cash flows (e.g. Google <-> Anthropic, MSFT <-> OpenAI, NVDA <-> CoreWeave) stored as separate directed edges."
+  ],
+  "remediationNotes": [
+    "P0-1: Added CapEx-anchored upstream hardware procurement edges (TX58-TX63) + 4-channel upstream supply contagion.",
+    "P0-2: Added lossAbsorbingInvestor=true on private credit funds + cross-quarter LGD deduplication (<=100% principal).",
+    "P0-3: Fixed 2026Q4 OCF double-deduction cliff, RCF auto-draw accounting, ocean.interestRate wiring, removed SPV_JUPITER +14 hardcode & -35% revGrowth floor.",
+    "P0-4: Corrected CRWV debt ($46.9B) & interest ($0.846B), META capex ($34.9B)/OCF ($32.8B)/RVG separation ($41.5B), Anthropic Q3 OCF ($2.64B) & Q4 IPO ($107.3B).",
+    "P1: Split multi-year bundled TXs (TX04/TX05/TX12/TX14), split syndicates (TX06/TX17/TX35), moved TX10 to EXTERNAL_EQUITY_POOL, split Meta Sopaipilla SPV (TX40A-D), fixed TX48 Asset Acquisition."
   ]
 }

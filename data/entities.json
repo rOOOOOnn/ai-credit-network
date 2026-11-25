@@ -28,7 +28,18 @@
         "interestExp": 0.06,
         "undrawnCredit": 0.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-05-28"
+        "disclosedDate": "2026-05-28",
+        "fiscalPeriod": "2026Q1",
+        "calendarPeriod": "2026Q1",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-03-31",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 8.47,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 118.0,
+        "revenueGrowth": null
       },
       "2026Q2": {
         "revenue": 96.22,
@@ -43,7 +54,18 @@
         "interestExp": 0.15,
         "undrawnCredit": 0.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-08-26"
+        "disclosedDate": "2026-08-26",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 32.37,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 118.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 115.84,
@@ -58,7 +80,18 @@
         "interestExp": 0.32,
         "undrawnCredit": 0.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-11-17"
+        "disclosedDate": "2026-11-17",
+        "fiscalPeriod": "FY27 Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 32.37,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 118.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -76,7 +109,11 @@
       "refiSuccess": 0.98,
       "cashConv": 0.85,
       "minCash": 15.0
-    }
+    },
+    "hardwareSupplyShare": 0.62,
+    "isHardwareSupplier": true,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "MSFT",
@@ -107,7 +144,18 @@
         "interestExp": 0.45,
         "undrawnCredit": 10.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-28"
+        "disclosedDate": "2026-10-28",
+        "fiscalPeriod": "FY27 Q1",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 35.5,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -125,7 +173,11 @@
       "refiSuccess": 0.99,
       "cashConv": 0.92,
       "minCash": 25.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "GOOGL",
@@ -156,7 +208,18 @@
         "interestExp": 1.2,
         "undrawnCredit": 10.0,
         "dataType": "Estimated",
-        "disclosedDate": "2026-07-28"
+        "disclosedDate": "2026-07-28",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 120.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 127.6,
@@ -171,7 +234,18 @@
         "interestExp": 1.35,
         "undrawnCredit": 10.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-28"
+        "disclosedDate": "2026-10-28",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 126.1,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -189,7 +263,11 @@
       "refiSuccess": 0.99,
       "cashConv": 0.9,
       "minCash": 40.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "AMZN",
@@ -220,7 +298,18 @@
         "interestExp": 1.95,
         "undrawnCredit": 80.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-29"
+        "disclosedDate": "2026-10-29",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 180.3,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -238,7 +327,11 @@
       "refiSuccess": 0.98,
       "cashConv": 0.9,
       "minCash": 35.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "ORCL",
@@ -269,7 +362,18 @@
         "interestExp": 1.65,
         "undrawnCredit": 6.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-09-10"
+        "disclosedDate": "2026-09-10",
+        "fiscalPeriod": "FY27 Q1",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 125.3,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -287,7 +391,11 @@
       "refiSuccess": 0.85,
       "cashConv": 0.88,
       "minCash": 10.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "META",
@@ -309,16 +417,28 @@
         "revenue": 64.6,
         "cash": 45.0,
         "debt": 37.5,
-        "ocf": 26.5,
-        "capex": 31.0,
-        "fcf": -4.5,
+        "ocf": 32.8,
+        "capex": 34.9,
+        "fcf": -2.1,
         "ar": null,
-        "rpo": 41.5,
-        "leaseLiab": 41.5,
+        "rpo": 0.0,
+        "leaseLiab": 21.5,
         "interestExp": 0.48,
         "undrawnCredit": 5.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-21"
+        "disclosedDate": "2026-10-21",
+        "offBalanceGuarantees": 41.5,
+        "note": "$41.5B off-balance-sheet RVG (Beignet + Sopaipilla; $68.4B max) separated from RPO/leaseLiab",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 37.5,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -327,8 +447,8 @@
       "revDecel": 0.004,
       "grossMargin": 0.8,
       "opex": 24.0,
-      "capex": 30.0,
-      "computePay": 2.0,
+      "capex": 34.0,
+      "computePay": 0.0,
       "interestRate": 0.052,
       "newDebt": 0.0,
       "equityInflow": 0.0,
@@ -336,7 +456,11 @@
       "refiSuccess": 0.96,
       "cashConv": 0.92,
       "minCash": 18.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "OPENAI",
@@ -367,7 +491,18 @@
         "interestExp": 0.0,
         "undrawnCredit": 4.7,
         "dataType": "Estimated",
-        "disclosedDate": "2026-10-19"
+        "disclosedDate": "2026-10-19",
+        "fiscalPeriod": "2026Q1",
+        "calendarPeriod": "2026Q1",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-03-31",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 0.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q2": {
         "revenue": 6.7,
@@ -382,7 +517,18 @@
         "interestExp": 0.0,
         "undrawnCredit": 4.7,
         "dataType": "Estimated",
-        "disclosedDate": "2026-10-19"
+        "disclosedDate": "2026-10-19",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 0.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 9.5,
@@ -397,25 +543,40 @@
         "interestExp": 0.0,
         "undrawnCredit": 4.7,
         "dataType": "Assumption",
-        "disclosedDate": "2026-11-14"
+        "disclosedDate": "2026-11-14",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 0.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
       "mode": "A",
       "revGrowth": 0.16,
       "revDecel": 0.015,
-      "grossMargin": 0.45,
-      "opex": 5.0,
+      "grossMargin": 0.42,
+      "opex": 12.0,
       "capex": 1.5,
-      "computePay": 18.0,
+      "computePay": 0.0,
       "interestRate": 0.06,
       "newDebt": 0.0,
-      "equityInflow": 12.0,
+      "equityInflow": 10.0,
       "debtRepay": 0.0,
       "refiSuccess": 0.8,
       "cashConv": 0.9,
       "minCash": 10.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "ANTHROPIC",
@@ -426,7 +587,7 @@
     "ring": 1,
     "isPublic": true,
     "infraRole": 92,
-    "filingCoverage": "SEC Form S-1/A-3 (2023–Q3 2026; filed Nov 17, 2026)",
+    "filingCoverage": "SEC Form S-1/A-3 (2023–Q3 2026); $81.3B IPO + $26.0B concurrent placement closed Nov 18–19, 2026",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2130357/000162828026074338/anthropicpbc-sx1ax3.htm",
     "confidence": "A",
     "dataType": "Actual",
@@ -446,40 +607,70 @@
         "interestExp": 0.0,
         "undrawnCredit": 15.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-26"
+        "disclosedDate": "2026-10-26",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 0.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 17.0,
         "cash": 35.0,
         "debt": 0.0,
-        "ocf": 2.1,
+        "ocf": 2.64,
         "capex": 0.3,
-        "fcf": 1.8,
+        "fcf": 2.34,
         "ar": null,
         "rpo": 900.9,
         "leaseLiab": null,
         "interestExp": 0.0,
         "undrawnCredit": 15.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-11-17"
+        "disclosedDate": "2026-11-17",
+        "note": "Q3 OCF calibrated as 9M26 ($6.569B) minus H126 ($3.929B) per S-1/A-3",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 0.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
       "mode": "A",
-      "revGrowth": 0.14,
+      "revGrowth": 0.07,
       "revDecel": 0.015,
-      "grossMargin": 0.48,
-      "opex": 3.0,
+      "grossMargin": 0.5,
+      "opex": 5.5,
       "capex": 0.4,
-      "computePay": 17.68,
+      "computePay": 0.0,
       "interestRate": 0.06,
       "newDebt": 0.0,
-      "equityInflow": 5.0,
+      "equityInflow": 0.0,
       "debtRepay": 0.0,
       "refiSuccess": 0.88,
       "cashConv": 0.92,
       "minCash": 8.0
-    }
+    },
+    "scheduledEquityInflows": {
+      "2026Q4": 107.3
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "CRWV",
@@ -500,35 +691,51 @@
       "2026Q3": {
         "revenue": 3.66,
         "cash": 4.2,
-        "debt": 18.5,
+        "debt": 46.9,
         "ocf": 1.1,
         "capex": 5.8,
         "fcf": -4.7,
         "ar": null,
         "rpo": 132.5,
-        "leaseLiab": null,
-        "interestExp": 0.42,
+        "leaseLiab": 18.7,
+        "interestExp": 0.846,
         "undrawnCredit": 3.5,
         "dataType": "Actual",
-        "disclosedDate": "2026-11-10"
+        "disclosedDate": "2026-11-10",
+        "shortTermDebt": 5.27,
+        "longTermDebt": 41.63,
+        "restrictedCash": 2.28,
+        "debtMaturity": "2027-2032 (DDTLs + Senior Notes)",
+        "note": "Includes $41.63B recourse + $5.27B non-recourse debt (consolidates SPV_CRWV8)",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
       "mode": "B",
-      "revGrowth": 0.18,
+      "revGrowth": 0.12,
       "revDecel": 0.02,
       "grossMargin": 0.56,
       "opex": 0.8,
       "capex": 5.5,
       "computePay": 0.5,
-      "interestRate": 0.085,
-      "newDebt": 3.0,
+      "interestRate": 0.072,
+      "newDebt": 3.5,
       "equityInflow": 0.0,
-      "debtRepay": 0.75,
+      "debtRepay": 0.8,
       "refiSuccess": 0.78,
       "cashConv": 0.88,
       "minCash": 2.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "SPCX_XAI",
@@ -559,7 +766,18 @@
         "interestExp": 0.75,
         "undrawnCredit": 4.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-20"
+        "disclosedDate": "2026-10-20",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 38.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -577,7 +795,11 @@
       "refiSuccess": 0.88,
       "cashConv": 0.88,
       "minCash": 6.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "AVGO",
@@ -608,7 +830,18 @@
         "interestExp": 0.65,
         "undrawnCredit": 7.5,
         "dataType": "Actual",
-        "disclosedDate": "2026-06-11"
+        "disclosedDate": "2026-06-11",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 65.14,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 29.59,
@@ -623,7 +856,18 @@
         "interestExp": 0.6,
         "undrawnCredit": 7.5,
         "dataType": "Actual",
-        "disclosedDate": "2026-09-10"
+        "disclosedDate": "2026-09-10",
+        "fiscalPeriod": "FY26 Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 59.42,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -641,7 +885,11 @@
       "refiSuccess": 0.98,
       "cashConv": 0.92,
       "minCash": 8.0
-    }
+    },
+    "hardwareSupplyShare": 0.16,
+    "isHardwareSupplier": true,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "AMD",
@@ -672,7 +920,18 @@
         "interestExp": 0.04,
         "undrawnCredit": 3.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-08-05"
+        "disclosedDate": "2026-08-05",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 3.23,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 13.38,
@@ -687,7 +946,18 @@
         "interestExp": 0.09,
         "undrawnCredit": 3.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-11-04"
+        "disclosedDate": "2026-11-04",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 7.08,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -705,7 +975,11 @@
       "refiSuccess": 0.96,
       "cashConv": 0.85,
       "minCash": 3.0
-    }
+    },
+    "hardwareSupplyShare": 0.08,
+    "isHardwareSupplier": true,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "MU",
@@ -736,7 +1010,18 @@
         "interestExp": 0.08,
         "undrawnCredit": 2.5,
         "dataType": "Actual",
-        "disclosedDate": "2026-06-25"
+        "disclosedDate": "2026-06-25",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 5.72,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 54.23,
@@ -751,7 +1036,18 @@
         "interestExp": 0.07,
         "undrawnCredit": 2.5,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-09"
+        "disclosedDate": "2026-10-09",
+        "fiscalPeriod": "FY26 Q4",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 5.18,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -769,7 +1065,11 @@
       "refiSuccess": 0.96,
       "cashConv": 0.9,
       "minCash": 8.0
-    }
+    },
+    "hardwareSupplyShare": 0.06,
+    "isHardwareSupplier": true,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "DELL",
@@ -800,7 +1100,18 @@
         "interestExp": 0.42,
         "undrawnCredit": 6.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-06-05"
+        "disclosedDate": "2026-06-05",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 34.47,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 46.97,
@@ -815,7 +1126,18 @@
         "interestExp": 0.44,
         "undrawnCredit": 6.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-09-08"
+        "disclosedDate": "2026-09-08",
+        "fiscalPeriod": "FY27 Q2",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 34.47,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -833,7 +1155,11 @@
       "refiSuccess": 0.94,
       "cashConv": 0.85,
       "minCash": 5.0
-    }
+    },
+    "hardwareSupplyShare": 0.04,
+    "isHardwareSupplier": true,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "SMCI",
@@ -864,7 +1190,18 @@
         "interestExp": 0.14,
         "undrawnCredit": 1.5,
         "dataType": "Actual",
-        "disclosedDate": "2026-08-28"
+        "disclosedDate": "2026-08-28",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 8.72,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 19.95,
@@ -879,7 +1216,18 @@
         "interestExp": 0.15,
         "undrawnCredit": 1.5,
         "dataType": "Actual",
-        "disclosedDate": "2026-11-06"
+        "disclosedDate": "2026-11-06",
+        "fiscalPeriod": "FY27 Q1",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 8.65,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -897,7 +1245,11 @@
       "refiSuccess": 0.8,
       "cashConv": 0.8,
       "minCash": 2.5
-    }
+    },
+    "hardwareSupplyShare": 0.03,
+    "isHardwareSupplier": true,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "HPE",
@@ -928,7 +1280,18 @@
         "interestExp": 0.22,
         "undrawnCredit": 4.5,
         "dataType": "Actual",
-        "disclosedDate": "2026-09-03"
+        "disclosedDate": "2026-09-03",
+        "fiscalPeriod": "FY26 Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 17.3,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -946,7 +1309,11 @@
       "refiSuccess": 0.94,
       "cashConv": 0.88,
       "minCash": 3.0
-    }
+    },
+    "hardwareSupplyShare": 0.01,
+    "isHardwareSupplier": true,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "DLR",
@@ -977,7 +1344,18 @@
         "interestExp": 0.2,
         "undrawnCredit": 3.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-05-01"
+        "disclosedDate": "2026-05-01",
+        "fiscalPeriod": "2026Q1",
+        "calendarPeriod": "2026Q1",
+        "periodStart": "2026-01-01",
+        "periodEnd": "2026-03-31",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 18.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q2": {
         "revenue": 1.92,
@@ -992,7 +1370,18 @@
         "interestExp": 0.21,
         "undrawnCredit": 3.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-07-23"
+        "disclosedDate": "2026-07-23",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 18.64,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 1.9,
@@ -1007,7 +1396,18 @@
         "interestExp": 0.22,
         "undrawnCredit": 3.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-30"
+        "disclosedDate": "2026-10-30",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 19.49,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1025,7 +1425,11 @@
       "refiSuccess": 0.95,
       "cashConv": 0.92,
       "minCash": 0.5
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "EQIX",
@@ -1056,7 +1460,18 @@
         "interestExp": 0.24,
         "undrawnCredit": 4.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-07-29"
+        "disclosedDate": "2026-07-29",
+        "fiscalPeriod": "2026Q2",
+        "calendarPeriod": "2026Q2",
+        "periodStart": "2026-04-01",
+        "periodEnd": "2026-06-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 22.15,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       },
       "2026Q3": {
         "revenue": 2.57,
@@ -1071,7 +1486,18 @@
         "interestExp": 0.27,
         "undrawnCredit": 4.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-28"
+        "disclosedDate": "2026-10-28",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 25.22,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1089,7 +1515,11 @@
       "refiSuccess": 0.96,
       "cashConv": 0.92,
       "minCash": 1.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "NBIS",
@@ -1120,7 +1550,18 @@
         "interestExp": 0.05,
         "undrawnCredit": 1.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-11-12"
+        "disclosedDate": "2026-11-12",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 2.5,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1138,7 +1579,11 @@
       "refiSuccess": 0.8,
       "cashConv": 0.9,
       "minCash": 1.5
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "APLD",
@@ -1169,7 +1614,18 @@
         "interestExp": 0.04,
         "undrawnCredit": 0.5,
         "dataType": "Estimated",
-        "disclosedDate": "2026-11-23"
+        "disclosedDate": "2026-11-23",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 1.4,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1187,7 +1643,11 @@
       "refiSuccess": 0.75,
       "cashConv": 0.85,
       "minCash": 0.25
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "IREN",
@@ -1218,7 +1678,18 @@
         "interestExp": 0.02,
         "undrawnCredit": 0.3,
         "dataType": "Estimated",
-        "disclosedDate": "2026-08-27"
+        "disclosedDate": "2026-08-27",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 0.85,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1236,7 +1707,11 @@
       "refiSuccess": 0.78,
       "cashConv": 0.85,
       "minCash": 0.2
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "CRUSOE",
@@ -1269,7 +1744,11 @@
       "refiSuccess": 0.75,
       "cashConv": 0.85,
       "minCash": 0.3
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "LAMBDA",
@@ -1302,7 +1781,11 @@
       "refiSuccess": 0.75,
       "cashConv": 0.85,
       "minCash": 0.25
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": true,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "COHERE",
@@ -1335,7 +1818,11 @@
       "refiSuccess": 0.8,
       "cashConv": 0.9,
       "minCash": 0.2
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "MISTRAL",
@@ -1368,7 +1855,11 @@
       "refiSuccess": 0.82,
       "cashConv": 0.9,
       "minCash": 0.3
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "VANTAGE",
@@ -1399,7 +1890,18 @@
         "interestExp": 0.72,
         "undrawnCredit": 2.0,
         "dataType": "Estimated",
-        "disclosedDate": "2026-09-15"
+        "disclosedDate": "2026-09-15",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 48.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1417,7 +1919,11 @@
       "refiSuccess": 0.82,
       "cashConv": 0.9,
       "minCash": 1.2
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "QTS",
@@ -1448,7 +1954,18 @@
         "interestExp": 0.14,
         "undrawnCredit": 1.0,
         "dataType": "Actual",
-        "disclosedDate": "2026-10-05"
+        "disclosedDate": "2026-10-05",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 8.26,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1466,7 +1983,11 @@
       "refiSuccess": 0.88,
       "cashConv": 0.9,
       "minCash": 0.6
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "ALIGNED",
@@ -1499,7 +2020,11 @@
       "refiSuccess": 0.88,
       "cashConv": 0.9,
       "minCash": 0.5
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "AIRTRUNK",
@@ -1530,7 +2055,18 @@
         "interestExp": 0.2,
         "undrawnCredit": 1.5,
         "dataType": "Estimated",
-        "disclosedDate": "2026-10-01"
+        "disclosedDate": "2026-10-01",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 13.2,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1548,7 +2084,11 @@
       "refiSuccess": 0.88,
       "cashConv": 0.9,
       "minCash": 0.5
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "SPV_BEIGNET",
@@ -1579,7 +2119,18 @@
         "interestExp": 0.45,
         "undrawnCredit": 0.0,
         "dataType": "Estimated",
-        "disclosedDate": "2025-10-21"
+        "disclosedDate": "2025-10-21",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 27.3,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1597,7 +2148,11 @@
       "refiSuccess": 0.9,
       "cashConv": 0.98,
       "minCash": 0.5
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "SPV_JUPITER",
@@ -1628,7 +2183,18 @@
         "interestExp": 0.41,
         "undrawnCredit": 0.0,
         "dataType": "Estimated",
-        "disclosedDate": "2026-09-24"
+        "disclosedDate": "2026-09-24",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 18.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1646,7 +2212,11 @@
       "refiSuccess": 0.55,
       "cashConv": 0.95,
       "minCash": 0.5
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "SPV_ABILENE",
@@ -1677,7 +2247,18 @@
         "interestExp": 0.21,
         "undrawnCredit": 0.5,
         "dataType": "Estimated",
-        "disclosedDate": "2025-05-01"
+        "disclosedDate": "2025-05-01",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 9.4,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1695,7 +2276,11 @@
       "refiSuccess": 0.75,
       "cashConv": 0.95,
       "minCash": 0.4
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "SPV_CRWV8",
@@ -1726,7 +2311,18 @@
         "interestExp": 0.13,
         "undrawnCredit": 1.0,
         "dataType": "Estimated",
-        "disclosedDate": "2026-03-31"
+        "disclosedDate": "2026-03-31",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 8.5,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1744,7 +2340,12 @@
       "refiSuccess": 0.82,
       "cashConv": 0.95,
       "minCash": 0.3
-    }
+    },
+    "consolidatedInParent": "CRWV",
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "SPV_XPV",
@@ -1775,7 +2376,18 @@
         "interestExp": 0.55,
         "undrawnCredit": 0.0,
         "dataType": "Estimated",
-        "disclosedDate": "2026-06-09"
+        "disclosedDate": "2026-06-09",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 35.0,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1793,7 +2405,11 @@
       "refiSuccess": 0.85,
       "cashConv": 0.95,
       "minCash": 0.6
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "SPV_VALOR",
@@ -1824,7 +2440,18 @@
         "interestExp": 0.08,
         "undrawnCredit": 0.0,
         "dataType": "Estimated",
-        "disclosedDate": "2026-01-07"
+        "disclosedDate": "2026-01-07",
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "restrictedCash": null,
+        "shortTermDebt": null,
+        "longTermDebt": 3.5,
+        "debtMaturity": null,
+        "accountsPayable": null,
+        "offBalanceGuarantees": 0.0,
+        "revenueGrowth": null
       }
     },
     "defaults": {
@@ -1842,7 +2469,11 @@
       "refiSuccess": 0.85,
       "cashConv": 0.95,
       "minCash": 0.2
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "BX_FUNDS",
@@ -1875,7 +2506,11 @@
       "refiSuccess": 0.98,
       "cashConv": 0.95,
       "minCash": 2.0
-    }
+    },
+    "lossAbsorbingInvestor": true,
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false
   },
   {
     "id": "APOLLO_FUNDS",
@@ -1908,7 +2543,11 @@
       "refiSuccess": 0.98,
       "cashConv": 0.95,
       "minCash": 2.0
-    }
+    },
+    "lossAbsorbingInvestor": true,
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false
   },
   {
     "id": "BLUEOWL_FUNDS",
@@ -1941,7 +2580,11 @@
       "refiSuccess": 0.96,
       "cashConv": 0.95,
       "minCash": 1.5
-    }
+    },
+    "lossAbsorbingInvestor": true,
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false
   },
   {
     "id": "BLK_AIP",
@@ -1974,7 +2617,11 @@
       "refiSuccess": 0.98,
       "cashConv": 0.95,
       "minCash": 2.0
-    }
+    },
+    "lossAbsorbingInvestor": true,
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false
   },
   {
     "id": "PIMCO_FUNDS",
@@ -2007,7 +2654,11 @@
       "refiSuccess": 0.98,
       "cashConv": 0.95,
       "minCash": 2.0
-    }
+    },
+    "lossAbsorbingInvestor": true,
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false
   },
   {
     "id": "JPM",
@@ -2040,7 +2691,11 @@
       "refiSuccess": 0.99,
       "cashConv": 0.95,
       "minCash": 10.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "MS",
@@ -2073,7 +2728,11 @@
       "refiSuccess": 0.99,
       "cashConv": 0.95,
       "minCash": 8.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "SOFTBANK",
@@ -2106,7 +2765,11 @@
       "refiSuccess": 0.92,
       "cashConv": 0.9,
       "minCash": 5.0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   },
   {
     "id": "PRIVATE_CREDIT_OCEAN",
@@ -2140,6 +2803,113 @@
       "refiSuccess": 1.0,
       "cashConv": 1.0,
       "minCash": 0
-    }
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
+  },
+  {
+    "id": "EXTERNAL_EQUITY_POOL",
+    "name": "External Institutional Equity Pool",
+    "ticker": "EQUITY-POOL",
+    "cik": null,
+    "sector": "Private Credit Ocean",
+    "ring": 4,
+    "isPublic": false,
+    "isOcean": true,
+    "isEquityPool": true,
+    "lossAbsorbingInvestor": true,
+    "infraRole": 100,
+    "filingCoverage": "External institutional/sovereign/VC equity syndicates (strictly separated from private credit debt).",
+    "sourceUrl": "https://openai.com/index/accelerating-the-next-phase-ai/",
+    "confidence": "A",
+    "dataType": "System Pool",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-11-24",
+    "financials": {},
+    "defaults": {
+      "mode": "B",
+      "revGrowth": 0,
+      "revDecel": 0,
+      "grossMargin": 1,
+      "opex": 0,
+      "capex": 0,
+      "computePay": 0,
+      "interestRate": 0,
+      "newDebt": 0,
+      "equityInflow": 0,
+      "debtRepay": 0,
+      "refiSuccess": 1.0,
+      "cashConv": 1.0,
+      "minCash": 0
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false
+  },
+  {
+    "id": "SPV_SOPAIPILLA",
+    "name": "Sopaipilla Investor LLC (Meta El Paso SPV)",
+    "ticker": "SPV-144A",
+    "cik": null,
+    "sector": "Data Center & SPV",
+    "ring": 3,
+    "isPublic": false,
+    "infraRole": 66,
+    "filingCoverage": "Unconsolidated VIE SPV ($12.55B 7.534% Notes, Mat 2048; BlackRock 80% / Meta 20% + RVG)",
+    "sourceUrl": "https://www.useluminix.com/reports/industry-analysis/meta-debt-bonds-and-credit-rating",
+    "confidence": "B",
+    "dataType": "Estimated",
+    "latestDisclosedQuarter": "2026Q3",
+    "disclosedDate": "2026-07-27",
+    "financials": {
+      "2026Q3": {
+        "fiscalPeriod": "2026Q3",
+        "calendarPeriod": "2026Q3",
+        "periodStart": "2026-07-01",
+        "periodEnd": "2026-09-30",
+        "revenue": 0.38,
+        "revenueGrowth": null,
+        "cash": 1.2,
+        "restrictedCash": 0.0,
+        "debt": 12.55,
+        "shortTermDebt": 0.0,
+        "longTermDebt": 12.55,
+        "debtMaturity": "2048-07-27",
+        "ocf": 0.3,
+        "capex": 0.8,
+        "fcf": -0.5,
+        "ar": null,
+        "accountsPayable": null,
+        "rpo": 12.55,
+        "leaseLiab": 0.0,
+        "offBalanceGuarantees": 0.0,
+        "interestExp": 0.24,
+        "undrawnCredit": 0.0,
+        "dataType": "Estimated",
+        "disclosedDate": "2026-07-27"
+      }
+    },
+    "defaults": {
+      "mode": "A",
+      "revGrowth": 0.02,
+      "revDecel": 0.0,
+      "grossMargin": 0.9,
+      "opex": 0.03,
+      "capex": 0.4,
+      "computePay": 0.0,
+      "interestRate": 0.0753,
+      "newDebt": 0.0,
+      "equityInflow": 0.0,
+      "debtRepay": 0.12,
+      "refiSuccess": 0.88,
+      "cashConv": 0.96,
+      "minCash": 0.35
+    },
+    "hardwareSupplyShare": 0.0,
+    "isHardwareSupplier": false,
+    "isCloudOrNeocloud": false,
+    "lossAbsorbingInvestor": false
   }
 ]

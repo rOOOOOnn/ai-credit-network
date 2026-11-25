@@ -1,6 +1,10 @@
 /**
- * AI Credit Network — Cash Flow Forecasting, Stress Testing & Multi-Hop Contagion Engine
- * Works identically in browser (window.AICreditEngine) and Node.js (module.exports).
+ * AI Credit Network — Audit-Remediated Cash Flow Forecasting, Stress Testing & Multi-Hop Contagion Engine (v2)
+ * Implements:
+ * - P0-1: 4-Channel Upstream Hardware Supply Chain Contagion (A1 Direct/L2 Cut, A2 AR Bad-Debt Write-Off, A3 Induced CapEx Contraction + Next-Qtr Growth Suppression, A4 Circular Guarantee/Backstop/Equity Impairment)
+ * - P0-2: Cross-Quarter LGD Deduplication (<=100% principal), Non-Cash Credit Impairment Separation, lossAbsorbingInvestor Non-Bankruptcy
+ * - P0-3: Calibrated OCF Continuity (Zero Double-Deduction), Auto-RCF Drawdown Accounting, Wired ocean.interestRate, Objective Market Stress (No Hardcodes), Unclamped Downside Growth
+ * - P1-3/P1-4: Fixed periodEnd Historical Matching, Contract-Driven Mode A, Debt Maturity Wall, Case H GPU Collateral Haircut / LTV Trigger
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -36,23 +40,17 @@
     return ALL_QUARTERS.indexOf(q);
   }
 
-  /**
-   * Anti-lookahead filter: only transactions announced on or before quarterEndDate(q)
-   * are visible in historical/partial quarters.
-   */
   function compareQuarter(a, b) {
     if (!a || !b) return 0;
     return a.localeCompare(b);
   }
 
+  function isPoolId(id) {
+    return id === "PRIVATE_CREDIT_OCEAN" || id === "EXTERNAL_EQUITY_POOL";
+  }
+
   /**
-   * Time-aware active relationship filter:
-   * 1. Historical quarters: must be announced on/before quarterEndDate(quarter) (no lookahead).
-   * 2. Must still be active/outstanding in `quarter`:
-   *    - Equity investments persist as ongoing capital stakes from announced/startQ onward.
-   *    - Debt, bonds, loans, leases, guarantees & long-term contracts remain active while
-   *      unmatured (quarter <= endQ) or while remaining commitment / unpaid principal > 0.
-   *    - Matured transactions with zero remaining obligation drop off after endQ.
+   * Time-aware active relationship filter (zero lookahead in historical quarters).
    */
   function getVisibleTransactions(transactions, quarter) {
     const endDate = quarterEndDate(quarter);
@@ -61,10 +59,9 @@
       if (!isForecast && tx.announcedDate && tx.announcedDate > endDate) {
         return false;
       }
-      if (tx.type === "Equity Investment") {
+      if (tx.type === "Equity Investment" || tx.type === "Asset Acquisition") {
         return true;
       }
-      // For debt/contracts/leases/guarantees: exclude if already matured with zero remaining obligation
       if (tx.endQ && compareQuarter(quarter, tx.endQ) > 0) {
         const rem = tx.remainingCommitment ?? 0;
         const unpaid = (tx.amountDrawn ?? 0) - (tx.amountRepaid ?? 0);
@@ -75,8 +72,7 @@
   }
 
   /**
-   * Computes Connected Components over non-Ocean entities using active edges,
-   * and strictly separates connected entities from unconnected (degree-0) entities.
+   * Connected Components & Strict Zero-Isolated-Nodes Connectivity Analysis.
    */
   function analyzeConnectivity(entities, activeTxs) {
     const nonOcean = entities.filter(e => !e.isOcean);
@@ -87,14 +83,12 @@
     activeTxs.forEach(tx => {
       if (degree[tx.payer] !== undefined) degree[tx.payer]++;
       if (degree[tx.receiver] !== undefined) degree[tx.receiver]++;
-      if (adj[tx.payer] && adj[tx.receiver] && tx.payer !== "PRIVATE_CREDIT_OCEAN" && tx.receiver !== "PRIVATE_CREDIT_OCEAN") {
+      if (adj[tx.payer] && adj[tx.receiver] && !isPoolId(tx.payer) && !isPoolId(tx.receiver)) {
         adj[tx.payer].add(tx.receiver);
         adj[tx.receiver].add(tx.payer);
       }
     });
 
-    // Only entities with >= 1 active verified link to another company/SPV/known fund enter the main network
-    // (Entities linked ONLY to Private Credit Ocean move to Unconnected Entities)
     const connectedIds = new Set(nonOcean.filter(e => adj[e.id] && adj[e.id].size > 0).map(e => e.id));
     const unconnectedIds = nonOcean.filter(e => !connectedIds.has(e.id)).map(e => e.id);
 
@@ -122,20 +116,16 @@
     return { connectedIds, unconnectedIds, components, degree };
   }
 
-  /**
-   * Strict visual semantics: Red = Cash Outflow, Green = Cash Inflow.
-   * Flips perspective when receiver vs payer is selected.
-   */
   function getEdgeVisual(tx, selectedNodeId, quarter) {
     const isForecastQ = quarterStatus(quarter) === "FORECAST";
     let color = "url(#grad-out-in)";
     let role = "neutral";
     if (selectedNodeId) {
       if (tx.payer === selectedNodeId) {
-        color = "#EF4444"; // Red outflow
+        color = "#EF4444";
         role = "outflow";
       } else if (tx.receiver === selectedNodeId) {
-        color = "#10B981"; // Green inflow
+        color = "#10B981";
         role = "inflow";
       } else {
         color = "#334155";
@@ -152,6 +142,10 @@
       dashArray = "2,4";
       opacity = role === "dimmed" ? 0.08 : 0.55;
       lineKind = "Unknown";
+    } else if (tx.status === "Estimated") {
+      dashArray = "4,3";
+      opacity = role === "dimmed" ? 0.10 : 0.65;
+      lineKind = "Estimated";
     } else if (isForecastQ && tx.status !== "Actual") {
       dashArray = "3,3";
       opacity = role === "dimmed" ? 0.10 : 0.65;
@@ -169,71 +163,64 @@
   }
 
   /**
-   * Computes Systemic Importance Score and all 6 switchable sizing metrics for every entity.
+   * Objective Multi-Factor Fragility Score (0-100) — zero hardcoded entity IDs.
+   * Uses real balance-sheet leverage, cash burn, refinancing dependency, obligation coverage,
+   * and objective market stress fields (secondaryPriceCents < 95, forceMajeureActive).
    */
-
-  /**
-   * Computes an objective, multi-factor Financial Fragility Score (0-100) for each entity
-   * based on leverage, cash burn / CapEx pressure, refinancing dependency, contract/debt service
-   * coverage, and active distress signals — ensuring no single company (e.g. OpenAI) is
-   * hardcoded as highest risk.
-   */
-  function computeFragilityScore(entity, st, ocean) {
-    if (!entity || entity.isOcean) return { score: 0, drivers: [] };
+  function computeFragilityScore(entity, st, ocean, entityTxs = []) {
+    if (!entity || entity.isOcean || entity.lossAbsorbingInvestor) return { score: 0, drivers: [] };
     const p = entity.defaults || {};
     const cash = st.cash !== null && st.cash !== undefined ? st.cash : (p.minCash ? p.minCash * 2 : 1.0);
     const undrawn = st.undrawnCredit !== null && st.undrawnCredit !== undefined ? st.undrawnCredit : 0;
     const liq = Math.max(0.2, cash + undrawn);
     const debt = Math.max(0, st.debt ?? 0);
     const fcf = st.fcf !== null && st.fcf !== undefined ? st.fcf : -((p.capex || 0) * 0.4);
-    const rev = Math.max(0.1, st.revenue !== null && st.revenue !== undefined ? st.revenue : 0.5);
+    const rev = Math.max(0.05, st.revenue !== null && st.revenue !== undefined ? st.revenue : 0.5);
     const gm = Math.max(0.1, p.grossMargin ?? 0.5);
     const refi = Math.max(0.1, (p.refiSuccess ?? 0.85) * ((ocean?.refiSuccessRate ?? 85) / 100));
     const avail = (ocean?.fundingAvailability ?? 100) / 100;
 
-    // 1. Leverage / Debt-to-Liquidity pressure (0-30)
-    const debtToLiq = debt / liq;
-    const levScore = Math.min(30, debtToLiq * 3.8);
-
-    // 2. Cash burn & CapEx runway pressure (0-25)
-    const burnRatio = fcf < 0 ? Math.abs(fcf) / liq : 0;
-    const burnScore = Math.min(25, burnRatio * 28);
-
-    // 3. Refinancing & external capital dependency (0-25)
-    const refiDep = ((1 - refi) * 30) + ((p.newDebt || 0) / liq) * 10 * (1.2 - avail * 0.5);
-    const refiScore = Math.min(25, Math.max(0, refiDep));
-
-    // 4. Debt service & fixed compute/lease rigidity vs gross profit (0-20)
+    const levScore = Math.min(30, (debt / liq) * 3.8);
+    const burnScore = Math.min(25, (fcf < 0 ? Math.abs(fcf) / liq : 0) * 26);
+    const refiScore = Math.min(25, Math.max(0, ((1 - refi) * 30) + ((p.newDebt || 0) / liq) * 10 * (1.2 - avail * 0.5)));
     const fixedOblig = (st.interestExp || (debt * (p.interestRate || 0.06) / 4)) + (p.debtRepay || 0) + (p.computePay || 0);
-    const covRatio = fixedOblig / Math.max(0.15, rev * gm);
-    const covScore = Math.min(20, covRatio * 8);
+    const covScore = Math.min(20, (fixedOblig / Math.max(0.15, rev * gm)) * 8);
 
-    // 5. Known market stress / distress boost
-    let stressBoost = 0;
-    if (st.distressLevel === 3) stressBoost = 30;
-    else if (st.distressLevel === 2) stressBoost = 18;
-    else if (st.distressLevel === 1) stressBoost = 8;
-    if (entity.id === "SPV_JUPITER") stressBoost += 14; // Verified Sep 2026 force majeure & 89-91c secondary loan quote
+    // Objective market stress derived from transaction metadata (secondary loan discount / force majeure)
+    let marketStress = 0;
+    let hasDiscount = false;
+    let hasForceMajeure = false;
+    entityTxs.forEach(tx => {
+      if (tx.receiver === entity.id) {
+        if (tx.secondaryPriceCents && tx.secondaryPriceCents < 95) {
+          marketStress += (100 - tx.secondaryPriceCents) * 1.1;
+          hasDiscount = true;
+        }
+        if (tx.forceMajeureActive) {
+          marketStress += 8;
+          hasForceMajeure = true;
+        }
+      }
+    });
 
-    const score = Math.round(Math.min(100, Math.max(4, levScore + burnScore + refiScore + covScore + stressBoost)));
+    let distressBoost = 0;
+    if (st.distressLevel === 3) distressBoost = 30;
+    else if (st.distressLevel === 2) distressBoost = 18;
+    else if (st.distressLevel === 1) distressBoost = 8;
+
+    const score = Math.round(Math.min(100, Math.max(4, levScore + burnScore + refiScore + covScore + marketStress + distressBoost)));
     const drivers = [];
     if (levScore >= 14) drivers.push("High Leverage");
     if (burnScore >= 10) drivers.push("Cash Burn / CapEx");
     if (refiScore >= 10) drivers.push("Refinancing Dependency");
     if (covScore >= 10) drivers.push("Fixed Obligation Load");
-    if (entity.id === "SPV_JUPITER") drivers.push("Force Majeure / 89-91¢ Loan");
+    if (hasDiscount || hasForceMajeure) drivers.push("Force Majeure / Secondary Discount");
     return { score, drivers };
   }
 
   function computeEntityMetrics(entities, visibleTxs, stateByEntity) {
-    const flowMap = {};
-    const degreeMap = {};
-    const commitMap = {};
-    entities.forEach(e => {
-      flowMap[e.id] = 0;
-      degreeMap[e.id] = new Set();
-      commitMap[e.id] = 0;
-    });
+    const flowMap = {}, degreeMap = {}, commitMap = {};
+    entities.forEach(e => { flowMap[e.id] = 0; degreeMap[e.id] = new Set(); commitMap[e.id] = 0; });
 
     visibleTxs.forEach(tx => {
       const amt = Number(tx.totalCommitment) || 0;
@@ -260,68 +247,90 @@
       const deg = degreeMap[e.id] ? degreeMap[e.id].size : 0;
       const infra = e.infraRole || 50;
 
-      // Composite Systemic Importance Score (0 - 100+)
-      const systemic = e.isOcean
-        ? 100
-        : Math.round(
-            Math.min(35, Math.log10(1 + flows) * 12) +
-            Math.min(20, Math.log10(1 + debt) * 8) +
-            Math.min(20, Math.log10(1 + rpo) * 7) +
-            Math.min(15, deg * 2.2) +
-            (infra * 0.25)
-          );
+      const systemic = e.isOcean ? 100 : Math.round(
+        Math.min(35, Math.log10(1 + flows) * 12) +
+        Math.min(20, Math.log10(1 + debt) * 8) +
+        Math.min(20, Math.log10(1 + rpo) * 7) +
+        Math.min(15, deg * 2.2) +
+        (infra * 0.25)
+      );
 
-      metrics[e.id] = {
-        systemic,
-        revenue: rev,
-        debt,
-        liquidity: cash + (st.undrawnCredit ?? 0),
-        commitments: rpo,
-        networkExposure: flows,
-        degree: deg
-      };
+      metrics[e.id] = { systemic, revenue: rev, debt, liquidity: cash + (st.undrawnCredit ?? 0), commitments: rpo, networkExposure: flows, degree: deg };
     });
     return metrics;
   }
 
   /**
-   * Core Phase 3 Simulation Engine:
-   * - Historical quarters (<= 2026Q3): returns strictly disclosed/reported values (no lookahead).
-   * - 2026Q4 (Partial) & Forecast quarters (2027Q1–2028Q4): runs Mode A / Mode B quarterly cash flow
-   *   projection with Ocean macro parameters, per-company overrides, 3-level distress detection,
-   *   and multi-hop contagion propagation along verified edges.
+   * Core Phase 3 & Audit-Remediated v2 Simulation Engine.
    */
   function runSimulation(entities, transactions, options = {}) {
     const ocean = Object.assign({
       fundingAvailability: 100,    // % (0-100)
-      interestRate: 7.5,           // %
+      interestRate: 7.5,           // % (wired into floating/new/refi debt!)
       refiSuccessRate: 85,         // % (0-100)
       maxCapacity: 250,            // $B per quarter
       creditTighteningBps: 0       // bps added to spreads
     }, options.ocean || {});
 
-    const overrides = options.overrides || {}; // { entityId: { param: val } }
+    const overrides = options.overrides || {};
     const forcedDefaults = new Set(options.forcedDefaults || []);
     const defaultHaircut = options.defaultHaircut ?? 0.75;
+    const crisisCapExCut = options.crisisCapExCut ?? 0.40;
     const lgd = options.lgd ?? 0.45;
+    const guaranteeCallRate = options.guaranteeCallRate ?? 0.25;
+    const gpuShareOfAiCapex = options.gpuShareOfAiCapex ?? 0.45;
+    const capexElasticity = options.capexElasticity ?? 0.35;
+    const maxCapexCutShare = options.maxCapexCutShare ?? 0.65;
+    const gpuCollateralHaircut = options.gpuCollateralHaircut ?? 0.0; // Case H: 0.0 to 0.70
+    const pointInTimeBacktest = Boolean(options.pointInTimeBacktest);
 
-    const timeline = {}; // { quarter: { entities: { id: state }, contagionLog: [], summary: {} } }
+    const entityById = Object.fromEntries(entities.map(e => [e.id, e]));
+    const timeline = {};
 
-    // Helper: get latest known financial snapshot on or before quarter q
+    // Global cross-quarter deduplication trackers (P0-2 & P0-1 A2/A4)
+    const cumCreditLossByTx = {};
+    const arWrittenOffPairs = new Set();
+    const equityImpairedTxIds = new Set();
+    const nextQGrowthPenalty = {}; // { entityId: negative delta } from Channel A3
+
+    // Pre-compute historical baseline OCF calibration per entity (P0-3.1: eliminates 2026Q4 artificial cliff)
+    const ocfCalibById = {};
+    entities.forEach(e => {
+      const q3 = e.financials && e.financials["2026Q3"];
+      const p = e.defaults || {};
+      if (q3 && q3.ocf !== null && q3.ocf !== undefined && q3.revenue !== null && q3.revenue !== undefined) {
+        const gm = Math.max(0.05, Math.min(0.98, p.grossMargin ?? 0.55));
+        const cc = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
+        const q3Int = q3.interestExp ?? 0;
+        // Exact pre-interest operating cash flow at Q3 baseline
+        const q3GrossCash = q3.revenue * gm * cc;
+        const impliedFixedOpCash = q3GrossCash - (q3.ocf + q3Int);
+        ocfCalibById[e.id] = {
+          hasCalib: true,
+          impliedFixedOpCash,
+          baseRev: q3.revenue,
+          baseOcfMargin: q3.revenue > 0 ? q3.ocf / q3.revenue : 0
+        };
+      } else {
+        ocfCalibById[e.id] = { hasCalib: false };
+      }
+    });
+
+    // Historical Snapshot Helper (P1-3 fixed: matches by periodEnd by default, disclosedDate only in pointInTimeBacktest)
     function getHistoricalSnapshot(entity, q) {
       const targetIdx = qIndex(q);
       const qEnd = quarterEndDate(q);
       const exact = entity.financials && entity.financials[q];
-      if (exact && (!exact.disclosedDate || exact.disclosedDate <= qEnd || q === "2026Q3")) {
-        return Object.assign({ quarter: q, hasActual: true, isSimulatedEvent: false, distressLevel: 0 }, exact);
+      if (exact) {
+        const pitOk = !pointInTimeBacktest || !exact.disclosedDate || exact.disclosedDate <= qEnd;
+        if (pitOk) {
+          return Object.assign({ quarter: q, hasActual: true, isSimulatedEvent: false, distressLevel: 0 }, exact);
+        }
       }
-      // Check if an earlier quarter exists for carry-forward display (strictly labeled prior/unavailable)
       let best = null;
       if (entity.financials) {
         for (const [fq, vals] of Object.entries(entity.financials)) {
-          if (qIndex(fq) <= targetIdx) {
-            best = vals;
-          }
+          if (qIndex(fq) <= targetIdx) best = vals;
         }
       }
       if (!best) {
@@ -335,17 +344,22 @@
       return Object.assign({ quarter: q, hasActual: false, isSimulatedEvent: false, distressLevel: 0 }, best, { dataType: best.dataType || "Estimated" });
     }
 
-    // Populate Historical Quarters (2022Q1 - 2026Q3)
+    // 1. Populate Historical Quarters (2022Q1 - 2026Q3)
     QUARTERS_HIST.forEach(q => {
+      const visTxs = getVisibleTransactions(transactions, q);
       const states = {};
       entities.forEach(e => {
         const snap = getHistoricalSnapshot(e, q);
         snap.distressLevel = 0;
-        snap.distressLabel = "Normal";
+        snap.distressLabel = e.isOcean ? "External Pool (Non-Defaulting)" : "Normal";
         snap.creditLoss = 0;
+        snap.equityImpairment = 0;
         snap.lostReceipts = 0;
+        snap.arCashHit = 0;
+        snap.inducedCapexCut = 0;
+        snap.rcfDraw = 0;
         snap.requiredRevenue = null;
-        const frag = computeFragilityScore(e, snap, ocean);
+        const frag = computeFragilityScore(e, snap, ocean, visTxs);
         snap.fragilityScore = frag.score;
         snap.fragilityDrivers = frag.drivers;
         states[e.id] = snap;
@@ -353,7 +367,7 @@
       timeline[q] = { quarter: q, status: "HISTORICAL", entities: states, contagionLog: [] };
     });
 
-    // Forward Simulation for 2026Q4 (Partial) and 2027Q1 - 2028Q4
+    // 2. Forward Simulation (2026Q4 Partial & 2027Q1 - 2028Q4 Forecast)
     const forwardQs = [QUARTER_PARTIAL, ...QUARTERS_FORECAST];
     let prevStates = timeline["2026Q3"].entities;
 
@@ -363,7 +377,7 @@
       const states = {};
       let oceanUsedThisQ = 0;
 
-      // Step 1: Standalone quarterly cash flow projection
+      // Step 2A: Standalone Quarterly Cash Flow Projection
       entities.forEach(e => {
         const prev = prevStates[e.id] || {};
         if (e.isOcean) {
@@ -371,7 +385,8 @@
             quarter: q, revenue: null, cash: ocean.maxCapacity, debt: 0, ocf: null, capex: 0, fcf: null,
             rpo: 0, interestExp: 0, undrawnCredit: ocean.maxCapacity,
             dataType: "System Pool", distressLevel: 0, distressLabel: "External Pool (Non-Defaulting)",
-            isSimulatedEvent: false, creditLoss: 0, lostReceipts: 0, requiredRevenue: null
+            isSimulatedEvent: false, creditLoss: 0, equityImpairment: 0, lostReceipts: 0, arCashHit: 0,
+            inducedCapexCut: 0, rcfDraw: 0, requiredRevenue: null, fragilityScore: 0, fragilityDrivers: []
           };
           return;
         }
@@ -380,55 +395,118 @@
         const begCash = prev.cash !== null && prev.cash !== undefined ? prev.cash : (p.minCash ? p.minCash * 2 : 1.0);
         const begDebt = prev.debt !== null && prev.debt !== undefined ? prev.debt : 0;
         const prevRev = prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : Math.max(0.2, (p.opex || 0.2) * 1.6);
-        const undrawn = prev.undrawnCredit !== null && prev.undrawnCredit !== undefined ? prev.undrawnCredit : 0.5;
+        const undrawn = prev.undrawnCredit !== null && prev.undrawnCredit !== undefined ? prev.undrawnCredit : 0.0;
 
-        // Effective interest rate with Ocean credit tightening
-        const effRate = (p.interestRate ?? 0.06) + (ocean.creditTighteningBps / 10000);
-        const interestPaid = Number(((begDebt * effRate) / 4).toFixed(3));
-        const principalRepay = Number((p.debtRepay ?? 0).toFixed(3));
-        const capex = Number((p.capex ?? 0).toFixed(3));
-        const opex = Number((p.opex ?? 0).toFixed(3));
-        const computePay = Number((p.computePay ?? 0).toFixed(3));
+        // Floating-rate debt share + Ocean base rate wiring (P0-3.3)
+        const myDebtTxs = visibleTxs.filter(tx => tx.receiver === e.id && ["Direct Loan","Corporate Bond","Project Finance","GPU-backed Financing","Equipment Financing"].includes(tx.type));
+        const floatingPrincipal = myDebtTxs.filter(tx => tx.isFloatingRate).reduce((s, tx) => s + (tx.amountDrawn ?? tx.totalCommitment ?? 0), 0);
+        const totalTxPrincipal = myDebtTxs.reduce((s, tx) => s + (tx.amountDrawn ?? tx.totalCommitment ?? 0), 0);
+        const floatShare = totalTxPrincipal > 0 ? Math.min(1, floatingPrincipal / totalTxPrincipal) : 0.35;
+
+        const baseFixedRate = p.interestRate ?? 0.06;
+        const oceanBaseRate = (ocean.interestRate ?? 7.5) / 100;
+        const tightening = (ocean.creditTighteningBps ?? 0) / 10000;
+        // Blend fixed debt at baseFixedRate with floating/new debt anchored to ocean.interestRate!
+        const effectiveRate = (1 - floatShare) * baseFixedRate + floatShare * Math.max(0.01, oceanBaseRate + tightening);
+        const interestPaid = Number(((begDebt * effectiveRate) / 4).toFixed(4));
+
+        // P1-4 Maturity Wall: add maturing principal when debt endQ === q
+        const maturingWall = myDebtTxs
+          .filter(tx => tx.endQ === q)
+          .reduce((s, tx) => s + ((tx.amountDrawn ?? tx.totalCommitment ?? 0) * 0.25), 0);
+        const principalRepay = Number(((p.debtRepay ?? 0) + maturingWall).toFixed(4));
+
+        // Case H: GPU Collateral Haircut & LTV Trigger
+        const gpuDebtTxs = myDebtTxs.filter(tx => tx.type === "GPU-backed Financing" || tx.type === "Equipment Financing");
+        let gpuMarginCall = 0;
+        let gpuRefiPenalty = 1.0;
+        if (gpuCollateralHaircut > 0 && gpuDebtTxs.length > 0) {
+          const baseLtv = 0.65;
+          const stressedLtv = baseLtv / Math.max(0.2, 1 - gpuCollateralHaircut);
+          if (stressedLtv > 0.85) {
+            const gpuDrawn = gpuDebtTxs.reduce((s, tx) => s + (tx.amountDrawn ?? 0), 0);
+            gpuMarginCall = Number((gpuDrawn * 0.12 * gpuCollateralHaircut).toFixed(4));
+            gpuRefiPenalty = Math.max(0.2, 1 - gpuCollateralHaircut * 1.2);
+          }
+        }
+
+        const capex = Number((p.capex ?? 0).toFixed(4));
         const grossMargin = Math.max(0.05, Math.min(0.98, p.grossMargin ?? 0.55));
         const cashConv = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
         const minCash = p.minCash ?? 1.0;
 
-        // Ocean-constrained new financing & refinancing
+        // Ocean-constrained new financing & scheduled IPO/equity inflows (e.g. Anthropic Nov 2026 $107.3B IPO)
         const availFactor = Math.max(0, Math.min(1, ocean.fundingAvailability / 100));
-        const refiFactor = Math.max(0, Math.min(1, (p.refiSuccess ?? 0.85) * (ocean.refiSuccessRate / 100)));
+        const refiFactor = Math.max(0, Math.min(1, (p.refiSuccess ?? 0.85) * (ocean.refiSuccessRate / 100) * gpuRefiPenalty));
         const requestedDebt = (p.newDebt ?? 0) * availFactor * refiFactor;
-        const allowedDebt = Math.max(0, Math.min(requestedDebt, Math.max(0, ocean.maxCapacity - oceanUsedThisQ)));
+        const allowedDebt = Number(Math.max(0, Math.min(requestedDebt, Math.max(0, ocean.maxCapacity - oceanUsedThisQ))).toFixed(4));
         oceanUsedThisQ += allowedDebt;
-        const equityInflow = (p.equityInflow ?? 0) * availFactor;
 
-        // Mode A (Contract Coverage) vs Mode B (Previous Quarter Growth)
-        const totalCashObligations = opex + computePay + capex + interestPaid + principalRepay;
-        const requiredRev = Math.max(0, (totalCashObligations + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
+        const scheduledEq = (e.scheduledEquityInflows && e.scheduledEquityInflows[q]) ? e.scheduledEquityInflows[q] : 0;
+        const equityInflow = Number((scheduledEq + (p.equityInflow ?? 0) * availFactor).toFixed(4));
+
+        // Revenue Forecast: True Mode A (Contract-Driven) vs Mode B (Previous-Quarter Growth, UNCLAMPED downside!)
+        const growthPen = nextQGrowthPenalty[e.id] || 0;
+        const rawG = (p.revGrowth ?? 0.05) - (p.revDecel ?? 0.005) * stepIdx + growthPen;
+        const clampedG = Math.max(-0.95, rawG); // Unclamped so -50% Case D executes faithfully!
 
         let projRev;
         if (p.mode === "A") {
-          // Mode A outputs contract-coverage required revenue benchmark while projecting baseline growth
-          const g = Math.max(-0.35, (p.revGrowth ?? 0.08) - (p.revDecel ?? 0.01) * stepIdx);
-          projRev = Number((prevRev * (1 + g)).toFixed(3));
+          const incomingContractQ = visibleTxs
+            .filter(tx => tx.receiver === e.id && ["Cloud Computing Purchase","Take-or-Pay Contract","Data Center Lease","GPU / Server Purchase"].includes(tx.type))
+            .reduce((s, tx) => s + (tx.quarterlyPayment || 0), 0);
+          const rpoConversion = (prev.rpo || 0) * 0.02;
+          const contractAnchor = incomingContractQ > 0 ? Math.max(incomingContractQ, rpoConversion) : prevRev * (1 + clampedG);
+          // Mode A blends contracted backlog conversion with organic growth
+          projRev = Number((0.55 * contractAnchor + 0.45 * prevRev * (1 + clampedG)).toFixed(4));
         } else {
-          const g = Math.max(-0.35, (p.revGrowth ?? 0.05) - (p.revDecel ?? 0.005) * stepIdx);
-          projRev = Number((prevRev * (1 + g)).toFixed(3));
+          projRev = Number((prevRev * (1 + clampedG)).toFixed(4));
         }
 
-        // Operating cash receipts (net of COGS ex-compute to avoid double-counting computePay)
+        // Calibrated OCF (P0-3.1): zero double-counting of computePay; smooth continuity from Q3 actuals!
+        const calib = ocfCalibById[e.id];
         const grossProfitCash = projRev * grossMargin * cashConv;
-        const taxes = Math.max(0, (grossProfitCash - opex - interestPaid) * 0.18);
-        const ocf = Number((grossProfitCash - opex - computePay - interestPaid - taxes).toFixed(3));
-        const fcf = Number((ocf - capex).toFixed(3));
-        const endCash = Number((begCash + fcf + allowedDebt + equityInflow - principalRepay).toFixed(3));
-        const endDebt = Number(Math.max(0, begDebt + allowedDebt - principalRepay).toFixed(3));
+        let ocf;
+        const incrementalCompute = overrides[e.id]?.computePay !== undefined ? Number(overrides[e.id].computePay) : 0;
+        if (calib && calib.hasCalib && overrides[e.id]?.opex === undefined) {
+          // Calibrated to actual Q3 OCF structure (preserves D&A, SBC, real cash tax rate)
+          const fixedOp = calib.impliedFixedOpCash;
+          const preTaxDelta = (grossProfitCash - fixedOp - incrementalCompute - interestPaid);
+          const incrementalTax = preTaxDelta > (calib.baseRev * grossMargin * cashConv - fixedOp)
+            ? (preTaxDelta - (calib.baseRev * grossMargin * cashConv - fixedOp)) * 0.15
+            : 0;
+          ocf = Number((preTaxDelta - incrementalTax).toFixed(4));
+        } else {
+          const opex = Number((p.opex ?? 0).toFixed(4));
+          const preTax = grossProfitCash - opex - incrementalCompute - interestPaid;
+          const taxes = Math.max(0, preTax * 0.18);
+          ocf = Number((preTax - taxes).toFixed(4));
+        }
+
+        const fcf = Number((ocf - capex).toFixed(4));
+
+        // Required minimum revenue under Mode A
+        const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall;
+        const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
+
+        // P0-3.2: Exact Accounting Conservation + Automatic RCF Drawdown!
+        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + equityInflow - principalRepay - gpuMarginCall).toFixed(4));
+        let rcfDraw = 0;
+        let endCash = preDrawCash;
+        let undrawnAfter = undrawn;
+        if (preDrawCash < 0 && undrawn > 0) {
+          rcfDraw = Number(Math.min(-preDrawCash, undrawn).toFixed(4));
+          endCash = Number((preDrawCash + rcfDraw).toFixed(4));
+          undrawnAfter = Number(Math.max(0, undrawn - rcfDraw).toFixed(4));
+        }
+        const endDebt = Number(Math.max(0, begDebt + allowedDebt + rcfDraw - principalRepay).toFixed(4));
 
         states[e.id] = {
           quarter: q,
           mode: p.mode || "B",
           revenue: projRev,
           requiredRevenue: Number(requiredRev.toFixed(2)),
-          begCash: Number(begCash.toFixed(2)),
+          begCash: Number(begCash.toFixed(4)),
           cash: endCash,
           debt: endDebt,
           ocf,
@@ -436,26 +514,60 @@
           fcf,
           interestExp: interestPaid,
           principalRepay,
-          computePay,
-          newDebt: Number(allowedDebt.toFixed(2)),
-          equityInflow: Number(equityInflow.toFixed(2)),
-          undrawnCredit: Number((undrawn * availFactor).toFixed(2)),
+          gpuMarginCall,
+          computePay: incrementalCompute,
+          newDebt: allowedDebt,
+          rcfDraw,
+          equityInflow,
+          undrawnCredit: undrawnAfter,
           rpo: prev.rpo ?? 0,
+          ar: prev.ar ?? (e.financials?.["2026Q3"]?.ar ?? null),
           minCash,
+          grossMargin,
+          cashConv,
           dataType: status === "PARTIAL" ? "Partial / Est." : "Forecast",
           distressLevel: 0,
           distressLabel: "Normal",
           isSimulatedEvent: false,
           creditLoss: 0,
-          lostReceipts: 0
+          equityImpairment: 0,
+          lostReceipts: 0,
+          arCashHit: 0,
+          inducedCapexCut: 0
         };
       });
 
-      // Helper to classify 3-level distress
+      // Helper: settle cash change cleanly with auto-RCF draw so accounting identity NEVER breaks
+      function applyCashDelta(id, ocfDelta, capexDelta = 0) {
+        const st = states[id];
+        if (!st || isPoolId(id)) return;
+        st.ocf = Number((st.ocf + ocfDelta).toFixed(4));
+        st.capex = Number(Math.max(0, st.capex + capexDelta).toFixed(4));
+        st.fcf = Number((st.ocf - st.capex).toFixed(4));
+        const netDelta = ocfDelta - capexDelta;
+        let newCash = Number((st.cash + netDelta).toFixed(4));
+        if (newCash < 0 && st.undrawnCredit > 0) {
+          const extraDraw = Number(Math.min(-newCash, st.undrawnCredit).toFixed(4));
+          st.rcfDraw = Number((st.rcfDraw + extraDraw).toFixed(4));
+          st.debt = Number((st.debt + extraDraw).toFixed(4));
+          st.undrawnCredit = Number(Math.max(0, st.undrawnCredit - extraDraw).toFixed(4));
+          newCash = Number((newCash + extraDraw).toFixed(4));
+        }
+        st.cash = newCash;
+      }
+
       function evaluateDistress(entityId) {
+        const e = entityById[entityId];
         const st = states[entityId];
-        if (!st || entityId === "PRIVATE_CREDIT_OCEAN") return;
-        const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0) + (st.computePay || 0);
+        if (!e || !st || e.isOcean) return;
+        // P0-2.3: Managed private funds absorb losses via LP NAV drawdowns — NEVER suffer corporate L3 bankruptcy!
+        if (e.lossAbsorbingInvestor) {
+          st.distressLevel = st.creditLoss > 5 ? 1 : 0;
+          st.distressLabel = st.creditLoss > 5 ? "Level 1: Fund NAV Drawdown" : "Normal";
+          st.isSimulatedEvent = false;
+          return;
+        }
+        const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0);
         const totalLiq = (st.cash || 0) + (st.undrawnCredit || 0);
 
         if (forcedDefaults.has(entityId) || totalLiq < 0) {
@@ -466,7 +578,7 @@
           st.distressLevel = 2;
           st.distressLabel = "Level 2: Liquidity Crisis";
           st.isSimulatedEvent = true;
-        } else if (st.cash < st.minCash || (st.fcf < 0 && Math.abs(st.fcf) > Math.max(0.5, st.begCash * 0.35))) {
+        } else if (st.cash < st.minCash) {
           st.distressLevel = 1;
           st.distressLabel = "Level 1: Liquidity Warning";
           st.isSimulatedEvent = false;
@@ -479,93 +591,193 @@
 
       entities.forEach(e => evaluateDistress(e.id));
 
-      // Step 2: Multi-hop Contagion Propagation (up to 3 hops along verified edges only)
+      // Step 2B: Multi-Hop Contagion Propagation (P0-1 Channels A1-A4 + P0-2 Deduplicated LGD)
       const contagionLog = [];
       const propagatedDefaults = new Set();
+      const propagatedCrisisCuts = new Set();
+      const cloudRevLossThisQ = {}; // tracks cloud revenue loss for Channel A3 Induced CapEx Contraction
 
       for (let hop = 1; hop <= 3; hop++) {
         const newDefaulters = entities
           .map(e => e.id)
-          .filter(id => id !== "PRIVATE_CREDIT_OCEAN" && states[id].distressLevel === 3 && !propagatedDefaults.has(id));
+          .filter(id => !isPoolId(id) && !entityById[id].lossAbsorbingInvestor && states[id].distressLevel === 3 && !propagatedDefaults.has(id));
 
-        if (newDefaulters.length === 0) break;
+        const newCrisisBuyers = entities
+          .map(e => e.id)
+          .filter(id => !isPoolId(id) && !entityById[id].lossAbsorbingInvestor && states[id].distressLevel === 2 && !propagatedCrisisCuts.has(id));
 
+        if (newDefaulters.length === 0 && newCrisisBuyers.length === 0) break;
+
+        // Channel A1 (L2 Liquidity Crisis -> Defensive CapEx / Hardware Order Cut)
+        newCrisisBuyers.forEach(buyerId => {
+          propagatedCrisisCuts.add(buyerId);
+          visibleTxs.forEach(tx => {
+            if (tx.payer === buyerId && tx.type === "GPU / Server Purchase") {
+              const supId = tx.receiver;
+              if (isPoolId(supId) || !states[supId]) return;
+              const qPay = tx.quarterlyPayment || (tx.totalCommitment ? tx.totalCommitment / 16 : 0);
+              const cut = Number((qPay * crisisCapExCut).toFixed(4));
+              if (cut > 0) {
+                const sup = states[supId];
+                sup.lostReceipts = Number((sup.lostReceipts + cut).toFixed(4));
+                sup.revenue = Number(Math.max(0, sup.revenue - cut).toFixed(4));
+                applyCashDelta(supId, -(cut * sup.grossMargin * sup.cashConv), 0);
+                evaluateDistress(supId);
+                contagionLog.push({ hop, from: buyerId, to: supId, txId: tx.id, channel: `A1: L2 Crisis Hardware Cut (-${Math.round(crisisCapExCut * 100)}%)`, impactB: cut });
+              }
+            }
+          });
+        });
+
+        // Level 3 Defaults Propagation
         newDefaulters.forEach(defId => {
           propagatedDefaults.add(defId);
 
           visibleTxs.forEach(tx => {
-            // Channel A: Defaulter is PAYER on Cloud/Lease/GPU/Take-or-Pay -> Supplier loses quarterly cash receipts
-            if (tx.payer === defId && ["Cloud Computing Purchase", "Take-or-Pay Contract", "Data Center Lease", "GPU / Server Purchase"].includes(tx.type)) {
+            // Channel A1 (Direct Contract / Cloud / Lease / Hardware Payment Cut)
+            if (tx.payer === defId && ["Cloud Computing Purchase","Take-or-Pay Contract","Data Center Lease","GPU / Server Purchase"].includes(tx.type)) {
               const supId = tx.receiver;
-              if (supId === "PRIVATE_CREDIT_OCEAN" || !states[supId]) return;
+              if (isPoolId(supId) || !states[supId]) return;
               const qPay = tx.quarterlyPayment || (tx.totalCommitment ? tx.totalCommitment / 20 : 0);
-              const loss = Number((qPay * defaultHaircut).toFixed(3));
+              const loss = Number((qPay * defaultHaircut).toFixed(4));
               if (loss > 0) {
-                states[supId].lostReceipts = Number((states[supId].lostReceipts + loss).toFixed(3));
-                states[supId].revenue = Number(Math.max(0, states[supId].revenue - loss).toFixed(3));
-                states[supId].ocf = Number((states[supId].ocf - loss * 0.7).toFixed(3));
-                states[supId].fcf = Number((states[supId].fcf - loss * 0.7).toFixed(3));
-                states[supId].cash = Number((states[supId].cash - loss * 0.7).toFixed(3));
+                const sup = states[supId];
+                sup.lostReceipts = Number((sup.lostReceipts + loss).toFixed(4));
+                sup.revenue = Number(Math.max(0, sup.revenue - loss).toFixed(4));
+                applyCashDelta(supId, -(loss * sup.grossMargin * sup.cashConv), 0);
+                if (entityById[supId]?.isCloudOrNeocloud) {
+                  cloudRevLossThisQ[supId] = (cloudRevLossThisQ[supId] || 0) + loss;
+                }
+                // Channel A2: One-time AR Bad-Debt Write-Off on Hardware Suppliers
+                const arKey = `${defId}->${supId}`;
+                if (entityById[supId]?.isHardwareSupplier && !arWrittenOffPairs.has(arKey)) {
+                  arWrittenOffPairs.add(arKey);
+                  const baseAr = sup.ar || (sup.revenue * 0.45);
+                  const share = Math.min(0.25, Math.max(0.03, qPay / Math.max(1, sup.revenue + loss)));
+                  const arHit = Number((baseAr * share * lgd).toFixed(4));
+                  if (arHit > 0) {
+                    sup.arCashHit = Number((sup.arCashHit + arHit).toFixed(4));
+                    applyCashDelta(supId, -arHit, 0);
+                    contagionLog.push({ hop, from: defId, to: supId, txId: tx.id, channel: `A2: AR Bad-Debt Write-Off`, impactB: arHit });
+                  }
+                }
                 evaluateDistress(supId);
-                contagionLog.push({
-                  hop, from: defId, to: supId, txId: tx.id,
-                  channel: `${tx.type} Payment Cut (-${Math.round(defaultHaircut * 100)}%)`,
-                  impactB: loss
-                });
+                contagionLog.push({ hop, from: defId, to: supId, txId: tx.id, channel: `A1: ${tx.type} Cut (-${Math.round(defaultHaircut * 100)}%)`, impactB: loss });
               }
             }
 
-            // Channel B: Defaulter is RECEIVER (Borrower) of Loan/Bond/SPV/GPU Debt -> Lender suffers credit loss
-            if (tx.receiver === defId && ["Direct Loan", "Corporate Bond", "Project Finance", "GPU-backed Financing", "Equipment Financing", "Convertible Debt"].includes(tx.type)) {
+            // Channel B: Debt Credit Loss (P0-2 Strictly Deduplicated <= 100% Principal; Non-Cash Impairment!)
+            if (tx.receiver === defId && ["Direct Loan","Corporate Bond","Project Finance","GPU-backed Financing","Equipment Financing","Convertible Debt"].includes(tx.type)) {
               const lenderId = tx.payer;
               if (!states[lenderId]) return;
-              const exp = (tx.amountDrawn && tx.amountDrawn > 0) ? tx.amountDrawn : (tx.totalCommitment || 0) * 0.5;
-              const cLoss = Number((exp * lgd).toFixed(3));
+              const principal = (tx.amountDrawn && tx.amountDrawn > 0) ? tx.amountDrawn : (tx.totalCommitment || 0);
+              const alreadyLost = cumCreditLossByTx[tx.id] || 0;
+              const remainingCap = Math.max(0, principal - alreadyLost);
+              const cLoss = Number(Math.min(remainingCap, principal * lgd).toFixed(4));
               if (cLoss > 0) {
-                states[lenderId].creditLoss = Number((states[lenderId].creditLoss + cLoss).toFixed(3));
-                if (lenderId !== "PRIVATE_CREDIT_OCEAN") {
-                  states[lenderId].cash = Number((states[lenderId].cash - cLoss * 0.25).toFixed(3));
-                  evaluateDistress(lenderId);
-                }
-                contagionLog.push({
-                  hop, from: defId, to: lenderId, txId: tx.id,
-                  channel: `${tx.type} Credit Loss (LGD ${Math.round(lgd * 100)}%)`,
-                  impactB: cLoss
-                });
+                cumCreditLossByTx[tx.id] = Number((alreadyLost + cLoss).toFixed(4));
+                states[lenderId].creditLoss = Number((states[lenderId].creditLoss + cLoss).toFixed(4));
+                // Non-cash credit impairment recorded on balance sheet; does NOT violently strip 25% cash every quarter
+                evaluateDistress(lenderId);
+                contagionLog.push({ hop, from: defId, to: lenderId, txId: tx.id, channel: `B: ${tx.type} Credit Loss (One-Time LGD)`, impactB: cLoss });
               }
             }
 
-            // Channel C: Guarantee triggered if receiver defaults
+            // Channel A4 / C: Guarantee Call (One-Time Capped <= 100% Guarantee Amount)
             if (tx.receiver === defId && tx.type === "Loan Guarantee") {
               const guarId = tx.payer;
-              if (guarId !== "PRIVATE_CREDIT_OCEAN" && states[guarId]) {
-                const callAmt = Number(((tx.totalCommitment || 0) * 0.25).toFixed(3));
-                if (callAmt > 0) {
-                  states[guarId].creditLoss = Number((states[guarId].creditLoss + callAmt).toFixed(3));
-                  states[guarId].cash = Number((states[guarId].cash - callAmt * 0.2).toFixed(3));
-                  evaluateDistress(guarId);
-                  contagionLog.push({
-                    hop, from: defId, to: guarId, txId: tx.id,
-                    channel: `Guarantee / RVG Call`,
-                    impactB: callAmt
-                  });
+              if (isPoolId(guarId) || !states[guarId]) return;
+              const cap = tx.totalCommitment || 0;
+              const alreadyCalled = cumCreditLossByTx[tx.id] || 0;
+              const remCap = Math.max(0, cap - alreadyCalled);
+              const callAmt = Number(Math.min(remCap, cap * guaranteeCallRate).toFixed(4));
+              if (callAmt > 0) {
+                cumCreditLossByTx[tx.id] = Number((alreadyCalled + callAmt).toFixed(4));
+                states[guarId].creditLoss = Number((states[guarId].creditLoss + callAmt).toFixed(4));
+                applyCashDelta(guarId, -callAmt, 0);
+                evaluateDistress(guarId);
+                contagionLog.push({ hop, from: defId, to: guarId, txId: tx.id, channel: `A4: Guarantee / RVG Cash Call`, impactB: callAmt });
+              }
+            }
+
+            // Channel A4: Non-Cash Equity Investment Impairment (Strictly Separated from OCF!)
+            if (tx.receiver === defId && tx.type === "Equity Investment" && !equityImpairedTxIds.has(tx.id)) {
+              const invId = tx.payer;
+              if (!isPoolId(invId) && states[invId]) {
+                const eqAmt = (tx.amountDrawn && tx.amountDrawn > 0) ? tx.amountDrawn : (tx.totalCommitment || 0);
+                if (eqAmt > 0) {
+                  equityImpairedTxIds.add(tx.id);
+                  const imp = Number((eqAmt * 0.80).toFixed(4));
+                  states[invId].equityImpairment = Number((states[invId].equityImpairment + imp).toFixed(4));
+                  contagionLog.push({ hop, from: defId, to: invId, txId: tx.id, channel: `A4: Non-Cash Equity Impairment`, impactB: imp });
                 }
               }
             }
           });
         });
+
+        // Channel A3: Induced CapEx Contraction (Cloud/Neocloud Lost Cloud Rev -> Dynamic CapEx Cut -> Upstream Chip/Hardware Demand Shock + AR Deterioration + Next-Qtr Growth Suppression!)
+        const totalInducedCapexCut = Object.entries(cloudRevLossThisQ).reduce((acc, [cloudId, lostRev]) => {
+          const cst = states[cloudId];
+          if (!cst || lostRev <= 0 || cst.inducedCapexCut > 0) return acc;
+          const cut = Number(Math.min(cst.capex * maxCapexCutShare, lostRev * capexElasticity).toFixed(4));
+          if (cut > 0) {
+            cst.inducedCapexCut = cut;
+            // Cloud provider saves CapEx cash!
+            applyCashDelta(cloudId, 0, -cut);
+            evaluateDistress(cloudId);
+            return acc + cut;
+          }
+          return acc;
+        }, 0);
+
+        if (totalInducedCapexCut > 0) {
+          const totalHardwareDemandShock = Number((totalInducedCapexCut * gpuShareOfAiCapex).toFixed(4));
+          entities.filter(e => e.isHardwareSupplier && e.hardwareSupplyShare > 0).forEach(hw => {
+            const hst = states[hw.id];
+            if (!hst) return;
+            const revHit = Number((totalHardwareDemandShock * hw.hardwareSupplyShare).toFixed(4));
+            if (revHit > 0) {
+              const prevHwRev = Math.max(1, hst.revenue);
+              hst.lostReceipts = Number((hst.lostReceipts + revHit).toFixed(4));
+              hst.revenue = Number(Math.max(0, hst.revenue - revHit).toFixed(4));
+              applyCashDelta(hw.id, -(revHit * hst.grossMargin * hst.cashConv), 0);
+
+              // Channel A2 indirect AR deterioration on NVDA/hardware when systemic cloud demand contracts
+              const sysArKey = `SYSTEMIC_A3_${q}->${hw.id}`;
+              if (hst.ar && !arWrittenOffPairs.has(sysArKey) && revHit / prevHwRev >= 0.03) {
+                arWrittenOffPairs.add(sysArKey);
+                const arHit = Number((hst.ar * Math.min(0.20, (revHit / prevHwRev) * 0.8) * lgd).toFixed(4));
+                if (arHit > 0) {
+                  hst.arCashHit = Number((hst.arCashHit + arHit).toFixed(4));
+                  applyCashDelta(hw.id, -arHit, 0);
+                  contagionLog.push({ hop: Math.min(3, hop + 1), from: "CLOUD_CAPEX_CUT", to: hw.id, txId: "A2_SYS", channel: `A2: Systemic AR Deterioration`, impactB: arHit });
+                }
+              }
+
+              // Suppress next-quarter revGrowth so NVDA doesn't blindly compound +8%/qtr during an AI CapEx bust
+              const pctHit = revHit / prevHwRev;
+              nextQGrowthPenalty[hw.id] = Math.max(-0.45, (nextQGrowthPenalty[hw.id] || 0) - pctHit * 1.1);
+
+              evaluateDistress(hw.id);
+              contagionLog.push({ hop: Math.min(3, hop + 1), from: "CLOUD_CAPEX_CUT", to: hw.id, txId: "A3_CAPEX", channel: `A3: Induced Cloud CapEx Cut`, impactB: revHit });
+            }
+          });
+        }
       }
 
+      // Compute final objective fragility scores for quarter q
       entities.forEach(e => {
-        const frag = computeFragilityScore(e, states[e.id], ocean);
+        const frag = computeFragilityScore(e, states[e.id], ocean, visibleTxs);
         states[e.id].fragilityScore = frag.score;
         states[e.id].fragilityDrivers = frag.drivers;
       });
+
       timeline[q] = { quarter: q, status, entities: states, contagionLog };
       prevStates = states;
     });
 
-    return { timeline, allQuarters: ALL_QUARTERS };
+    return { timeline, allQuarters: ALL_QUARTERS, cumCreditLossByTx };
   }
 
   return {

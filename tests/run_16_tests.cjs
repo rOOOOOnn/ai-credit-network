@@ -128,7 +128,7 @@ runTest(10, 'No lookahead bias in historical quarters', () => {
 
 // Test 11: Cash inflow/outflow direction, color and arrows consistent
 runTest(11, 'Directed cash flow color semantics consistent', () => {
-  const tx = transactions.find(t => t.id === 'TX05'); // OpenAI -> CoreWeave
+  const tx = transactions.find(t => t.id === 'TX05A'); // OpenAI -> CoreWeave
   assert.strictEqual(tx.payer, 'OPENAI');
   assert.strictEqual(tx.receiver, 'CRWV');
   const neutral = Engine.getEdgeVisual(tx, null, '2026Q3');
@@ -138,14 +138,14 @@ runTest(11, 'Directed cash flow color semantics consistent', () => {
 
 // Test 12: Same transaction flips Red (outflow) vs Green (inflow) by perspective
 runTest(12, 'Same transaction flips Red/Green by payer vs receiver perspective', () => {
-  const tx = transactions.find(t => t.id === 'TX05'); // OpenAI -> CoreWeave
+  const tx = transactions.find(t => t.id === 'TX05A'); // OpenAI -> CoreWeave
   const fromOpenAI = Engine.getEdgeVisual(tx, 'OPENAI', '2026Q3');
   const fromCoreWeave = Engine.getEdgeVisual(tx, 'CRWV', '2026Q3');
   assert.strictEqual(fromOpenAI.color, '#EF4444');
   assert.strictEqual(fromOpenAI.role, 'outflow');
   assert.strictEqual(fromCoreWeave.color, '#10B981');
   assert.strictEqual(fromCoreWeave.role, 'inflow');
-  return 'TX05 is Red (#EF4444) from OpenAI and Green (#10B981) from CoreWeave';
+  return 'TX05A is Red (#EF4444) from OpenAI and Green (#10B981) from CoreWeave';
 });
 
 // Test 13: Node size dynamically scales by Systemic Importance & 5 other metrics
