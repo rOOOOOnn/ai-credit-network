@@ -1,10 +1,10 @@
 {
-  "version": "v2.0-audit-remediated-2026-11-25",
-  "retrievedAt": "2026-11-24",
+  "version": "v3.0-audit2-remediated-2026-11-25",
+  "retrievedAt": "2026-11-25",
   "currency": "USD",
   "unit": "Billions",
-  "entityCount": 46,
-  "transactionCount": 76,
+  "entityCount": 50,
+  "transactionCount": 82,
   "quarters": {
     "historical": [
       "2022Q1",
@@ -52,6 +52,7 @@
     "P0-2: Added lossAbsorbingInvestor=true on private credit funds + cross-quarter LGD deduplication (<=100% principal).",
     "P0-3: Fixed 2026Q4 OCF double-deduction cliff, RCF auto-draw accounting, ocean.interestRate wiring, removed SPV_JUPITER +14 hardcode & -35% revGrowth floor.",
     "P0-4: Corrected CRWV debt ($46.9B) & interest ($0.846B), META capex ($34.9B)/OCF ($32.8B)/RVG separation ($41.5B), Anthropic Q3 OCF ($2.64B) & Q4 IPO ($107.3B).",
-    "P1: Split multi-year bundled TXs (TX04/TX05/TX12/TX14), split syndicates (TX06/TX17/TX35), moved TX10 to EXTERNAL_EQUITY_POOL, split Meta Sopaipilla SPV (TX40A-D), fixed TX48 Asset Acquisition."
+    "P1: Split multi-year bundled TXs (TX04/TX05/TX12/TX14), split syndicates (TX06/TX17/TX35), moved TX10 to EXTERNAL_EQUITY_POOL, split Meta Sopaipilla SPV (TX40A-D), fixed TX48 Asset Acquisition.",
+    "Audit 2.0 (v3.0): True one-time LGD/guarantee deduplication (defaultedTxIds), Layer 3 operational contagion (supplier->customer switching & disruption), decaying nextQGrowthPenalty, A1/A3/AR deduplication, 100% maturity wall w/ refi rollover, CRWV nonRecourseDebt/AP & ORCL $288B leases + exact periodEnd, 0 false Base Case L3 defaults, verified power/OEM/DC intermediaries (VERTIV/CEG/VST/CORZ)."
   ]
 }

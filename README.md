@@ -2,7 +2,7 @@
 
 [简体中文](#chinese)
 
-An interactive simulator for exploring how financing obligations and liquidity shocks propagate across the AI infrastructure supply chain. The v8 package includes the v2.0 audit-remediated dataset with **46 entities and 76 directed transaction records**.
+An interactive simulator for exploring how financing obligations and liquidity shocks propagate across the AI infrastructure supply chain. The v3.0 release includes the second-round audit remediation and a dataset with **50 entities and 82 directed transaction records**.
 
 ## Quick start
 
@@ -23,7 +23,7 @@ The standalone HTML files embed the dataset. Changes to files in [data/](data/) 
 
 ## Run the tests
 
-With Node.js installed, run both suites from the repository root. They cover 16 standard checks and 9 audit regressions.
+With Node.js installed, run both suites from the repository root. They cover 16 standard checks and 12 audit regressions.
 
 ```bash
 node tests/run_16_tests.cjs
@@ -38,7 +38,7 @@ node tests/audit_regression.cjs
 
 [返回英文](#ai-credit-network--financial-contagion-simulator)
 
-这是一个交互式信用风险模拟器，用来探索 AI 基础设施产业链中的融资义务，以及流动性冲击如何沿交易对手传导。v8 包采用 v2.0 审计修订数据，包含 **46 个主体和 76 笔有向交易记录**。
+这是一个交互式信用风险模拟器，用来探索 AI 基础设施产业链中的融资义务，以及流动性冲击如何沿交易对手传导。v3.0 版采用二轮审计修订数据，包含 **50 个主体和 82 笔有向交易记录**。
 
 ### 快速启动
 
@@ -59,7 +59,7 @@ HTML 页面内嵌数据。[data/](data/) 中的数据变更需要同步到 HTML 
 
 ### 运行测试
 
-安装 Node.js 后，在仓库根目录运行以下两套测试，分别覆盖 16 项常规检查和 9 项审计回归检查。
+安装 Node.js 后，在仓库根目录运行以下两套测试，分别覆盖 16 项常规检查和 12 项审计回归检查。
 
 ```bash
 node tests/run_16_tests.cjs
