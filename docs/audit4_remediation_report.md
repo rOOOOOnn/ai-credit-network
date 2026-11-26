@@ -219,3 +219,16 @@ Figures are USD billions. Meta's separately reported $34.91B capital expenditure
 Under unchanged forward assumptions, 2028Q4 cash and FCF are $116.6262B and $19.3636B for Alphabet, $83.4815B and $15.4546B for Meta, and $0 and -$10.5609B for Amazon. Amazon's $35B minimum-cash gap persists. No first default occurs for the three under this run. The revised quarterly amounts do not validate entity-specific GPU cohorts, debt availability, or lease commencement schedules.
 
 Primary sources: [Alphabet September](https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm), [Alphabet June](https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm), [Meta September](https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm), [Meta June](https://www.sec.gov/Archives/edgar/data/1326801/000162828026050705/meta-20260630.htm), and [Amazon September](https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm).
+
+### Microsoft recognized finance-lease principal and cash timing
+
+Note 12 discloses $70.973B in recognized finance-lease liabilities, a weighted-average discount rate of 4.5%, and scheduled undiscounted cash payments of $6.006B for the last three quarters of FY2027, $8.163B in FY2028, $7.433B in FY2029, $7.323B in FY2030, $7.300B in FY2031 and $59.021B thereafter. The audit forecast distributes the dated buckets evenly by quarter, with a rounding allocation that preserves each fiscal-year total. Interest uses the opening liability and an effective quarterly rate. Payments reduce cash, principal reduces the separate lease liability, and the modeled interest replaces the historical lease interest already embedded in calibrated OCF. Cash PP&E, operating lease cash costs, and standalone borrowing principal stay distinct. The undated thereafter balance and uncommenced $364.6B aggregate do not get invented quarterly payments.
+
+| Microsoft 2028Q4 | Cash | FCF | Funding gap | First model default |
+| --- | ---: | ---: | ---: | --- |
+| Existing lease schedule disabled | 236.5666 | 33.3884 | 0 | — |
+| Existing lease schedule enabled | 225.6020 | 33.4842 | 0 | — |
+
+Amounts in USD billions. The modeled 2028Q4 lease cash payment is $1.8583B including $1.1851B principal, with $59.6533B remaining on the recognized finance-lease ledger. Lower modeled interest than the historical anchor explains why FCF can rise slightly even as cash falls. The test verifies two fiscal-year buckets, interest, principal roll-forward, and the treatment of principal outside FCF. Quarterly installments and the split are model assumptions, and future additional leases are outside the recognized schedule.
+
+Source: [Microsoft September 2026 10-Q, Note 12](https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm).

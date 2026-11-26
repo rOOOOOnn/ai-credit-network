@@ -1019,6 +1019,26 @@
       commencedRemainingPayments: money(commencedRemainingPayments), dataType: "Assumption" };
   }
 
+  function financeLeaseQuarter(filing, quarter, previousBalance) {
+    if (!filing?.financeLeasePaymentBuckets) return null;
+    const elapsed = parseQuarterNumber(quarter);
+    const bucket = filing.financeLeasePaymentBuckets.find(entry => {
+      const start = parseQuarterNumber(entry.startQuarter);
+      return elapsed >= start && elapsed < start + entry.quarters;
+    });
+    const opening = previousBalance ?? filing.financeLeaseLiability;
+    if (!bucket) return { opening, ending: opening, payment: null, principal: null, interest: null,
+      dataType: "Unavailable beyond disclosed dated buckets" };
+    const interest = money(opening * ((1 + filing.financeLeaseDiscountRate) ** 0.25 - 1));
+    const units = Math.round(bucket.payment * 10000);
+    const position = elapsed - parseQuarterNumber(bucket.startQuarter);
+    const installment = (Math.floor(units / bucket.quarters) + Number(position < units % bucket.quarters)) / 10000;
+    const payment = money(Math.min(installment, opening + interest));
+    const principal = money(payment - interest);
+    return { opening, ending: money(opening - principal), payment, principal, interest,
+      dataType: "Assumption: equal quarterly installments within the disclosed fiscal-year bucket" };
+  }
+
   function phasedGuarantee(projects, quarter, maximum, called = 0) {
     let active = 0;
     let contingent = 0;
@@ -1456,6 +1476,12 @@
           : useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []);
         const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);
         const leasePayment = leaseSchedule.payment;
+        const recognizedFinanceLease = useAudit4Contracts && ov?.includeExistingFinanceLease !== false
+          ? financeLeaseQuarter(e.audit4FiscalCashFlow, q, prev.recognizedFinanceLease?.ending) : null;
+        const leasePrincipal = recognizedFinanceLease?.principal ?? 0;
+        const leaseInterestAdjustment = recognizedFinanceLease?.interest == null ? 0 :
+          recognizedFinanceLease.interest - (ocfCalibById[e.id]?.hasCalib && ov?.opex === undefined
+            ? e.audit4FiscalCashFlow.financeLeaseInterestPaid : 0);
         const grossMargin = Math.max(0.05, Math.min(0.98, p.grossMargin ?? 0.55));
         const cashConv = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
         const minCash = p.minCash ?? 1.0;
@@ -1500,18 +1526,18 @@
           ocf = Number((preTax - taxes).toFixed(4));
         }
 
-        ocf = money(ocf - leasePayment);
+        ocf = money(ocf - leasePayment - leaseInterestAdjustment);
         const fcf = Number((ocf - capex).toFixed(4));
-        const ocfBeforeLeaseTarget = capex + leasePayment;
+        const ocfBeforeLeaseTarget = capex + leasePayment + leaseInterestAdjustment;
         const preTaxTarget = ocfBeforeLeaseTarget <= taxThreshold ? ocfBeforeLeaseTarget
           : (ocfBeforeLeaseTarget - marginalTaxRate * taxThreshold) / (1 - marginalTaxRate);
         const fcfBreakEvenRevenue = money(Math.max(0, (preTaxTarget + operatingCashCosts) / (grossMargin * cashConv)));
         const minimumRequiredRevenueGrowth = prevRev > 0 ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
-        const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leasePayment;
+        const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leasePayment + leasePrincipal + leaseInterestAdjustment;
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
         // Exact Accounting Conservation + Auto-RCF Drawdown
-        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - gpuMarginCall + refresh.disposalProceeds + investmentSale).toFixed(4));
+        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - leasePrincipal - gpuMarginCall + refresh.disposalProceeds + investmentSale).toFixed(4));
         let rcfDraw = 0;
         let endCash = preDrawCash;
         let undrawnAfter = undrawn;
@@ -1553,6 +1579,9 @@
           openingQuarterCashFlow: useAudit4Contracts && q === QUARTER_PARTIAL ? auditCashFlowObservation(e.audit4CashFlowBridge) : null,
           incrementalLeasePayment: leasePayment,
           leaseSchedule,
+          recognizedFinanceLease,
+          leasePrincipal,
+          leaseInterestAdjustment,
           gpuPurchases,
           gpuCollateralValue: fleetOriginalCost > 0 ? money(fleetCollateral) : null,
           gpuAccountingLife: fleetConfig?.accountingLife ?? null,
@@ -1613,7 +1642,7 @@
           st.isSimulatedEvent = false;
           return;
         }
-        const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0);
+        const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0) + (st.leasePrincipal ?? 0) + (st.recognizedFinanceLease?.interest ?? 0);
         const totalLiq = (st.cash || 0) + (st.undrawnCredit || 0);
 
         if (forcedDefaults.has(entityId)) {
@@ -2021,10 +2050,11 @@
           state.availableLiquidity = money(Math.max(0, state.cash + (state.undrawnCredit ?? 0)));
           state.requiredFinancing = money(Math.max(0, minimumCash - state.cash - (state.undrawnCredit ?? 0)));
           const newFinancing = (state.newDebt ?? 0) + (state.rcfDraw ?? 0) + (state.equityInflow ?? 0);
-          const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0);
-          const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0);
+          const leaseInterest = state.recognizedFinanceLease?.interest ?? 0;
+          const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0) + (state.leasePrincipal ?? 0) + leaseInterest;
+          const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0) + leaseInterest;
           state.debtServiceCoverage = obligations > 0 ? money(cashBeforeDebtService / obligations) : null;
-          const cashUses = burn + (state.principalRepay ?? 0) + (state.gpuMarginCall ?? 0);
+          const cashUses = burn + (state.principalRepay ?? 0) + (state.leasePrincipal ?? 0) + (state.gpuMarginCall ?? 0);
           state.financingDependency = cashUses > 0 ? money(newFinancing / cashUses) : null;
           state.revenueGrowth = state.priorQuarterRevenue > 0 ? money(state.revenue / state.priorQuarterRevenue - 1) : null;
           state.cashRunwayMonths = burn > 0 ? money(3 * Math.max(0, state.cash - minimumCash) / burn) : null;
@@ -2302,7 +2332,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "MSFT",
-    "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q1","periodStart":"2026-07-01","periodEnd":"2026-09-30","calendarBucket":"2026Q3","revenue":92.279,"ocf":58,"capex":39.367,"currentBorrowings":4.391,"nonCurrentBorrowings":31.09,"operatingLeaseLiability":27.477,"financeLeaseLiability":70.973,"operatingLeaseCashPaid":1.547,"financeLeaseInterestPaid":0.769,"financeLeasePrincipalPaid":1,"noncashFinanceLeaseAcquisitions":5.192,"uncommencedLeaseCommitment":364.6,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
+    "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q1","periodStart":"2026-07-01","periodEnd":"2026-09-30","calendarBucket":"2026Q3","revenue":92.279,"ocf":58,"capex":39.367,"currentBorrowings":4.391,"nonCurrentBorrowings":31.09,"operatingLeaseLiability":27.477,"financeLeaseLiability":70.973,"financeLeaseDiscountRate":0.045,"financeLeasePaymentBuckets":[{"startQuarter":"2026Q4","quarters":3,"payment":6.006},{"startQuarter":"2027Q3","quarters":4,"payment":8.163},{"startQuarter":"2028Q3","quarters":4,"payment":7.433},{"startQuarter":"2029Q3","quarters":4,"payment":7.323},{"startQuarter":"2030Q3","quarters":4,"payment":7.3}],"financeLeasePaymentsThereafter":59.021,"operatingLeaseCashPaid":1.547,"financeLeaseInterestPaid":0.769,"financeLeasePrincipalPaid":1,"noncashFinanceLeaseAcquisitions":5.192,"uncommencedLeaseCommitment":364.6,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":20.281,"currentInvestments":44.228,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "name": "Microsoft Corp.",
     "ticker": "MSFT",
@@ -9024,7 +9054,7 @@ const I18N = {
     text.value = JSON.stringify({financing:config ?? example,
       gpuRefresh:state.overrides[entity.id]?.gpuRefresh ?? {economicLife:5,replacementRatio:0.25,residualValue:0.2,cohorts:[]},
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
-      includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75, openingInvestmentSaleFraction:state.overrides[entity.id]?.openingInvestmentSaleFraction ?? 0}, null, 2);
+      includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75, openingInvestmentSaleFraction:state.overrides[entity.id]?.openingInvestmentSaleFraction ?? 0, includeExistingFinanceLease:state.overrides[entity.id]?.includeExistingFinanceLease ?? true}, null, 2);
     panel.querySelector("button").textContent = t("Apply assumptions", "\u5e94\u7528\u5047\u8bbe");
     panel.querySelector("p").textContent = t(
       "Edit annual amounts by source in USD billions. Set mode to manual or curve. Example values are assumptions. A scenario freeze excludes only scenario financing. Scheduled equity, rollover and credit draws are separate.",
@@ -9190,6 +9220,7 @@ const I18N = {
         settings.leaseDelayQuarters = data.leaseDelayQuarters;
         settings.operationalRecoveryRate = data.operationalRecoveryRate;
         settings.openingInvestmentSaleFraction = data.openingInvestmentSaleFraction;
+        settings.includeExistingFinanceLease = data.includeExistingFinanceLease;
         settings.incrementalLease = data.incrementalLease;
         recompute();
       } catch (error) {

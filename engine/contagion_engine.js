@@ -703,6 +703,26 @@
       commencedRemainingPayments: money(commencedRemainingPayments), dataType: "Assumption" };
   }
 
+  function financeLeaseQuarter(filing, quarter, previousBalance) {
+    if (!filing?.financeLeasePaymentBuckets) return null;
+    const elapsed = parseQuarterNumber(quarter);
+    const bucket = filing.financeLeasePaymentBuckets.find(entry => {
+      const start = parseQuarterNumber(entry.startQuarter);
+      return elapsed >= start && elapsed < start + entry.quarters;
+    });
+    const opening = previousBalance ?? filing.financeLeaseLiability;
+    if (!bucket) return { opening, ending: opening, payment: null, principal: null, interest: null,
+      dataType: "Unavailable beyond disclosed dated buckets" };
+    const interest = money(opening * ((1 + filing.financeLeaseDiscountRate) ** 0.25 - 1));
+    const units = Math.round(bucket.payment * 10000);
+    const position = elapsed - parseQuarterNumber(bucket.startQuarter);
+    const installment = (Math.floor(units / bucket.quarters) + Number(position < units % bucket.quarters)) / 10000;
+    const payment = money(Math.min(installment, opening + interest));
+    const principal = money(payment - interest);
+    return { opening, ending: money(opening - principal), payment, principal, interest,
+      dataType: "Assumption: equal quarterly installments within the disclosed fiscal-year bucket" };
+  }
+
   function phasedGuarantee(projects, quarter, maximum, called = 0) {
     let active = 0;
     let contingent = 0;
@@ -1140,6 +1160,12 @@
           : useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []);
         const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);
         const leasePayment = leaseSchedule.payment;
+        const recognizedFinanceLease = useAudit4Contracts && ov?.includeExistingFinanceLease !== false
+          ? financeLeaseQuarter(e.audit4FiscalCashFlow, q, prev.recognizedFinanceLease?.ending) : null;
+        const leasePrincipal = recognizedFinanceLease?.principal ?? 0;
+        const leaseInterestAdjustment = recognizedFinanceLease?.interest == null ? 0 :
+          recognizedFinanceLease.interest - (ocfCalibById[e.id]?.hasCalib && ov?.opex === undefined
+            ? e.audit4FiscalCashFlow.financeLeaseInterestPaid : 0);
         const grossMargin = Math.max(0.05, Math.min(0.98, p.grossMargin ?? 0.55));
         const cashConv = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
         const minCash = p.minCash ?? 1.0;
@@ -1184,18 +1210,18 @@
           ocf = Number((preTax - taxes).toFixed(4));
         }
 
-        ocf = money(ocf - leasePayment);
+        ocf = money(ocf - leasePayment - leaseInterestAdjustment);
         const fcf = Number((ocf - capex).toFixed(4));
-        const ocfBeforeLeaseTarget = capex + leasePayment;
+        const ocfBeforeLeaseTarget = capex + leasePayment + leaseInterestAdjustment;
         const preTaxTarget = ocfBeforeLeaseTarget <= taxThreshold ? ocfBeforeLeaseTarget
           : (ocfBeforeLeaseTarget - marginalTaxRate * taxThreshold) / (1 - marginalTaxRate);
         const fcfBreakEvenRevenue = money(Math.max(0, (preTaxTarget + operatingCashCosts) / (grossMargin * cashConv)));
         const minimumRequiredRevenueGrowth = prevRev > 0 ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
-        const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leasePayment;
+        const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leasePayment + leasePrincipal + leaseInterestAdjustment;
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
         // Exact Accounting Conservation + Auto-RCF Drawdown
-        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - gpuMarginCall + refresh.disposalProceeds + investmentSale).toFixed(4));
+        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - leasePrincipal - gpuMarginCall + refresh.disposalProceeds + investmentSale).toFixed(4));
         let rcfDraw = 0;
         let endCash = preDrawCash;
         let undrawnAfter = undrawn;
@@ -1237,6 +1263,9 @@
           openingQuarterCashFlow: useAudit4Contracts && q === QUARTER_PARTIAL ? auditCashFlowObservation(e.audit4CashFlowBridge) : null,
           incrementalLeasePayment: leasePayment,
           leaseSchedule,
+          recognizedFinanceLease,
+          leasePrincipal,
+          leaseInterestAdjustment,
           gpuPurchases,
           gpuCollateralValue: fleetOriginalCost > 0 ? money(fleetCollateral) : null,
           gpuAccountingLife: fleetConfig?.accountingLife ?? null,
@@ -1297,7 +1326,7 @@
           st.isSimulatedEvent = false;
           return;
         }
-        const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0);
+        const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0) + (st.leasePrincipal ?? 0) + (st.recognizedFinanceLease?.interest ?? 0);
         const totalLiq = (st.cash || 0) + (st.undrawnCredit || 0);
 
         if (forcedDefaults.has(entityId)) {
@@ -1705,10 +1734,11 @@
           state.availableLiquidity = money(Math.max(0, state.cash + (state.undrawnCredit ?? 0)));
           state.requiredFinancing = money(Math.max(0, minimumCash - state.cash - (state.undrawnCredit ?? 0)));
           const newFinancing = (state.newDebt ?? 0) + (state.rcfDraw ?? 0) + (state.equityInflow ?? 0);
-          const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0);
-          const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0);
+          const leaseInterest = state.recognizedFinanceLease?.interest ?? 0;
+          const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0) + (state.leasePrincipal ?? 0) + leaseInterest;
+          const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0) + leaseInterest;
           state.debtServiceCoverage = obligations > 0 ? money(cashBeforeDebtService / obligations) : null;
-          const cashUses = burn + (state.principalRepay ?? 0) + (state.gpuMarginCall ?? 0);
+          const cashUses = burn + (state.principalRepay ?? 0) + (state.leasePrincipal ?? 0) + (state.gpuMarginCall ?? 0);
           state.financingDependency = cashUses > 0 ? money(newFinancing / cashUses) : null;
           state.revenueGrowth = state.priorQuarterRevenue > 0 ? money(state.revenue / state.priorQuarterRevenue - 1) : null;
           state.cashRunwayMonths = burn > 0 ? money(3 * Math.max(0, state.cash - minimumCash) / burn) : null;

@@ -311,3 +311,24 @@ const amznReported = liquid.timeline["2026Q4"].entities.AMZN.openingQuarterCashF
 assert.equal(amznReported.propertySaleAndIncentiveProceeds, 1.381);
 assert.equal(usd(amznReported.grossCashFcf + amznReported.propertySaleAndIncentiveProceeds), -33.456);
 console.log("Audit 4 Alphabet, Amazon and Meta quarterly cash-flow checks passed");
+
+const msftLeaseQuarters = ["2026Q4", "2027Q1", "2027Q2"].map(
+  q => liquid.timeline[q].entities.MSFT.recognizedFinanceLease);
+assert.equal(msftLeaseQuarters[0].opening, 70.973);
+assert.equal(msftLeaseQuarters[0].interest, usd(70.973 * (1.045 ** 0.25 - 1)));
+assert.equal(usd(msftLeaseQuarters.reduce((sum, row) => sum + row.payment, 0)), 6.006);
+for (const row of msftLeaseQuarters) {
+  assert.equal(row.principal, usd(row.payment - row.interest));
+  assert.equal(row.ending, usd(row.opening - row.principal));
+}
+assert.equal(msftLeaseQuarters[1].opening, msftLeaseQuarters[0].ending);
+const withoutMsftLease = engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, overrides: { MSFT: { includeExistingFinanceLease: false } }
+}).timeline["2026Q4"].entities.MSFT;
+assert.equal(withoutMsftLease.recognizedFinanceLease, null);
+assert.equal(usd(withoutMsftLease.fcf - msftOpening.fcf), usd(msftOpening.leaseInterestAdjustment));
+assert.equal(usd(withoutMsftLease.cash - msftOpening.cash), usd(msftOpening.leasePrincipal + msftOpening.leaseInterestAdjustment));
+assert.equal(withoutMsftLease.debt, msftOpening.debt);
+console.log("Audit 4 Microsoft lease cash, amortization and FY bucket checks passed");
+assert.equal(usd(["2027Q3", "2027Q4", "2028Q1", "2028Q2"].reduce(
+  (sum, q) => sum + liquid.timeline[q].entities.MSFT.recognizedFinanceLease.payment, 0)), 8.163);
