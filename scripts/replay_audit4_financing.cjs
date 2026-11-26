@@ -3,6 +3,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
+const reportQuarter = process.argv[2] ?? "2028Q4";
 const baseline = "a515599901f062c138f3a86fadf360817f96c4b7";
 const gitShow = file => execFileSync("git", ["show", baseline + ":" + file], {
   cwd: root, encoding: "utf8", maxBuffer: 4 * 1024 * 1024
@@ -35,13 +36,17 @@ const display = value => value ?? "—";
 for (const entity of ["OPENAI", "ANTHROPIC", "CRWV"]) {
   for (const [scenario, financing] of Object.entries(scenarios)) {
     for (const [label, version] of Object.entries(versions)) {
+      if (label === "Continuation" && reportQuarter > "2028Q4") continue;
       const result = version.engine.runSimulation(version.entities, version.transactions, {
-        audit4Contracts: version.audit4Contracts, overrides: { [entity]: { financing } }
+        audit4Contracts: version.audit4Contracts, forecastThrough: Number(reportQuarter.slice(0, 4)),
+        overrides: { [entity]: { financing } }
       });
-      const final = result.timeline["2028Q4"].entities[entity];
+      const final = result.timeline[reportQuarter]?.entities[entity];
+      if (!final) throw new RangeError("Unsupported report quarter: " + reportQuarter);
       const summary = result.scenarioSummary[entity];
+      const byReportQuarter = eventQuarter => eventQuarter && eventQuarter <= reportQuarter ? eventQuarter : null;
       console.log("| " + [label, entity, scenario, final.cash, final.fundingGap, final.cashRunwayMonths,
-        summary.defaultQuarter, summary.breakEvenQuarter].map(display).join(" | ") + " |");
+        byReportQuarter(summary.defaultQuarter), byReportQuarter(summary.breakEvenQuarter)].map(display).join(" | ") + " |");
     }
   }
 }

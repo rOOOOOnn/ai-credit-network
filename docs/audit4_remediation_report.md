@@ -615,3 +615,22 @@ Audit 4 classifies TX11 settlement as a separate cash use in the scenario bridge
 | Core Scientific to CoreWeave | The hosting exhibit directly supports TX66. Actual phase utilization and quarterly collections remain unverified. [Core Scientific](https://investors.corescientific.com/sec-filings/all-sec-filings/content/0001628280-24-026483/corzcoreweavehpc.htm) |
 | NVIDIA to CoreWeave | CoreWeave confirms GPU dependency. Direct NVIDIA procurement and spending already embedded in Dell systems cannot be separated from this disclosure. TX24 disruption magnitude remains a scenario assumption. [CoreWeave 10-Q](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000366/crwv-20260630.htm) |
 | Oracle to OpenAI | OpenAI confirms the Stargate capacity partnership. Quarterly payments and migration costs remain unverified. [OpenAI](https://openai.com/index/stargate-advances-with-partnership-with-oracle/) |
+
+
+### Companion Audit 4 archive review
+
+An independently supplied archive was compared against the current branch and tested in isolation. Its own model and data passed 39 of 39 specialized cases. The test APIs and data schemas differ. The archive has 50 entities and 83 transactions. Its added TX83 aggregates the same $3.5B and $9.5B NVIDIA caps already represented separately on this branch and assigns an unsupported calendar. Importing it would duplicate exposure. Its company GPU installed-base values mix estimates and assumptions, including owned and leased equipment, and were left out of the baseline. Its Anthropic lessee estimate links to a generic EDGAR search page and requires a direct filing before it can change the cash baseline.
+
+The archive's longer financing comparison was adapted to this branch. Run `node scripts/replay_audit4_financing.cjs 2031Q4` to reproduce the table. The continuation engine ends in 2028Q4, so the common-cutoff before/after replay remains the default. The three financing paths use the same finite capacity and scheduled inflow rules as that replay. Values are scenario results in USD billions except runway months. Reported default and break-even quarters are limited to the selected cutoff. A break-even quarter records the first nonnegative FCF and can coexist with later cash burn.
+
+| Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |
+| --- | --- | --- | ---: | ---: | ---: | --- | --- |
+| Remediated | OPENAI | Manual | -130.2395 | 140.2395 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Curve | -130.069 | 140.069 | 0 | 2028Q3 | — |
+| Remediated | OPENAI | Freeze | -163.1121 | 173.1121 | 0 | 2027Q4 | — |
+| Remediated | ANTHROPIC | Manual | 255.0982 | 0 | 166.962 | — | 2026Q4 |
+| Remediated | ANTHROPIC | Curve | 255.0982 | 0 | 166.962 | — | 2026Q4 |
+| Remediated | ANTHROPIC | Freeze | 225.0982 | 0 | 146.6913 | — | 2026Q4 |
+| Remediated | CRWV | Manual | -51.3712 | 53.3712 | 0 | 2029Q2 | — |
+| Remediated | CRWV | Curve | -51.3712 | 53.3712 | 0 | 2029Q2 | — |
+| Remediated | CRWV | Freeze | -80.1646 | 82.1646 | 0 | 2027Q1 | — |
