@@ -507,3 +507,7 @@ const lateGpu = engine.runSimulation(entities, transactions, {
 assert.equal(lateGpu.timeline["2033Q4"].entities.CRWV.replacementCapex, 0);
 assert.equal(lateGpu.timeline["2034Q1"]?.entities.CRWV.replacementCapex, 1);
 assert.equal(lateGpu.timeline["2034Q1"].entities.CRWV.disposalProceeds, 0.25);
+assert.equal(purchased.gpuFleetAgeYears, 0);
+assert.equal(replaced.gpuFleetAgeYears, 1.5);
+assert.equal(replaced.netGpuReplacementCashOutflow, 0.75);
+assert.equal(liquid.timeline["2026Q4"].entities.CRWV.gpuFleetAgeYears, null);

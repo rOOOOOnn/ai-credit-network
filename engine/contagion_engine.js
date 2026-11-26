@@ -1204,6 +1204,10 @@
           fleets[e.id] = [...refresh.cohorts];
           if (gpuPurchases > 0) fleets[e.id].push({ acquired: q, cost: gpuPurchases });
         }
+        const closingFleet = fleets[e.id] ?? [];
+        const closingFleetCost = closingFleet.reduce((sum, cohort) => sum + cohort.cost, 0);
+        const gpuFleetAgeYears = closingFleetCost > 0 ? money(closingFleet.reduce((sum, cohort) =>
+          sum + cohort.cost * (parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired)) / 4, 0) / closingFleetCost) : null;
         const capex = money((p.capex ?? 0) + refresh.replacementCapex);
         const legacyLease = ov?.incrementalLease;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
@@ -1308,6 +1312,8 @@
           financingForecast: funding ? { ...funding, fundedDebt: fundedScenarioDebt, remainingCapacity: financingRemaining[e.id], scheduledEquity: scheduledEq, scheduledEquityStatus, fundedRollover, rcfDraw } : null,
           replacementCapex: refresh.replacementCapex,
           disposalProceeds: refresh.disposalProceeds,
+          netGpuReplacementCashOutflow: money(refresh.replacementCapex - refresh.disposalProceeds),
+          gpuFleetAgeYears,
           openingInvestmentSale: investmentSale,
           openingLiquidityDisclosure: liquidityOpening || null,
           openingFiscalCashFlowDisclosure: fiscalOpening || null,
