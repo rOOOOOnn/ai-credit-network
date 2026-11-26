@@ -362,3 +362,38 @@ assert.equal(guaranteeStress.timeline["2027Q2"].guaranteeLedger[neocloud].called
 assert.equal(guaranteeStress.timeline["2027Q2"].guaranteeLedger[systems].remainingDisclosedCap, 0);
 assert.equal(calls.guaranteeLedger.TX11.calledGuarantee, 0);
 console.log("Audit 4 NVIDIA reporting cutoff and unallocated guarantee cap checks passed");
+
+const mixedLeases = [
+  { type: "finance", startQuarter: "2027Q1", termQuarters: 4, quarterlyPayment: 1, annualDiscountRate: 1.1 ** 4 - 1 },
+  { type: "operating", startQuarter: "2027Q1", termQuarters: 4, quarterlyPayment: 0.5 }
+];
+const beforeLease = engine.incrementalLeaseSchedule(mixedLeases, "2026Q4");
+assert.equal(beforeLease.uncommencedCommitment, 6);
+assert.equal(beforeLease.classifiedFinanceLiability, 0);
+const firstLease = engine.incrementalLeaseSchedule(mixedLeases, "2027Q1");
+const firstLeasePV = [1, 2, 3, 4].reduce((sum, n) => sum + 1 / 1.1 ** n, 0);
+assert.equal(firstLease.financeInterest, usd(firstLeasePV * 0.1));
+assert.equal(firstLease.financePrincipal, usd(1 - firstLeasePV * 0.1));
+assert.equal(firstLease.classifiedFinanceLiability, usd(firstLeasePV * 1.1 - 1));
+assert.equal(firstLease.ocfCashPayment, usd(0.5 + firstLeasePV * 0.1));
+assert.equal(firstLease.financeDepreciation, usd(firstLeasePV / 4));
+assert.equal(engine.incrementalLeaseSchedule(mixedLeases, "2027Q4").classifiedFinanceLiability, 0);
+assert.equal(engine.incrementalLeaseSchedule(mixedLeases, "2028Q1").payment, 0);
+assert.equal(engine.incrementalLeaseSchedule(mixedLeases, "2027Q1", 1).payment, 0);
+const zeroRate = engine.incrementalLeaseSchedule([{ ...mixedLeases[0], annualDiscountRate: 0 }], "2027Q1");
+assert.equal(zeroRate.financePrincipal, 1);
+assert.equal(zeroRate.financeInterest, 0);
+const unclassified = engine.incrementalLeaseSchedule([{ ...mixedLeases[0], annualDiscountRate: null }], "2027Q1");
+assert.equal(unclassified.unclassifiedPayment, 1);
+assert.equal(unclassified.financePrincipal, 0);
+
+const separateLease = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { ORCL: { incrementalLeaseTranches: mixedLeases } } }).timeline["2027Q1"].entities.ORCL;
+const noIncrementalLease = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { ORCL: { incrementalLeaseTranches: [] } } }).timeline["2027Q1"].entities.ORCL;
+assert.equal(usd(noIncrementalLease.cash - separateLease.cash), 1.5);
+assert.equal(usd(noIncrementalLease.fcf - separateLease.fcf), firstLease.ocfCashPayment);
+assert.equal(separateLease.leasePrincipal, firstLease.financePrincipal);
+assert.equal(separateLease.debt, noIncrementalLease.debt);
+assert.equal(separateLease.capex, noIncrementalLease.capex);
+console.log("Audit 4 incremental finance and operating lease classification checks passed");

@@ -688,18 +688,43 @@
     let payment = 0;
     let uncommencedCommitment = 0;
     let commencedRemainingPayments = 0;
+    let financeInterest = 0;
+    let financePrincipal = 0;
+    let financeDepreciation = 0;
+    let classifiedFinanceLiability = 0;
+    let unclassifiedPayment = 0;
     for (const tranche of tranches) {
       const age = parseQuarterNumber(quarter) - parseQuarterNumber(tranche.startQuarter) - Math.max(0, Math.trunc(delay));
       const term = Math.trunc(nonnegative(tranche.termQuarters));
-      if (!term) continue;
-      const installment = tranche.quarterlyPayment ?? nonnegative(tranche.commitment) / term;
+      if (!term || parseQuarterNumber(tranche.startQuarter) < 0) continue;
+      const installment = tranche.quarterlyPayment == null ? nonnegative(tranche.commitment) / term : nonnegative(tranche.quarterlyPayment);
       if (age < 0) uncommencedCommitment += installment * term;
       if (age >= 0 && age < term) {
         payment += installment;
-        commencedRemainingPayments += installment * (term - age - 1);
+        const remainingAfter = term - age - 1;
+        commencedRemainingPayments += installment * remainingAfter;
+        const rate = tranche.annualDiscountRate;
+        if (tranche.type === "finance" && Number.isFinite(rate) && rate >= 0) {
+          const effectiveRate = (1 + rate) ** 0.25 - 1;
+          const pv = periods => effectiveRate > 1e-10
+            ? installment * -Math.expm1(-periods * Math.log1p(effectiveRate)) / effectiveRate
+            : installment * periods;
+          const interest = pv(remainingAfter + 1) * effectiveRate;
+          financeInterest += interest;
+          financePrincipal += installment - interest;
+          financeDepreciation += pv(term) / term;
+          classifiedFinanceLiability += pv(remainingAfter);
+        } else if (tranche.type !== "operating") {
+          unclassifiedPayment += installment;
+        }
       }
     }
-    return { payment: money(payment), uncommencedCommitment: money(uncommencedCommitment),
+    const postedPayment = money(payment);
+    const postedPrincipal = money(financePrincipal);
+    return { payment: postedPayment, ocfCashPayment: money(postedPayment - postedPrincipal),
+      financePrincipal: postedPrincipal, financeInterest: money(financeInterest),
+      financeDepreciation: money(financeDepreciation), classifiedFinanceLiability: money(classifiedFinanceLiability),
+      unclassifiedPayment: money(unclassifiedPayment), uncommencedCommitment: money(uncommencedCommitment),
       commencedRemainingPayments: money(commencedRemainingPayments), dataType: "Assumption" };
   }
 
@@ -1161,9 +1186,10 @@
           : useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []);
         const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);
         const leasePayment = leaseSchedule.payment;
+        const leaseOperatingCash = leaseSchedule.ocfCashPayment;
         const recognizedFinanceLease = useAudit4Contracts && ov?.includeExistingFinanceLease !== false
           ? financeLeaseQuarter(e.audit4FiscalCashFlow, q, prev.recognizedFinanceLease?.ending) : null;
-        const leasePrincipal = recognizedFinanceLease?.principal ?? 0;
+        const leasePrincipal = money((recognizedFinanceLease?.principal ?? 0) + leaseSchedule.financePrincipal);
         const leaseInterestAdjustment = recognizedFinanceLease?.interest == null ? 0 :
           recognizedFinanceLease.interest - (ocfCalibById[e.id]?.hasCalib && ov?.opex === undefined
             ? e.audit4FiscalCashFlow.financeLeaseInterestPaid : 0);
@@ -1211,14 +1237,14 @@
           ocf = Number((preTax - taxes).toFixed(4));
         }
 
-        ocf = money(ocf - leasePayment - leaseInterestAdjustment);
+        ocf = money(ocf - leaseOperatingCash - leaseInterestAdjustment);
         const fcf = Number((ocf - capex).toFixed(4));
-        const ocfBeforeLeaseTarget = capex + leasePayment + leaseInterestAdjustment;
+        const ocfBeforeLeaseTarget = capex + leaseOperatingCash + leaseInterestAdjustment;
         const preTaxTarget = ocfBeforeLeaseTarget <= taxThreshold ? ocfBeforeLeaseTarget
           : (ocfBeforeLeaseTarget - marginalTaxRate * taxThreshold) / (1 - marginalTaxRate);
         const fcfBreakEvenRevenue = money(Math.max(0, (preTaxTarget + operatingCashCosts) / (grossMargin * cashConv)));
         const minimumRequiredRevenueGrowth = prevRev > 0 ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
-        const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leasePayment + leasePrincipal + leaseInterestAdjustment;
+        const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leaseOperatingCash + leasePrincipal + leaseInterestAdjustment;
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
         // Exact Accounting Conservation + Auto-RCF Drawdown
@@ -1328,7 +1354,7 @@
           st.isSimulatedEvent = false;
           return;
         }
-        const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0) + (st.leasePrincipal ?? 0) + (st.recognizedFinanceLease?.interest ?? 0);
+        const mandatoryNextQ = (st.interestExp || 0) + (st.principalRepay || 0) + (st.leasePrincipal ?? 0) + (st.recognizedFinanceLease?.interest ?? 0) + (st.leaseSchedule?.financeInterest ?? 0);
         const totalLiq = (st.cash || 0) + (st.undrawnCredit || 0);
 
         if (forcedDefaults.has(entityId)) {
@@ -1763,7 +1789,7 @@
           state.availableLiquidity = money(Math.max(0, state.cash + (state.undrawnCredit ?? 0)));
           state.requiredFinancing = money(Math.max(0, minimumCash - state.cash - (state.undrawnCredit ?? 0)));
           const newFinancing = (state.newDebt ?? 0) + (state.rcfDraw ?? 0) + (state.equityInflow ?? 0);
-          const leaseInterest = state.recognizedFinanceLease?.interest ?? 0;
+          const leaseInterest = (state.recognizedFinanceLease?.interest ?? 0) + (state.leaseSchedule?.financeInterest ?? 0);
           const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0) + (state.leasePrincipal ?? 0) + leaseInterest;
           const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0) + leaseInterest;
           state.debtServiceCoverage = obligations > 0 ? money(cashBeforeDebtService / obligations) : null;

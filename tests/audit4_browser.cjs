@@ -53,6 +53,14 @@ async function checkPage(browser, url) {
     assert.equal(await row.locator("input").first().inputValue(), "8");
     await page.locator("#stepFwdBtn").click();
     assert.notEqual(await panel.locator("output").innerText(), "");
+    const leaseSettings = JSON.parse(await scenario.inputValue());
+    leaseSettings.incrementalLeaseTranches = [
+      { type: "finance", startQuarter: "2026Q4", termQuarters: 8, quarterlyPayment: 2, annualDiscountRate: 0 },
+      { type: "operating", startQuarter: "2026Q4", termQuarters: 8, quarterlyPayment: 0.5 }
+    ];
+    await scenario.fill(JSON.stringify(leaseSettings));
+    await panel.locator("button").click();
+    assert.match(await panel.locator("[data-lease-result]").innerText(), /2\.50 \/ 2\.00 \/ 0\.00/);
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {
