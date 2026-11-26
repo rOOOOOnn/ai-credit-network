@@ -992,3 +992,9 @@ assert.equal(usd(delayedAnthropic.fcf - earlyAnthropic.fcf), 11.28);
 assert.equal(delayedAnthropicLease["2027Q4"].entities.ANTHROPIC.incrementalLeasePayment, 11.28);
 assert.equal(earlyAnthropicLease["2031Q4"].entities.ANTHROPIC.fundingGap, 8);
 assert.equal(delayedAnthropicLease["2031Q4"].entities.ANTHROPIC.fundingGap, 0);
+
+assert.equal(usd(anthropicLease.operatingPayments.reduce((sum, payment) => sum + payment, 0) -
+  anthropicLease.operatingImputedInterest), 2.81);
+assert.equal(usd(anthropicLease.financePayments.reduce((sum, payment) => sum + payment, 0) -
+  anthropicLease.financeImputedInterest), 1.674);
+assert.equal(usd(anthropicLease.separatePurchaseCommitments.reduce((sum, payment) => sum + payment, 0)), 313.819);
