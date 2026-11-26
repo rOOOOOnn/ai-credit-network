@@ -949,3 +949,16 @@ const afterRelease = engine.phasedGuarantee(releaseFixture, "2028Q3", 105, { 0: 
 assert.deepEqual([afterRelease.effectiveExposure, afterRelease.remainingGuaranteeLiability,
   afterRelease.calledGuarantee, afterRelease.projects[0].rentPaid], [0, 0, 1, 2]);
 assert.equal(afterRelease.projects[0].releaseReason, "Qualifying replacement support");
+
+const sbEnergySettlementOptions = { audit4Contracts: true, forcedDefaults: ["OPENAI"], guaranteeCallRate: 0.25,
+  sbEnergyProjects: [{ readyQuarter: "2028Q1", leaseStartQuarter: "2028Q1", termQuarters: 80, cap: 12 }] };
+const immediateCall = engine.runSimulation(entities, transactions, sbEnergySettlementOptions);
+const delayedCall = engine.runSimulation(entities, transactions,
+  { ...sbEnergySettlementOptions, sbEnergySettlementLagQuarters: 2 });
+assert.equal(delayedCall.creditEvents.find(event => event.txId === "TX11").scenarioCashSettlementQuarter, "2028Q3");
+const delayedCallFirst = delayedCall.timeline["2028Q1"];
+assert.equal(delayedCallFirst.guaranteeLedger.TX11.calledGuarantee, 3);
+assert.equal(delayedCallFirst.guaranteeLedger.TX11.cashSettledThisQuarter, 0);
+assert.equal(usd(delayedCallFirst.entities.NVDA.cash - immediateCall.timeline["2028Q1"].entities.NVDA.cash), 3);
+assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettledThisQuarter, 3);
+assert.equal(delayedCall.timeline["2028Q4"].guaranteeLedger.TX11.cashSettledThisQuarter, 0);

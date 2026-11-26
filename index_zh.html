@@ -1164,6 +1164,8 @@
     const scenarioSummary = {};
     const facilityBalances = {};
     const sbEnergyCalls = {};
+    const sbEnergySettlementQueue = new Map();
+    const sbEnergySettlementLag = Math.max(0, Math.trunc(nonnegative(options.sbEnergySettlementLagQuarters)));
     let deferredRevenue = [];
     const useAudit4Contracts = options.audit4Contracts === true;
     if (useAudit4Contracts) {
@@ -1934,6 +1936,15 @@
           }
         }
       }
+      const sbEnergyLedger = guaranteeLedger.TX11;
+      if (sbEnergyLedger?.projects) {
+        const settlement = sbEnergySettlementQueue.get(q);
+        sbEnergyLedger.cashSettledThisQuarter = settlement?.amount ?? 0;
+        if (settlement) {
+          applyCashDelta(settlement.guarantor, -settlement.amount, 0);
+          sbEnergySettlementQueue.delete(q);
+        }
+      }
       entities.forEach(e => evaluateDistress(e.id));
 
       // Step 2B: Dynamic Multi-Hop 4-Layer Contagion (strictly on activeTxs!)
@@ -2197,7 +2208,19 @@
                   eadBasis: eadInfo.eadBasis
                 });
                 states[guarId].creditLoss = Number((states[guarId].creditLoss + callAmt).toFixed(4));
-                applyCashDelta(guarId, -callAmt, 0);
+                if (eligibleProjects && sbEnergySettlementLag > 0) {
+                  const settlementIndex = parseQuarterNumber(q) + sbEnergySettlementLag;
+                  const settlementQuarter = Math.floor(settlementIndex / 4) + "Q" + (settlementIndex % 4 + 1);
+                  const amount = sbEnergySettlementQueue.get(settlementQuarter)?.amount ?? 0;
+                  sbEnergySettlementQueue.set(settlementQuarter, { guarantor: guarId, amount: money(amount + callAmt) });
+                  creditEvents.at(-1).scenarioCashSettlementQuarter = settlementQuarter;
+                } else {
+                  applyCashDelta(guarId, -callAmt, 0);
+                  if (eligibleProjects) {
+                    scenario.cashSettledThisQuarter = money(scenario.cashSettledThisQuarter + callAmt);
+                    creditEvents.at(-1).scenarioCashSettlementQuarter = q;
+                  }
+                }
                 evaluateDistress(guarId);
                 contagionLog.push({
                   hop, layer: "L1_FINANCIAL", from: defId, to: guarId, txId: tx.id,
