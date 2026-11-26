@@ -1015,3 +1015,10 @@ assert.equal(entities.find(row => row.id === "ORCL").audit4HardwareDisclosure.ac
 const metaHardware = entities.find(row => row.id === "META").audit4HardwareDisclosure;
 assert.deepEqual(metaHardware.accountingUsefulLifeRangeYears, [5, 5.5]);
 assert.equal(metaHardware.reportedServerNetworkDepreciationExpense, 13.36);
+
+assert.deepEqual(entities.find(row => row.id === "NVDA").audit4HardwareDisclosure.accountingUsefulLifeRangeYears, [2, 7]);
+const nebiusHardware = entities.find(row => row.id === "NBIS").audit4HardwareDisclosure;
+assert.deepEqual([nebiusHardware.priorAccountingUsefulLifeYears, nebiusHardware.accountingUsefulLifeYears], [4, 5]);
+const irenHardware = entities.find(row => row.id === "IREN").audit4HardwareDisclosure;
+assert.deepEqual([irenHardware.accountingUsefulLifeYears, irenHardware.pledgedNetCarryingValue,
+  irenHardware.gpuHardwareGrossCarryingValue], [5, 1.4871, 5.819]);
