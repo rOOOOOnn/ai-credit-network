@@ -45,8 +45,19 @@ async function checkPage(browser, url) {
     await annualEquity.press("Tab");
     assert.equal(await row.locator("td").nth(7).innerText(), "8.00");
     assert.ok((await panel.locator("[data-financing-chart]").innerText()).includes("8.00"));
+    const finalYear = panel.locator("tbody tr").last();
+    assert.equal(await finalYear.locator("td").first().innerText(), "2033");
+    const finalYearEquity = finalYear.locator("input").first();
+    await finalYearEquity.fill("4");
+    await finalYearEquity.press("Tab");
+    assert.equal(await finalYear.locator("td").nth(7).innerText(), "4.00");
     await panel.locator("select").first().selectOption("curve");
     assert.equal(await row.locator("input").count(), 0);
+    const curveEquity = panel.getByLabel("equity ($B)", { exact: true });
+    await curveEquity.fill("10");
+    await curveEquity.press("Tab");
+    assert.equal(await row.locator("td").nth(7).innerText(), "10.00");
+
     await panel.locator("select").nth(1).selectOption("historical");
     assert.match(await panel.locator("[data-financing-trend]").innerText(), /Insufficient Historical Data|历史融资数据不足/);
     await panel.locator("select").first().selectOption("manual");

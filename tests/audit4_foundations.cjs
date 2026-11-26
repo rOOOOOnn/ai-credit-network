@@ -567,3 +567,14 @@ assert.equal(pledgedEvents[0].fundedEAD, 10);
 assert.equal(pledgedEvents[0].collateralRecovery, 2.4);
 assert.equal(pledgedEvents[0].recognizedLoss, 3.42);
 assert.equal(pledgedEvents[0].expectedRecovery, 6.58);
+assert.deepEqual(engine.financingForecast({
+  mode: "manual", annual: { 2033: { equity: 4 } }
+}, 2033).amounts, { equity: 4 });
+const manualLate = engine.runSimulation([refreshFixture], [], { forecastThrough: 2033,
+  overrides: { REFRESH_FIXTURE: { financing: { mode: "manual", capacity: 4, quarterlyLimit: 1, annual: { 2033: { equity: 4 } } } } }
+});
+assert.equal(manualLate.timeline["2032Q4"].entities.REFRESH_FIXTURE.equityInflow, 0);
+assert.equal(manualLate.timeline["2033Q1"].entities.REFRESH_FIXTURE.equityInflow, 1);
+assert.equal(manualLate.timeline["2033Q4"].entities.REFRESH_FIXTURE.financingForecast.remainingCapacity, 0);
+assert.equal(usd(manualLate.timeline["2033Q4"].entities.REFRESH_FIXTURE.cash -
+  withoutRefresh.timeline["2033Q4"].entities.REFRESH_FIXTURE.cash), 4);

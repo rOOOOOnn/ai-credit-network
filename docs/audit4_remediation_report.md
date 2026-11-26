@@ -363,3 +363,7 @@ An explicit physical limit now retires the remaining cohort in that quarter. The
 ### GPU collateral and lender recovery
 
 A scenario cohort can explicitly pledge its modeled value to a single GPU-backed or equipment financing transaction through `pledgedTo`. At default, only remaining pledged equipment contributes to recovery, capped at funded principal, with the existing loss rate applied to residual EAD. Sold units are absent from the closing fleet and replacement units start without a lien. Unallocated company fleet value does not establish a lender's security. The independent TX27 scenario has $10B funded EAD, $2.4B modeled pledged recovery and 45% residual LGD. This gives one credit event with a $3.42B loss and $6.58B expected total recovery. The additional $50B unpledged fleet in the test contributes nothing to that lender's recovery. No real fleet-to-lien allocation is inferred.
+
+### Financing horizon and browser checks
+
+Manual amounts entered in 2033 previously appeared editable while the engine discarded them at the default six-year curve cutoff. Manual amounts now follow their explicit years and the same remaining and quarterly caps. The full-engine regression independently verifies four $1B payments in 2033 and a $4B cash increase with no remaining capacity. The browser test enters the late-year amount on each page, then switches to a curve and verifies that editing its equity base changes modeled funding. Curve horizons can extend the browser timeline within the engine's 2040 ceiling.

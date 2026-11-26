@@ -907,7 +907,9 @@
 
   function financingForecast(config, year) {
     const elapsed = year - (config.startYear ?? 2027);
-    if (elapsed < 0 || elapsed >= (config.horizon ?? 6)) return { amounts: {}, status: "Outside Horizon" };
+    if (elapsed < 0 || (config.mode !== "manual" && elapsed >= (config.horizon ?? 6))) {
+      return { amounts: {}, status: "Outside Horizon" };
+    }
     if (config.mode === "manual") return { amounts: config.annual?.[year] ?? {}, status: "Assumption" };
     const curve = config.curve ?? "linear";
     const historical = config.history ?? {};
@@ -8978,7 +8980,11 @@ const I18N = {
     state.simResult = Engine.runSimulation(state.entities, state.transactions, {
       ocean: state.ocean,
       overrides: state.overrides,
-      forecastThrough: 2033,
+      forecastThrough: Math.max(2033, ...Object.values(state.overrides).map(override => {
+        const financing = override.financing;
+        if (financing?.mode !== "curve") return 2033;
+        return (financing.startYear ?? 2027) + (financing.horizon ?? 6) - 1;
+      })),
       includeFirstGpuRefresh: true,
       audit4Contracts: true,
       forcedDefaults: Array.from(state.forcedDefaults),
@@ -9432,7 +9438,8 @@ const I18N = {
         ["annualDecline", t("Annual decline", "\u5e74\u5ea6\u589e\u901f\u964d\u5e45"), 0.2],
         ["minimumGrowth", t("Minimum growth", "\u6700\u4f4e\u589e\u901f"), 0],
         ["horizon", t("Forecast years", "\u9884\u6d4b\u5e74\u6570"), 6]
-      ]) setting(label, selectedConfig[key] ?? fallback, value => assignFunding(key, value));
+      ]) setting(label, selectedConfig[key] ?? fallback, value =>
+        assignFunding(key, key === "horizon" ? Math.max(1, Math.min(14, Math.trunc(value))) : value));
       if (selectedConfig.curve !== "historical") {
         for (const source of sources) setting(source + " ($B)", selectedConfig.base?.[source] ?? 0, value => {
           const financing = settings().financing ??= selectedConfig;

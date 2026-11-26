@@ -588,7 +588,9 @@
 
   function financingForecast(config, year) {
     const elapsed = year - (config.startYear ?? 2027);
-    if (elapsed < 0 || elapsed >= (config.horizon ?? 6)) return { amounts: {}, status: "Outside Horizon" };
+    if (elapsed < 0 || (config.mode !== "manual" && elapsed >= (config.horizon ?? 6))) {
+      return { amounts: {}, status: "Outside Horizon" };
+    }
     if (config.mode === "manual") return { amounts: config.annual?.[year] ?? {}, status: "Assumption" };
     const curve = config.curve ?? "linear";
     const historical = config.history ?? {};
