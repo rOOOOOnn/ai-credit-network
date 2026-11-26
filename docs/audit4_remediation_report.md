@@ -550,3 +550,18 @@ All amounts are in USD billions. APLD current debt is $0.112645B, long-term debt
 | Equinix | 2.571 | 2.362 | 22.647 | 1.243 | 1.558 | -0.315 |
 
 The quarterly cash figures are September year-to-date less June year-to-date. Digital Realty operating cash is 1.977486 less 1.595227, and cash improvements are 3.166212 less 1.784229. Equinix operating cash is 3.027 less 1.784, and cash purchases of other PP&E are 4.392 less 2.834. FCF uses each displayed capital purchase definition. Real estate acquisitions, sale proceeds and investments in joint ventures remain outside these cash purchase measures. Equinix's $22.839B opening borrowing principal includes $22.820B of senior notes tracked in TX57 and $0.019B of other borrowing. The $0.192B difference between consolidated principal and borrowing carrying amount reflects issuance costs and discounts on the notes. Equinix reports $1.386B of operating and $2.378B of finance lease liabilities separately, approximately $5.5B of drawable revolving credit, and $15.9B of RPO. Its $0.694B of additional signed leases had yet to commence, with commencements expected from 2026 through 2029 and terms from 2 through 99 years. The disclosure establishes aggregate exposure. Quarterly cash stress remains unquantified until a payment schedule is sourced or a separately labeled scenario is specified. Standalone payables and GPU-only capital spending remain unverified. Digital Realty's comparable RPO, drawable revolver and borrower-side uncommenced lease schedules still need verification. [Digital Realty September 10-Q](https://www.sec.gov/Archives/edgar/data/1297996/000110465926120710/dlr-20260930x10q.htm), [Digital Realty June 10-Q](https://www.sec.gov/Archives/edgar/data/1297996/000110465926089296/dlr-20260630x10q.htm), [Equinix September 10-Q](https://www.sec.gov/Archives/edgar/data/1101239/000110123926000180/eqix-20260930.htm), [Equinix June 10-Q](https://www.sec.gov/Archives/edgar/data/1101239/000110123926000147/eqix-20260630.htm).
+
+
+### TX26 disclosure bounds
+
+CoreWeave identifies exactly three facilities in its September aggregate undrawn liquidity: the revolver, DDTL 4.0 and DDTL 5.5. The September balances therefore permit a conditional arithmetic range for TX26 even though its drawable amount is undisclosed. All figures below are USD billions.
+
+| Item | Arithmetic | Result |
+| --- | --- | ---: |
+| Combined DDTL 4.0 and 5.5 availability | 5.653 reported credit availability less 0.754 RCF availability | 4.899 |
+| DDTL 5.5 nominal headroom ceiling | 2.600 capacity less 1.555 outstanding | 1.045 |
+| TX26 implied minimum | 4.899 less at most 1.045 available from DDTL 5.5 | 3.854 |
+| TX26 nominal headroom ceiling | 8.500 capacity less 4.583 outstanding | 3.917 |
+| TX26 standalone carrying amount arithmetic range | 4.583 principal less zero to 0.080 in combined non-recourse unamortized costs | 4.503 to 4.583 |
+
+The availability range assumes amounts use the same September 30 cutoff and that repayments do not create capacity in either delayed-draw term loan. It is a derived boundary on reported availability, with actual future draws still subject to conditions. The $0.080B of unamortized costs is shared across TX26 and other non-recourse financing in the filing. Exact cost allocation, cumulative funding and principal previously repaid remain unavailable. The ledger continues to leave standalone carrying value and available commitment blank. [CoreWeave September 10-Q, Note 10 and Risks Related to Our Indebtedness](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm).
