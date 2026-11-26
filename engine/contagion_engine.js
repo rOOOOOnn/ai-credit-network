@@ -1210,8 +1210,30 @@
           const allocation = allocateFunding(principalByFacility, realizedRollover);
           for (const [txId, amount] of Object.entries(allocation)) {
             if (amount <= 0) continue;
-            refinancingOriginations.push({ borrower: e.id, lender: null, replacesTxId: txId,
-              newDrawdown: amount, principalAtOrigination: amount, dataType: "Assumption" });
+            const terms = options.refinancingTerms?.[txId];
+            const validMaturity = /^\d{4}Q[1-4]$/.test(terms?.maturityQuarter ?? "") &&
+              compareQuarter(terms.maturityQuarter, q) > 0;
+            const lender = validMaturity && entityById[terms.lender] && terms.lender !== e.id ? terms.lender : null;
+            const replacementTxId = validMaturity ? `REFI-${txId}-${q}` : null;
+            refinancingOriginations.push({ borrower: e.id, lender, replacesTxId: txId,
+              replacementTxId, newDrawdown: amount, principalAtOrigination: amount, dataType: "Assumption" });
+            if (replacementTxId === null || transactions.some(tx => tx.id === replacementTxId)) continue;
+            const replacement = {
+              id: replacementTxId, payer: lender, receiver: e.id, type: "Direct Loan",
+              startQ: q, endQ: terms.maturityQuarter, totalCommitment: amount, amountDrawn: amount, amountRepaid: 0,
+              remainingCommitment: 0, networkLayer: "Financial", isFloatingRate: terms.isFloatingRate === true,
+              exposureBasis: "Modeled replacement facility with scenario terms"
+            };
+            transactions.push(replacement);
+            activeTxs.push(replacement);
+            financingLedger[replacementTxId] = {
+              txId: replacementTxId, borrower: e.id, lender, instrumentType: replacement.type, isRevolver: false,
+              beginningOutstanding: 0, newDrawdown: amount, principalRepayment: 0, nonCashConversion: 0,
+              endingOutstanding: amount, remainingCommitment: 0, cumulativeDrawdown: amount, lettersOfCredit: null,
+              canDraw: false, undrawnCommitment: 0, defaultExposure: 0, defaulted: false, accruedInterest: 0,
+              dataType: "Assumption", exposureBasis: replacement.exposureBasis
+            };
+            (facilityByBorrower[e.id] ??= []).push(financingLedger[replacementTxId]);
           }
           const unallocated = money(realizedRollover - Object.values(allocation).reduce((sum, amount) => sum + amount, 0));
           if (unallocated > 0) refinancingOriginations.push({ borrower: e.id, lender: null, replacesTxId: null,
