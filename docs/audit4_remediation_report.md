@@ -570,3 +570,16 @@ The availability range assumes amounts use the same September 30 cutoff and that
 ### CoreWeave tenant lease exposure
 
 Note 8 reports $32.954B of commenced operating payments and $0.822B of commenced finance payments. Subtracting imputed interest of $14.257B and $0.173B respectively reconciles to $18.697B and $0.649B of recognized liabilities. The scenario input export now retains the disclosed annual buckets and the separate $47.4B estimate of undiscounted future payments for leases expected to start in 2026 through 2029. Terms range from seven to seventeen years. The filing excludes a separate variable rent arrangement capped at $16.9B and other variable arrangements covering 354 MW of undelivered power. The $0.188B to $0.817B estimated spend on lessee-owned equipment is a distinct capital commitment. The note also reports a $0.432B recognized finance liability and $1.2B of committed future payments for the equipment lessor. Those figures require careful reconciliation against the aggregates before any incremental cash flow is assigned. Project payment calendars, phase-level lease mix and overlap remain unresolved. These memorandum amounts are retained separately from the baseline cash flows. [CoreWeave September 10-Q, Note 8](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm).
+
+
+#### CoreWeave lease timing sensitivity
+
+The following 2026Q4 overlay treats the $47.4B undiscounted aggregate as incremental operating rent, assumes immediate commencement after the reporting cutoff, and spreads the total evenly over the stated term endpoint. Classification, timing and overlap with calibrated cash costs are scenario assumptions. The full overlay describes gross sensitivity and may overstate incremental cash pressure if the calibrated baseline already includes some of these payments.
+
+| Scenario, USD billions | Quarterly incremental payment | OCF | FCF | Ending cash | Required revenue |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Existing audited profile | 0 | 2.1585 | -3.0415 | 5.8911 | 0 |
+| Immediate start, seven years | 1.6929 | 0.4656 | -4.7344 | 4.1982 | 2.56 |
+| Immediate start, seventeen years | 0.6971 | 1.4614 | -3.7386 | 5.1940 | 0.54 |
+
+Payments are $47.4B divided by 28 or 68. Both scenarios reduce first-quarter FCF and ending cash by the payment amount and leave the first-quarter funding gap at zero. The tests execute both paths via model overrides and verify those amounts. The $16.9B separate contractual maximum and unquantified variable arrangements are outside these scenarios. [CoreWeave September 10-Q, Note 8](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm).
