@@ -797,3 +797,11 @@ assert.equal(detailedOperating.fcf, 0.1);
 assert.equal(detailedOperating.operatingCashBridge.researchCashCost, 0.3);
 assert.equal(detailedOperating.operatingCashBridge.workingCapitalCashUse, 0.4);
 assert.equal(detailedOperating.minimumRequiredRevenueGrowth, -0.05);
+const weightedFunding = engine.runSimulation([refreshFixture], [], {
+  overrides: { REFRESH_FIXTURE: { financing: { mode: "manual", capacity: 8, quarterlyLimit: 4,
+    annual: { 2027: { equity: 8 } }, quarterWeights: [1, 0, 1, 2] } } }
+});
+assert.deepEqual(["2027Q1", "2027Q2", "2027Q3", "2027Q4"].map(q =>
+  weightedFunding.timeline[q].entities.REFRESH_FIXTURE.equityInflow), [2, 0, 2, 4]);
+assert.equal(usd(weightedFunding.timeline["2027Q4"].entities.REFRESH_FIXTURE.cash -
+  withoutRefresh.timeline["2027Q4"].entities.REFRESH_FIXTURE.cash), 8);
