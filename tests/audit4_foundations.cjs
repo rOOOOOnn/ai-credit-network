@@ -397,3 +397,31 @@ assert.equal(separateLease.leasePrincipal, firstLease.financePrincipal);
 assert.equal(separateLease.debt, noIncrementalLease.debt);
 assert.equal(separateLease.capex, noIncrementalLease.capex);
 console.log("Audit 4 incremental finance and operating lease classification checks passed");
+
+const crwvFacilityId = "CRWV_RCF_DISCLOSED";
+const reportedCrwvFacility = liquid.timeline["2026Q4"].financingLedger[crwvFacilityId];
+assert.equal(reportedCrwvFacility.beginningOutstanding, 1.2);
+assert.equal(reportedCrwvFacility.lettersOfCredit, 0.546);
+assert.equal(reportedCrwvFacility.undrawnCommitment, 0.754);
+assert.equal(reportedCrwvFacility.cumulativeDrawdown, null);
+assert.equal(liquid.timeline["2026Q4"].financingLedger.TX26.undrawnCommitment, null);
+const crwvRcfStress = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { CRWV: { computePay: 25, financing: noFunding } } });
+const crwvRcfQuarter = crwvRcfStress.timeline["2026Q4"];
+const crwvRcfBorrower = crwvRcfQuarter.entities.CRWV;
+const crwvRcf = crwvRcfQuarter.financingLedger[crwvFacilityId];
+assert.equal(crwvRcf.newDrawdown, 0.754);
+assert.equal(crwvRcfBorrower.rcfDraw, 0.754);
+assert.equal(crwvRcf.endingOutstanding, 1.954);
+assert.equal(crwvRcf.defaultExposure, 1.954);
+assert.equal(crwvRcf.cumulativeDrawdown, null);
+assert.equal(crwvRcf.lender, null);
+assert.equal(crwvRcfBorrower.cash, usd(crwvRcfBorrower.begCash + crwvRcfBorrower.fcf + 0.754 -
+  crwvRcfBorrower.principalRepay - crwvRcfBorrower.gpuMarginCall));
+assert.equal(crwvRcfBorrower.debt, usd(46.873 + 0.754 - crwvRcfBorrower.principalRepay));
+assert.equal(crwvRcfStress.timeline["2027Q1"].entities.CRWV.rcfDraw, 0);
+const crwvEvents = crwvRcfStress.creditEvents.filter(event => event.txId === crwvFacilityId);
+assert.equal(crwvEvents.length, 1);
+assert.equal(crwvEvents[0].fundedEAD, 1.954);
+assert.equal(crwvEvents[0].lender, null);
+console.log("Audit 4 CoreWeave letter-of-credit reserve and RCF reconciliation checks passed");

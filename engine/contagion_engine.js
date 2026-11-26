@@ -800,12 +800,16 @@
     const scenarioSummary = {};
     const facilityBalances = {};
     const deferredRevenue = [];
+    const useAudit4Contracts = options.audit4Contracts === true;
+    if (useAudit4Contracts) {
+      const disclosedFacilities = entities.flatMap(entity => entity.audit4Facilities ?? []);
+      transactions = [...transactions, ...disclosedFacilities.filter(facility => !transactions.some(tx => tx.id === facility.id))];
+    }
     transactions = transactions.map(tx => {
       const extension = options.facilityExtensions?.[tx.id];
       return extension && /\bRCF\b/i.test(tx.collateral ?? "") && compareQuarter(extension, tx.endQ) > 0
         ? { ...tx, endQ: extension } : tx;
     });
-    const useAudit4Contracts = options.audit4Contracts === true;
     const reportedAnthropic = useAudit4Contracts && entities.find(e => e.id === "ANTHROPIC")?.audit4Observations;
     if (reportedAnthropic) {
       transactions = transactions.map(tx => {
@@ -961,9 +965,9 @@
           txId: tx.id, borrower: tx.receiver, lender: tx.payer, instrumentType: tx.type, isRevolver,
           beginningOutstanding: beginning, dataType: "Forecast", exposureBasis: tx.exposureBasis ?? observed.eadBasis,
           newDrawdown: 0, principalRepayment: 0, nonCashConversion, endingOutstanding: money(beginning - nonCashConversion),
-          remainingCommitment, cumulativeDrawdown,
+          remainingCommitment, cumulativeDrawdown, lettersOfCredit: tx.lettersOfCredit ?? null,
           undrawnCommitment: active && tx.endQ !== q && !previous?.defaulted
-            ? isRevolver ? money(Math.max(0, nonnegative(tx.totalCommitment) - beginning)) : remainingCommitment
+            ? isRevolver ? money(Math.max(0, nonnegative(tx.totalCommitment) - beginning - nonnegative(tx.lettersOfCredit))) : remainingCommitment
             : 0,
           defaultExposure: previous?.defaultExposure ?? 0,
           defaulted: previous?.defaulted ?? false,
@@ -982,8 +986,8 @@
           const draw = allocation[row.txId];
           row.newDrawdown = money(row.newDrawdown + draw);
           row.endingOutstanding = money(row.endingOutstanding + draw);
-          row.cumulativeDrawdown = money(row.cumulativeDrawdown + draw);
-          row.remainingCommitment = money(Math.max(0, row.remainingCommitment - draw));
+          if (row.cumulativeDrawdown !== null) row.cumulativeDrawdown = money(row.cumulativeDrawdown + draw);
+          if (row.remainingCommitment !== null) row.remainingCommitment = money(Math.max(0, row.remainingCommitment - draw));
           row.undrawnCommitment = money(row.undrawnCommitment - draw);
         }
         return money(Object.values(allocation).reduce((sum, draw) => sum + draw, 0));
@@ -1574,7 +1578,6 @@
             if (tx.receiver === defId && DEBT_TX_TYPES.includes(tx.type)) {
               if (defaultedTxIds.has(tx.id)) return;
               const lenderId = tx.payer;
-              if (!states[lenderId]) return;
               const row = financingLedger[tx.id];
               const eadInfo = row && row.endingOutstanding !== null
                 ? computeTransactionEAD({ ...tx, principalOutstanding: row.endingOutstanding,
@@ -1607,10 +1610,12 @@
                   remainingExposure: 0,
                   eadBasis: eadInfo.eadBasis
                 });
-                states[lenderId].creditLoss = Number((states[lenderId].creditLoss + cLoss).toFixed(4));
-                evaluateDistress(lenderId);
+                if (states[lenderId]) {
+                  states[lenderId].creditLoss = money(states[lenderId].creditLoss + cLoss);
+                  evaluateDistress(lenderId);
+                }
                 contagionLog.push({
-                  hop, layer: "L1_FINANCIAL", from: defId, to: lenderId, txId: tx.id,
+                  hop, layer: "L1_FINANCIAL", from: defId, to: lenderId ?? defId, txId: tx.id,
                   channel: `L1 Direct Financial: ${tx.type} Credit Loss (EAD $${eadInfo.totalEAD.toFixed(2)}B x ${Math.round(eadInfo.lgd * 100)}% LGD)`,
                   impactB: cLoss
                 });
