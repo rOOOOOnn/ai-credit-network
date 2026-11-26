@@ -1093,10 +1093,16 @@
       const age = parseQuarterNumber(quarter) - activation;
       const cap = nonnegative(project.cap);
       const term = nonnegative(project.termQuarters);
-      const terminated = project.terminationQuarter && compareQuarter(quarter, project.terminationQuarter) >= 0;
+      const release = [
+        ["Scheduled termination", project.terminationQuarter],
+        ["Qualifying credit rating", project.qualifyingCreditRatingQuarter],
+        ["Qualifying replacement support", project.qualifyingReplacementQuarter]
+      ].filter(([, releaseQuarter]) => releaseQuarter && parseQuarterNumber(releaseQuarter) >= 0)
+        .sort((left, right) => compareQuarter(left[1], right[1]))[0];
+      const terminated = release != null && compareQuarter(quarter, release[1]) >= 0;
       const contingent = !terminated && (activation < 0 || age < 0);
       const active = !terminated && activation >= 0 && age >= 0 && age < term;
-      const scheduledEnd = project.terminationQuarter ? parseQuarterNumber(project.terminationQuarter) : Infinity;
+      const scheduledEnd = release ? parseQuarterNumber(release[1]) : Infinity;
       const lastPaymentQuarter = Math.min(parseQuarterNumber(quarter), activation + term - 1, scheduledEnd - 1);
       const rentPaid = activation < 0 || lastPaymentQuarter < activation ? 0 : project.paymentsByQuarter
         ? Object.entries(project.paymentsByQuarter).reduce((sum, [q, amount]) => {
@@ -1108,6 +1114,7 @@
         projectIndex: index, phase: active ? "Active" : contingent ? "Contingent" : "Expired",
         scenarioCap: cap, readyQuarter: project.readyQuarter ?? null, leaseStartQuarter: project.leaseStartQuarter ?? null,
         terminationQuarter: project.terminationQuarter ?? null,
+        scenarioReleaseQuarter: release?.[1] ?? null, releaseReason: terminated ? release[0] : null,
         effectiveExposure: active ? Math.max(0, cap - rentPaid) : 0,
         contingentExposure: contingent ? cap : 0, rentPaid: money(rentPaid),
         calledGuarantee: previouslyCalled?.[index] ?? 0, calledThisQuarter: 0

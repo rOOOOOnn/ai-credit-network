@@ -939,3 +939,13 @@ assert.deepEqual([preCommencement.incrementalLeasePayment, preCommencement.lease
 assert.deepEqual([atCommencement.incrementalLeasePayment, atCommencement.leaseSchedule.uncommencedCommitment,
   atCommencement.fcf, atCommencement.cash], [1.6929, 0, -4.4515, 12.2908]);
 assert.equal(usd(atCommencement.cash - 5.5192), 4 * usd(47.4 / 28));
+
+const releaseFixture = [{ readyQuarter: "2028Q1", leaseStartQuarter: "2028Q2", termQuarters: 80,
+  cap: 12, qualifyingCreditRatingQuarter: "2028Q4", qualifyingReplacementQuarter: "2028Q3",
+  paymentsByQuarter: { "2028Q2": 2, "2028Q3": 1 } }];
+const beforeRelease = engine.phasedGuarantee(releaseFixture, "2028Q2", 105, { 0: 1 });
+assert.deepEqual([beforeRelease.effectiveExposure, beforeRelease.remainingGuaranteeLiability], [10, 9]);
+const afterRelease = engine.phasedGuarantee(releaseFixture, "2028Q3", 105, { 0: 1 });
+assert.deepEqual([afterRelease.effectiveExposure, afterRelease.remainingGuaranteeLiability,
+  afterRelease.calledGuarantee, afterRelease.projects[0].rentPaid], [0, 0, 1, 2]);
+assert.equal(afterRelease.projects[0].releaseReason, "Qualifying replacement support");
