@@ -283,3 +283,16 @@ assert.equal(oracleOpening.priorQuarterRevenue, 19.345);
 assert.equal(oracleOpening.incrementalLeasePayment, 0);
 assert.equal(liquid.timeline["2027Q1"].entities.ORCL.incrementalLeasePayment, 1.4118);
 console.log("Audit 4 Oracle customer prepayment and fiscal-period checks passed");
+
+const msftOpening = liquid.timeline["2026Q4"].entities.MSFT;
+const msftFiling = msftOpening.openingFiscalCashFlowDisclosure;
+assert.equal(msftOpening.priorQuarterRevenue, 92.279);
+assert.equal(msftOpening.begCash, 20.281);
+assert.equal(usd(msftFiling.ocf - msftFiling.capex), 18.633);
+assert.equal(usd(msftFiling.currentBorrowings + msftFiling.nonCurrentBorrowings), 35.481);
+assert.equal(usd(msftFiling.operatingLeaseLiability + msftFiling.financeLeaseLiability), 98.45);
+assert.equal(msftFiling.financeLeasePrincipalPaid, 1);
+assert.equal(msftFiling.noncashFinanceLeaseAcquisitions, 5.192);
+assert.equal(msftOpening.incrementalLeasePayment, 0);
+assert.ok(Number.isFinite(msftOpening.fcf));
+console.log("Audit 4 Microsoft cash flow and lease classification checks passed");

@@ -797,7 +797,7 @@
       const fiscal = useAudit4Contracts ? e.audit4FiscalCashFlow : null;
       const originalQ3 = e.financials?.["2026Q3"];
       const existingQ3 = originalQ3 && fiscal?.calendarBucket === "2026Q3"
-        ? { ...originalQ3, revenue: fiscal.revenue, ocf: money(fiscal.ocf - fiscal.financingComponentPrepayments) }
+        ? { ...originalQ3, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;
       const bridge = useAudit4Contracts ? e.audit4CashFlowBridge : null;
       const q3 = existingQ3 && bridge?.quarter === "2026Q3"

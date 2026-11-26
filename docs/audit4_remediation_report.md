@@ -193,3 +193,13 @@ The bridge separately preserves reported current and non-current borrowings of $
 The revised cash profile is conditional on the unchanged financing and forward CapEx assumptions. The CapEx and commencement schedule are not validated by this bridge. In the standard nine-path replay Anthropic and CoreWeave are unchanged. OpenAI's manual, curve and freeze 2028Q4 cash is -$14.7058B, -$12.9399B and -$48.0550B, respectively, with gaps of $24.7058B, $22.9399B and $58.0550B. Runway and first model default quarters remain unchanged from the preceding comparison.
 
 Primary source: [Oracle August 2026 10-Q, cash-flow statement, Note 1, Note 6 and MD&A](https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm).
+
+### Microsoft quarterly cash flow and lease reconciliation
+
+The September 2026 10-Q reports $92.279B revenue, $58.000B OCF, $39.367B cash additions to property and equipment, and $18.633B by subtraction. The audited forecast now anchors revenue and OCF to those figures. The historical fixture remains available for replay, and future CapEx remains a scenario parameter. Starting cash and equivalents are $20.281B. Current and non-current borrowings of $4.391B and $31.090B total $35.481B and exclude recognized lease liabilities.
+
+Note 12 separately reports $27.477B operating and $70.973B finance lease liabilities, $1.547B in cash paid within operating leases, $0.769B finance lease interest classified in OCF, $1.000B finance lease principal classified in financing cash flow, and $5.192B in noncash ROU additions under finance leases. The noncash additions do not enter historical cash CapEx. The historical OCF calibration already includes the operating lease and finance interest cash charges. The $364.6B additional commitment remains an uncommenced aggregate with some conditional arrangements and no project-by-quarter schedule. The audit profile does not automatically convert it into a quarterly charge. The model still needs a separate forward finance-lease principal schedule.
+
+With unchanged forward financing and CapEx assumptions, audited 2028Q4 cash changes from $155.4063B to $236.5666B and quarterly FCF from $24.3724B to $33.3884B. Neither scenario triggers Microsoft model default through 2028Q4. The difference primarily reflects the $9.020B higher reported OCF anchor. These outputs do not estimate the cash effects of the uncommenced aggregate.
+
+Source: [Microsoft September 2026 Form 10-Q, income and cash flow statements and Notes 9 and 12](https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm).

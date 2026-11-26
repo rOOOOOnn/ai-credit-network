@@ -208,6 +208,7 @@
   },
   {
     "id": "MSFT",
+    "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q1","periodStart":"2026-07-01","periodEnd":"2026-09-30","calendarBucket":"2026Q3","revenue":92.279,"ocf":58,"capex":39.367,"currentBorrowings":4.391,"nonCurrentBorrowings":31.09,"operatingLeaseLiability":27.477,"financeLeaseLiability":70.973,"operatingLeaseCashPaid":1.547,"financeLeaseInterestPaid":0.769,"financeLeasePrincipalPaid":1,"noncashFinanceLeaseAcquisitions":5.192,"uncommencedLeaseCommitment":364.6,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":20.281,"currentInvestments":44.228,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "name": "Microsoft Corp.",
     "ticker": "MSFT",
