@@ -119,6 +119,13 @@ async function checkPage(browser, url) {
     assert.equal(firstQuarter.financingLedger.TX26.lender, null);
     assert.equal(firstQuarter.financingLedger.TX26.undrawnCommitment, null);
     assert.equal(ledger.quarters.at(-1).quarter, "2034Q4");
+    await page.locator("#closeDataModalBtn").click();
+    await page.locator('[data-network-entity="CRWV"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    const coreWeaveLease = panel.locator("[data-lease-disclosure]");
+    assert.match(await coreWeaveLease.innerText(), /47\.40 \(2026-09-30\)/);
+    assert.match(await coreWeaveLease.locator("a").getAttribute("href"), /crwv-20260930\.htm$/);
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {

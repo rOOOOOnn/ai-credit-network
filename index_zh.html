@@ -259,7 +259,7 @@
           </div>
         </div>
         <div id="paramControls" class="grid grid-cols-2 gap-2.5"></div>
-        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><p data-lease-result></p><p data-gpu-result></p><p data-equity-dilution></p><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th><th>Financing growth</th><th>Revenue growth</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
+        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><p data-lease-disclosure></p><p data-lease-result></p><p data-gpu-result></p><p data-equity-dilution></p><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th><th>Financing growth</th><th>Revenue growth</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
         <div class="flex gap-2 pt-1">
           <button id="applyParamsBtn" class="flex-1 py-1.5 rounded bg-[#5B8DEF] hover:bg-[#4A7CE0] text-white font-medium transition"></button>
           <button id="resetParamsBtn" class="px-3 py-1.5 rounded bg-[#161B24] hover:bg-[#1E2532] text-slate-300 border border-[#252E3E] transition"></button>
@@ -9460,7 +9460,7 @@ const I18N = {
       const fill = SECTOR_FILL[e.sector] || "#526075";
       const ringStroke = st.distressLevel === 3 ? "#D9535F" : st.distressLevel === 2 ? "#E07A3D" : st.distressLevel === 1 ? "#D99B38" : isSelected ? "#ECEFF4" : "#0C0F14";
 
-      const g = nodeLayer.append("g").datum(e).attr("transform", `translate(${pos.x},${pos.y})`).attr("opacity", isDimmed ? 0.18 : 1).call(drag);
+      const g = nodeLayer.append("g").datum(e).attr("data-network-entity", e.id).attr("transform", `translate(${pos.x},${pos.y})`).attr("opacity", isDimmed ? 0.18 : 1).call(drag);
       const circle = g.append("circle").attr("class", "node-circle").attr("r", isSelected ? r * 1.15 : r)
         .attr("fill", fill).attr("fill-opacity", isSelected ? 0.96 : 0.85)
         .attr("stroke", ringStroke).attr("stroke-width", st.distressLevel >= 2 || isSelected ? 2.5 : 1.5);
@@ -9614,6 +9614,19 @@ const I18N = {
       result.cumulativeScenarioEquityDilution > 0 ? t("Scenario equity dilution, quarter / cumulative: ", "\u60c5\u666f\u80a1\u6743\u7a00\u91ca\uff0c\u672c\u5b63 / \u7d2f\u8ba1\uff1a") +
       [result.scenarioEquityDilution, result.cumulativeScenarioEquityDilution]
         .map(value => value == null ? "—" : (100 * value).toFixed(2) + "%").join(" / ") : "";
+    const disclosedLease = entity.audit4LeaseDisclosure;
+    const leaseDisclosure = panel.querySelector("[data-lease-disclosure]");
+    leaseDisclosure.textContent = disclosedLease ? t(
+      "Reported uncommenced lease payments ($B): ",
+      "\u5df2\u62ab\u9732\u672a\u8d77\u79df\u4ed8\u6b3e\uff08\u5341\u4ebf\u7f8e\u5143\uff09\uff1a"
+    ) + disclosedLease.uncommencedUndiscountedPayments.toFixed(2) + " (" + disclosedLease.asOf + ")" : "";
+    if (disclosedLease) {
+      const source = document.createElement("a");
+      source.className = "ml-2 underline";
+      source.href = disclosedLease.sourceUrl;
+      source.textContent = t("SEC filing", "SEC \u62a5\u544a");
+      leaseDisclosure.append(source);
+    }
     const lease = result.leaseSchedule;
     panel.querySelector("[data-lease-result]").textContent = lease?.payment > 0 ?
       t("Incremental lease cash / finance principal / finance interest ($B): ",
