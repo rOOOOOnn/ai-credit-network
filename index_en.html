@@ -1851,8 +1851,12 @@
         const previousCapex = st.capex;
         st.capex = Number(Math.max(st.replacementCapex ?? 0, st.capex + capexDelta).toFixed(4));
         st.fcf = Number((st.ocf - st.capex).toFixed(4));
-        const netDelta = ocfDelta - (st.capex - previousCapex);
-        let newCash = Number((st.cash + netDelta).toFixed(4));
+        adjustCash(id, ocfDelta - (st.capex - previousCapex));
+      }
+
+      function adjustCash(id, delta) {
+        const st = states[id];
+        let newCash = money(st.cash + delta);
         if (newCash < 0 && st.undrawnCredit > 0) {
           const extraDraw = drawFacilities(id, Math.min(-newCash, st.undrawnCredit));
           st.rcfDraw = Number((st.rcfDraw + extraDraw).toFixed(4));
@@ -1861,6 +1865,12 @@
           newCash = Number((newCash + extraDraw).toFixed(4));
         }
         st.cash = newCash;
+      }
+
+      function settleSbEnergyGuarantee(guarantor, amount) {
+        const state = states[guarantor];
+        state.projectGuaranteeCashPaid = money((state.projectGuaranteeCashPaid ?? 0) + amount);
+        adjustCash(guarantor, -amount);
       }
 
       function evaluateDistress(entityId) {
@@ -1938,7 +1948,7 @@
         const settlement = sbEnergySettlementQueue.get(q);
         sbEnergyLedger.cashSettledThisQuarter = settlement?.amount ?? 0;
         if (settlement) {
-          applyCashDelta(settlement.guarantor, -settlement.amount, 0);
+          settleSbEnergyGuarantee(settlement.guarantor, settlement.amount);
           sbEnergySettlementQueue.delete(q);
         }
       }
@@ -2212,10 +2222,12 @@
                   sbEnergySettlementQueue.set(settlementQuarter, { guarantor: guarId, amount: money(amount + callAmt) });
                   creditEvents.at(-1).scenarioCashSettlementQuarter = settlementQuarter;
                 } else {
-                  applyCashDelta(guarId, -callAmt, 0);
                   if (eligibleProjects) {
+                    settleSbEnergyGuarantee(guarId, callAmt);
                     scenario.cashSettledThisQuarter = money(scenario.cashSettledThisQuarter + callAmt);
                     creditEvents.at(-1).scenarioCashSettlementQuarter = q;
+                  } else {
+                    applyCashDelta(guarId, -callAmt, 0);
                   }
                 }
                 evaluateDistress(guarId);
@@ -2379,7 +2391,7 @@
           const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0) + (state.leasePrincipal ?? 0) + leaseInterest;
           const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0) + leaseInterest;
           state.debtServiceCoverage = obligations > 0 ? money(cashBeforeDebtService / obligations) : null;
-          const cashUses = burn + (state.principalRepay ?? 0) + (state.leasePrincipal ?? 0) + (state.gpuMarginCall ?? 0) + (state.unallocatedGuaranteeCashPaid ?? 0);
+          const cashUses = burn + (state.principalRepay ?? 0) + (state.leasePrincipal ?? 0) + (state.gpuMarginCall ?? 0) + (state.unallocatedGuaranteeCashPaid ?? 0) + (state.projectGuaranteeCashPaid ?? 0);
           state.financingDependency = cashUses > 0 ? money(newFinancing / cashUses) : null;
           state.revenueGrowth = state.priorQuarterRevenue > 0 ? money(state.revenue / state.priorQuarterRevenue - 1) : null;
           state.cashRunwayMonths = burn > 0 ? money(3 * Math.max(0, state.cash - minimumCash) / burn) : null;

@@ -743,7 +743,7 @@ for (const [name, entity, overrides, options] of cases) {
       assert.equal(state.fcf, usd(state.ocf - state.capex), label);
       const cash = state.begCash + state.fcf + state.newDebt + state.equityInflow + state.rcfDraw -
         state.principalRepay - state.leasePrincipal - state.gpuMarginCall + state.disposalProceeds +
-        state.openingInvestmentSale - (state.unallocatedGuaranteeCashPaid ?? 0);
+        state.openingInvestmentSale - (state.unallocatedGuaranteeCashPaid ?? 0) - (state.projectGuaranteeCashPaid ?? 0);
       assert.ok(Math.abs(state.cash - cash) <= 0.002, `${label} cash: ${state.cash} vs ${cash}`);
       const minimum = overrides[id]?.minCash ?? entities.find(row => row.id === id).defaults?.minCash ?? 1;
       assert.equal(state.fundingGap, usd(Math.max(0, minimum - state.cash)), label);
@@ -962,3 +962,14 @@ assert.equal(delayedCallFirst.guaranteeLedger.TX11.cashSettledThisQuarter, 0);
 assert.equal(usd(delayedCallFirst.entities.NVDA.cash - immediateCall.timeline["2028Q1"].entities.NVDA.cash), 3);
 assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettledThisQuarter, 3);
 assert.equal(delayedCall.timeline["2028Q4"].guaranteeLedger.TX11.cashSettledThisQuarter, 0);
+
+const noSbEnergyCall = engine.runSimulation(entities, transactions,
+  { ...sbEnergySettlementOptions, guaranteeCallRate: 0 });
+for (const [run, quarter] of [[immediateCall, "2028Q1"], [delayedCall, "2028Q3"]]) {
+  const actual = run.timeline[quarter].entities.NVDA;
+  const baseline = noSbEnergyCall.timeline[quarter].entities.NVDA;
+  assert.equal(actual.projectGuaranteeCashPaid, 3);
+  assert.equal(actual.ocf, baseline.ocf);
+  assert.equal(actual.fcf, baseline.fcf);
+  assert.equal(usd(baseline.cash - actual.cash), 3);
+}
