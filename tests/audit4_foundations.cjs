@@ -1022,3 +1022,15 @@ assert.deepEqual([nebiusHardware.priorAccountingUsefulLifeYears, nebiusHardware.
 const irenHardware = entities.find(row => row.id === "IREN").audit4HardwareDisclosure;
 assert.deepEqual([irenHardware.accountingUsefulLifeYears, irenHardware.pledgedNetCarryingValue,
   irenHardware.gpuHardwareGrossCarryingValue], [5, 1.4871, 5.819]);
+
+const irenGpuFacilities = liquid.timeline["2026Q4"].financingLedger;
+for (const [id, opening, funded, remaining] of [
+  ["IREN_GPU1_DDTL", 0.409, 0.413, 1.132],
+  ["IREN_GPU1_USPP", 1.571, 1.575, 0.525]
+]) {
+  const facility = irenGpuFacilities[id];
+  assert.deepEqual([facility.beginningOutstanding, facility.cumulativeDrawdown, facility.remainingCommitment,
+    facility.lender], [opening, funded, remaining, null]);
+}
+assert.equal(irenOpening.openingFiscalCashFlowDisclosure.borrowingsPrincipal, 10.041);
+assert.equal(liquid.timeline["2026Q4"].debtReconciliation.IREN.namedTermPrincipal, 1.98);
