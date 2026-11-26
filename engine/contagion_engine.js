@@ -781,6 +781,7 @@
     return {
       quarter, ocf, capex, grossCashFcf: money(ocf - capex),
       propertySaleAndIncentiveProceeds: direct?.propertySaleAndIncentiveProceeds ?? null,
+      capitalizedSoftware: direct?.capitalizedSoftware ?? null,
       basis: direct ? "Reported quarter" : "Nine months less first six months"
     };
   }
@@ -857,8 +858,8 @@
     entities.forEach(e => {
       const fiscal = useAudit4Contracts ? e.audit4FiscalCashFlow : null;
       const originalQ3 = e.financials?.["2026Q3"];
-      const existingQ3 = originalQ3 && fiscal?.calendarBucket === "2026Q3"
-        ? { ...originalQ3, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
+      const existingQ3 = fiscal?.calendarBucket === "2026Q3" && (originalQ3 || e.audit4Liquidity)
+        ? { ...originalQ3, cash: e.audit4Liquidity?.cashAndEquivalents ?? originalQ3?.cash, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;
       const bridge = useAudit4Contracts ? e.audit4CashFlowBridge : null;
       const quarterlyCash = auditCashFlowObservation(bridge);

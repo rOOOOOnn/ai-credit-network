@@ -3516,6 +3516,7 @@
   },
   {
     "id": "VERTIV",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","direct":{"ocf":0.794,"capex":0.1391,"capitalizedSoftware":0.0027,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1674101/000162828026067707/q32026exhibit991vrt10282026.htm"}},
     "name": "Vertiv Holdings Co.",
     "ticker": "VRT",
     "cik": "0001674101",
@@ -3569,6 +3570,7 @@
   },
   {
     "id": "CEG",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":4.979,"capex":3.461,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1868275/000186827526000119/ceg-20260930.htm"},"sixMonths":{"ocf":1.553,"capex":2.521,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1868275/000186827526000104/ceg-20260630.htm"}},
     "name": "Constellation Energy Corp.",
     "ticker": "CEG",
     "cik": "0001868275",
@@ -3623,6 +3625,10 @@
   },
   {
     "id": "VST",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":4.33,"capex":2.319,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1692819/000169281926000025/vistra-20260930.htm"},"sixMonths":{"ocf":2.222,"capex":1.572,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1692819/000169281926000019/vistra-20260630.htm"}},
+    "audit4FiscalCashFlow": {"fiscalPeriod":"Q3 2026","periodStart":"2026-07-01","periodEnd":"2026-09-30","calendarBucket":"2026Q3","revenue":6.347,"ocf":2.108,"capex":0.747,"currentBorrowings":2.877,"nonCurrentBorrowings":18.269,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1692819/000169281926000025/vistra-20260930.htm"},
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":2.743,"currentInvestments":0,"knownRestrictedWithinCurrentInvestments":0,"restrictedCashSeparate":0.033,"commodityFacilityAvailability":1.466,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1692819/000169281926000025/vistra-20260930.htm"},
+    "audit4Facilities": [{"id":"VST_RCF_DISCLOSED","type":"Direct Loan","payer":null,"receiver":"VST","announcedDate":"2026-11-06","startQ":"2026Q4","endQ":"2029Q4","totalCommitment":5.5,"principalOutstanding":0,"principalAsOfQuarter":"2026Q3","amountDrawn":null,"amountRepaid":null,"remainingCommitment":null,"lettersOfCredit":0.786,"collateral":"Senior secured RCF","isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1692819/000169281926000025/vistra-20260930.htm","exposureBasis":"Facility-wide information; lender shares unavailable"}],
     "name": "Vistra Corp.",
     "ticker": "VST",
     "cik": "0001692819",
@@ -3656,6 +3662,7 @@
   },
   {
     "id": "CORZ",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":0.296243,"capex":1.494979,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1839341/000183934126000030/core-20260930.htm"},"sixMonths":{"ocf":0.230949,"capex":0.954244,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1839341/000183934126000014/core-20260630.htm"}},
     "name": "Core Scientific (CRWV Hosting)",
     "ticker": "CORZ",
     "cik": "0001839341",

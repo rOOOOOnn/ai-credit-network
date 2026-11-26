@@ -425,3 +425,24 @@ assert.equal(crwvEvents.length, 1);
 assert.equal(crwvEvents[0].fundedEAD, 1.954);
 assert.equal(crwvEvents[0].lender, null);
 console.log("Audit 4 CoreWeave letter-of-credit reserve and RCF reconciliation checks passed");
+for (const [id, ocf, capex, fcf] of [
+  ["VST", 2.108, 0.747, 1.361],
+  ["CEG", 3.426, 0.940, 2.486],
+  ["VERTIV", 0.794, 0.1391, 0.6549],
+  ["CORZ", 0.0653, 0.5407, -0.4754]
+]) {
+  const actual = liquid.timeline["2026Q4"].entities[id].openingQuarterCashFlow;
+  assert.deepEqual([actual.ocf, actual.capex, actual.grossCashFcf], [ocf, capex, fcf], id);
+}
+const vst = liquid.timeline["2026Q4"].entities.VST;
+assert.equal(vst.insufficientData, false);
+assert.equal(vst.begCash, 2.743);
+assert.equal(vst.priorQuarterRevenue, 6.347);
+assert.equal(vst.undrawnCredit, 4.714);
+const vstFacility = liquid.timeline["2026Q4"].financingLedger.VST_RCF_DISCLOSED;
+assert.equal(vstFacility.beginningOutstanding, 0);
+assert.equal(vstFacility.lettersOfCredit, 0.786);
+assert.equal(vstFacility.undrawnCommitment, 4.714);
+assert.equal(vstFacility.lender, null);
+assert.equal(liquid.timeline["2026Q4"].entities.VERTIV.openingQuarterCashFlow.capitalizedSoftware, 0.0027);
+console.log("Audit 4 infrastructure cash-flow and Vistra revolver checks passed");
