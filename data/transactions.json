@@ -1,6 +1,7 @@
 [
   {
     "id": "TX01",
+    "counterpartyFinancialObservations": [{"asOf":"2026-06-30","commitment":13,"funded":11.9,"counterpartyReceivable":6,"commercialRevenue":24.1,"commercialRevenuePeriod":"FY2026","sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"},{"asOf":"2026-09-30","commitment":13,"funded":12,"counterpartyReceivable":7.2,"commercialRevenue":10,"commercialRevenuePeriod":"FY2027Q1","sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"}],
     "payer": "MSFT",
     "receiver": "OPENAI",
     "type": "Equity Investment",
@@ -22,7 +23,7 @@
     "spv": "None",
     "confidence": "A",
     "sourceDoc": "Microsoft FY27 Q1 Official IR / Form 10-Q",
-    "sourceUrl": "https://www.microsoft.com/en-us/investor/earnings/fy-2027-q1/press-release-webcast",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm",
     "currency": "USD",
     "isFloatingRate": false,
     "networkLayer": "Financial"
@@ -51,7 +52,7 @@
     "spv": "None",
     "confidence": "B",
     "sourceDoc": "Microsoft Official Blog (Oct 28, 2025)",
-    "sourceUrl": "https://blogs.microsoft.com/blog/2025/10/28/the-next-chapter-of-the-microsoft-openai-partnership/",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm",
     "currency": "USD",
     "isFloatingRate": false,
     "networkLayer": "Commercial",

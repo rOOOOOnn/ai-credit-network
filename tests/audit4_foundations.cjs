@@ -1063,3 +1063,10 @@ assert.deepEqual([trancheExcluded.timeline["2026Q4"].entities.OPENAI.cash,
 assert.deepEqual([trancheExcluded.timeline["2028Q4"].entities.OPENAI.cash,
   trancheIncluded.timeline["2028Q4"].entities.OPENAI.cash], [-47.4052, -38.9871]);
 assert.equal(trancheIncluded.scenarioSummary.OPENAI.defaultQuarter, "2027Q4");
+
+const microsoftOpenAi = transactions.find(row => row.id === "TX01");
+const [juneMicrosoft, septemberMicrosoft] = microsoftOpenAi.counterpartyFinancialObservations;
+assert.equal(usd(septemberMicrosoft.funded - juneMicrosoft.funded), 0.1);
+assert.equal(usd(septemberMicrosoft.counterpartyReceivable - juneMicrosoft.counterpartyReceivable), 1.2);
+assert.equal(microsoftOpenAi.amountDrawn, septemberMicrosoft.funded);
+assert.equal(microsoftOpenAi.remainingCommitment, septemberMicrosoft.commitment - septemberMicrosoft.funded);
