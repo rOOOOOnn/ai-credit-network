@@ -906,3 +906,10 @@ assert.equal(usd(eqixDisclosure.operatingLeaseLiability + eqixDisclosure.finance
 assert.equal(eqixDisclosure.uncommencedLeaseCommitment, 0.694);
 assert.equal(eqixDisclosure.borrowingsPrincipal, 22.839);
 assert.equal(liquid.timeline["2026Q4"].financingLedger.TX57.beginningOutstanding, 22.82);
+
+const coreWeaveLeases = entities.find(row => row.id === "CRWV").audit4LeaseDisclosure;
+assert.equal(usd(coreWeaveLeases.operatingPayments.reduce((sum, payment) => sum + payment, 0) -
+  coreWeaveLeases.operatingImputedInterest), 18.697);
+assert.equal(usd(coreWeaveLeases.financePayments.reduce((sum, payment) => sum + payment, 0) -
+  coreWeaveLeases.financeImputedInterest), 0.649);
+assert.equal(coreWeaveLeases.uncommencedUndiscountedPayments, 47.4);
