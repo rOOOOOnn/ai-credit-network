@@ -88,6 +88,19 @@ async function checkPage(browser, url) {
     await scenario.fill(JSON.stringify(gpuSettings));
     await panel.locator("button").click();
     assert.equal(await panel.locator("tbody tr").last().locator("td").first().innerText(), "2034");
+    await page.locator("#openDataModalBtn").click();
+    const downloadPromise = page.waitForEvent("download");
+    await page.locator("#dlAuditLedgerJson").click();
+    const download = await downloadPromise;
+    assert.equal(download.suggestedFilename(), "audit4_quarterly_credit_ledger.json");
+    const ledger = JSON.parse(await fs.readFile(await download.path(), "utf8"));
+    assert.equal(ledger.currency, "USD billions");
+    const firstQuarter = ledger.quarters[0];
+    assert.equal(firstQuarter.quarter, "2026Q4");
+    assert.equal(firstQuarter.financingLedger.TX26.beginningOutstanding, 4.583);
+    assert.equal(firstQuarter.financingLedger.TX26.lender, "BX_FUNDS");
+    assert.equal(firstQuarter.financingLedger.TX26.undrawnCommitment, null);
+    assert.equal(ledger.quarters.at(-1).quarter, "2034Q4");
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {

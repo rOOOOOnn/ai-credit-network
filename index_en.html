@@ -309,6 +309,7 @@
       <button id="dlTxCsv" class="w-full py-2 px-3 rounded bg-[#161B24] hover:bg-[#1E2532] text-slate-200 border border-[#252E3E] text-left"></button>
       <button id="dlForecastCsv" class="w-full py-2 px-3 rounded bg-[#161B24] hover:bg-[#1E2532] text-slate-200 border border-[#252E3E] text-left"></button>
       <button id="dlSnapshotJson" class="w-full py-2 px-3 rounded bg-[#161B24] hover:bg-[#1E2532] text-[#5B8DEF] border border-[#252E3E] text-left"></button>
+      <button id="dlAuditLedgerJson" class="w-full py-2 px-3 rounded bg-[#161B24] hover:bg-[#1E2532] text-[#5B8DEF] border border-[#252E3E] text-left"></button>
     </div>
   </div>
 </div>
@@ -8864,6 +8865,7 @@ const I18N = {
     document.getElementById("dlTxCsv").textContent = t.dlTx;
     document.getElementById("dlForecastCsv").textContent = t.dlFc;
     document.getElementById("dlSnapshotJson").textContent = t.dlSnap;
+    document.getElementById("dlAuditLedgerJson").textContent = state.lang === "zh" ? "\u5bfc\u51fa\u5b63\u5ea6\u4fe1\u7528\u8d26\u672c (JSON)" : "Export quarterly credit ledger (JSON)";
 
 
     document.getElementById("legendBar").innerHTML = `
@@ -9800,6 +9802,26 @@ const I18N = {
       const rows = [["quarter","entityId","revenue_B","cash_B","debt_B","fcf_B","fragilityScore","distressLevel","lostReceipts_B","creditLoss_B"]];
       state.simResult.allQuarters.slice(18).forEach(q => { const qd = state.simResult.timeline[q]; state.entities.forEach(e => { const s = qd.entities[e.id] || {}; rows.push([q, e.id, s.revenue ?? "", s.cash ?? "", s.debt ?? "", s.fcf ?? "", s.fragilityScore ?? 0, s.distressLevel ?? 0, s.lostReceipts ?? 0, s.creditLoss ?? 0]); }); });
       triggerDownload("forecast_contagion_results.csv", rows.map(r => r.join(",")).join("\n"), "text/csv;charset=utf-8");
+    });
+    document.getElementById("dlAuditLedgerJson").addEventListener("click", () => {
+      const quarters = state.simResult.allQuarters.flatMap(quarter => {
+        const row = state.simResult.timeline[quarter];
+        if (!row.financingLedger) return [];
+        const { financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation } = row;
+        return [{ quarter, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation }];
+      });
+      triggerDownload("audit4_quarterly_credit_ledger.json", JSON.stringify({
+        version: state.version,
+        currency: "USD billions",
+        simulationOptions: {
+          audit4Contracts: true, forecastThrough: Number(quarters.at(-1).quarter.slice(0, 4)),
+          ocean: state.ocean, overrides: state.overrides, forcedDefaults: [...state.forcedDefaults],
+          gpuCollateralHaircut: state.gpuCollateralHaircut
+        },
+        entities: state.entities, transactions: state.transactions,
+        quarters, creditEvents: state.simResult.creditEvents,
+        parentSpvReconciliation: state.simResult.parentSpvReconciliation
+      }, null, 2), "application/json");
     });
     document.getElementById("dlSnapshotJson").addEventListener("click", () => {
       triggerDownload("ai_credit_network_snapshot.json", JSON.stringify({ version: state.version, exportedAt: new Date().toISOString(), ocean: state.ocean, entities: state.entities, transactions: state.transactions }, null, 2), "application/json");
