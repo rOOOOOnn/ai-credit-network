@@ -1004,3 +1004,8 @@ assert.equal(coreWeaveHardware.accountingUsefulLifeYears, 6);
 assert.equal(usd(coreWeaveHardware.grossTechnologyEquipment - coreWeaveHardware.grossTechnologyEquipmentPriorYearEnd), 26.12);
 assert.deepEqual([coreWeaveHardware.gpuOnlyPurchaseCost, coreWeaveHardware.physicalUsefulLifeYears,
   coreWeaveHardware.economicUsefulLifeYears], [null, null, null]);
+
+assert.deepEqual(entities.find(row => row.id === "MSFT").audit4HardwareDisclosure.accountingUsefulLifeRangeYears, [2, 6]);
+const amazonHardware = entities.find(row => row.id === "AMZN").audit4HardwareDisclosure;
+assert.deepEqual([amazonHardware.priorAccountingUsefulLifeYears, amazonHardware.accountingUsefulLifeYears,
+  amazonHardware.accountingLifeAppliesToSubset, amazonHardware.incrementalDepreciationExpense], [6, 5, true, 1.4]);

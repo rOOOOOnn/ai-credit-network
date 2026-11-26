@@ -138,6 +138,17 @@ async function checkPage(browser, url) {
     assert.match(await anthropicLease.innerText(), /451\.20 \(2026-09-30\)/);
     assert.match(await anthropicLease.innerText(), /2\.810 \/ 1\.674/);
     assert.match(await anthropicLease.locator("a").getAttribute("href"), /anthropicpbc-424b4\.htm$/);
+    for (const [id, life, filing] of [
+      ["MSFT", /2–6/, /msft-20260630\.htm$/],
+      ["AMZN", /5.*(?:subset|\u90e8\u5206)/, /amzn-20251231\.htm$/]
+    ]) {
+      await page.locator('[data-network-entity="' + id + '"]').dispatchEvent("click");
+      await page.locator("#tabBtnForecast").click();
+      if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+      const disclosure = panel.locator("[data-gpu-disclosure]");
+      assert.match(await disclosure.innerText(), life);
+      assert.match(await disclosure.locator("a").getAttribute("href"), filing);
+    }
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {

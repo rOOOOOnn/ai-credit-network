@@ -2673,6 +2673,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "MSFT",
+    "audit4HardwareDisclosure": {"assetClass":"Servers and network equipment","accountingUsefulLifeRangeYears":[2,6],"fiscalYearEnd":"2026-06-30","accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"},
     "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q1","periodStart":"2026-07-01","periodEnd":"2026-09-30","calendarBucket":"2026Q3","revenue":92.279,"ocf":58,"capex":39.367,"currentBorrowings":4.391,"nonCurrentBorrowings":31.09,"operatingLeaseLiability":27.477,"financeLeaseLiability":70.973,"financeLeaseDiscountRate":0.045,"financeLeasePaymentBuckets":[{"startQuarter":"2026Q4","quarters":3,"payment":6.006},{"startQuarter":"2027Q3","quarters":4,"payment":8.163},{"startQuarter":"2028Q3","quarters":4,"payment":7.433},{"startQuarter":"2029Q3","quarters":4,"payment":7.323},{"startQuarter":"2030Q3","quarters":4,"payment":7.3}],"financeLeasePaymentsThereafter":59.021,"operatingLeaseCashPaid":1.547,"financeLeaseInterestPaid":0.769,"financeLeasePrincipalPaid":1,"noncashFinanceLeaseAcquisitions":5.192,"uncommencedLeaseCommitment":364.6,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":20.281,"currentInvestments":44.228,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "name": "Microsoft Corp.",
@@ -3011,6 +3012,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "AMZN",
+    "audit4HardwareDisclosure": {"assetClass":"Subset of servers and networking equipment","accountingUsefulLifeYears":5,"priorAccountingUsefulLifeYears":6,"accountingLifeAppliesToSubset":true,"accountingChangeEffective":"2025-01-01","incrementalDepreciationExpense":1.4,"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000004/amzn-20251231.htm"},
     "audit4CashFlowBridge": {"quarter":"2026Q3","direct":{"ocf":42.422,"capex":77.259,"propertySaleAndIncentiveProceeds":1.381,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"}},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":55.783,"currentInvestments":58.443,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"},
     "name": "Amazon.com, Inc. (AWS)",
@@ -9506,10 +9508,14 @@ const I18N = {
       source.href = hardware.accountingSourceUrl;
       source.textContent = t("SEC filing", "SEC \u62a5\u544a");
       source.className = "ml-2 underline";
+      const life = hardware.accountingUsefulLifeRangeYears?.join("–") ?? hardware.accountingUsefulLifeYears;
+      const scope = hardware.accountingLifeAppliesToSubset
+        ? t(" (subset of servers and network equipment)", "\uff08\u90e8\u5206\u670d\u52a1\u5668\u53ca\u7f51\u7edc\u8bbe\u5907\uff09")
+        : "";
       gpuDisclosure.append(
-        t("Reported technology equipment depreciation life (years) ",
-          "\u5df2\u62ab\u9732\u7684\u6280\u672f\u8bbe\u5907\u6298\u65e7\u5e74\u9650\uff08\u5e74\uff09 ") +
-          hardware.accountingUsefulLifeYears, source, document.createElement("br"),
+        t("Reported equipment depreciation life (years) ",
+          "\u5df2\u62ab\u9732\u7684\u8bbe\u5907\u6298\u65e7\u5e74\u9650\uff08\u5e74\uff09 ") +
+          life + scope, source, document.createElement("br"),
         t("Actual GPU physical life, economic life and GPU-only purchase costs are unavailable.",
           "GPU \u5b9e\u9645\u7269\u7406\u5bff\u547d\u3001\u7ecf\u6d4e\u5bff\u547d\u548c\u4e13\u9879\u91c7\u8d2d\u6210\u672c\u7f3a\u5c11\u62ab\u9732\u3002"));
     }
