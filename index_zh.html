@@ -598,6 +598,11 @@
    * Strictly enforces (period <= target) AND (if pointInTimeBacktest: disclosedDate <= quarterEndDate(q))
    * on BOTH exact match and fallback, sorting chronologically rather than by JSON key insertion order.
    */
+  function isRevolvingFacility(tx) {
+    return DEBT_TX_TYPES.includes(tx.type) &&
+      (tx.facilityKind != null ? tx.facilityKind === "Revolver" : /\bRCF\b/i.test(tx.collateral ?? ""));
+  }
+
   function getHistoricalSnapshot(entity, q, pointInTimeBacktest = false) {
     const targetNum = parseQuarterNumber(q);
     const qEnd = quarterEndDate(q);
@@ -1127,7 +1132,7 @@
     }
     transactions = transactions.map(tx => {
       const extension = options.facilityExtensions?.[tx.id];
-      return extension && /\bRCF\b/i.test(tx.collateral ?? "") && compareQuarter(extension, tx.endQ) > 0
+      return extension && isRevolvingFacility(tx) && compareQuarter(extension, tx.endQ) > 0
         ? { ...tx, endQ: extension } : tx;
     });
     const reportedAnthropic = useAudit4Contracts && entities.find(e => e.id === "ANTHROPIC")?.audit4Observations;
@@ -1255,7 +1260,7 @@
             tx.totalCommitment, cumCreditLossByTx[tx.id] ?? 0);
         }
       }
-      const revolving = transactions.filter(tx => /\bRCF\b/i.test(tx.collateral ?? "") && DEBT_TX_TYPES.includes(tx.type));
+      const revolving = transactions.filter(tx => isRevolvingFacility(tx));
       const facilityByBorrower = {};
       const instruments = trackTermDebt ? transactions.filter(tx => DEBT_TX_TYPES.includes(tx.type)) : revolving;
       for (const tx of instruments) {

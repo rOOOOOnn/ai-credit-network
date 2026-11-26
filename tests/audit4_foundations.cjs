@@ -466,3 +466,14 @@ assert.equal(vstEvents.estimatedCombinedDrawDataType, "Estimated");
 const vstProForma = usd(vstEvents.openingReportedLiquidity - 4.9 + vstFullLimitDraw);
 assert.equal(vstProForma, 5.398);
 assert.equal(Number(vstProForma.toFixed(1)), vstEvents.proFormaLiquidity);
+const explicitFacilities = structuredClone(entities);
+const vistraRevolver = explicitFacilities.find(entity => entity.id === "VST").audit4Facilities[0];
+assert.equal(vistraRevolver.facilityKind, "Revolver");
+vistraRevolver.endQ = "2027Q1";
+vistraRevolver.collateral = "Liens released in April 2026";
+const explicitVst = engine.runSimulation(explicitFacilities, transactions, {
+  audit4Contracts: true,
+  facilityExtensions: { VST_RCF_DISCLOSED: "2030Q4" }
+}).timeline["2027Q2"];
+assert.equal(explicitVst.financingLedger.VST_RCF_DISCLOSED.isRevolver, true);
+assert.equal(explicitVst.entities.VST.undrawnCredit, 4.714);
