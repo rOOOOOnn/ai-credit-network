@@ -703,3 +703,18 @@ const appliedTx26 = fullLedgerAudit.timeline["2026Q4"].financingLedger.TX26;
 assert.equal(appliedTx26.inferredPrincipalRepayment, 0.35);
 assert.equal(appliedTx26.endingOutstanding, 4.233);
 assert.equal(fullLedgerAudit.timeline["2026Q4"].debtReconciliation.SPV_CRWV8.unattributedDebt, 0.3485);
+const laterGuarantee = contracts.timeline["2028Q2"].guaranteeLedger.TX11;
+assert.equal(laterGuarantee.projects?.[1].calledThisQuarter, usd(105 / 9 * 0.25));
+assert.equal(laterGuarantee.projects[0].calledThisQuarter, 0);
+assert.equal(laterGuarantee.calledGuarantee, usd(2 * usd(105 / 9 * 0.25)));
+const cappedProjects = engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, forcedDefaults: ["OPENAI"], guaranteeCallRate: 1,
+  sbEnergyProjects: [
+    { readyQuarter: "2028Q1", leaseStartQuarter: "2028Q1", terminationQuarter: "2028Q2", termQuarters: 4, cap: 80 },
+    { readyQuarter: "2028Q2", leaseStartQuarter: "2028Q2", termQuarters: 4, cap: 80 }
+  ]
+});
+const cappedProjectQ2 = cappedProjects.timeline["2028Q2"].guaranteeLedger.TX11;
+assert.equal(cappedProjectQ2.projects[0].phase, "Expired");
+assert.equal(cappedProjectQ2.projects[1].calledThisQuarter, 25);
+assert.equal(cappedProjectQ2.calledGuarantee, 105);
