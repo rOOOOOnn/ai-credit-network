@@ -126,6 +126,14 @@ async function checkPage(browser, url) {
     const coreWeaveLease = panel.locator("[data-lease-disclosure]");
     assert.match(await coreWeaveLease.innerText(), /47\.40 \(2026-09-30\)/);
     assert.match(await coreWeaveLease.locator("a").getAttribute("href"), /crwv-20260930\.htm$/);
+    assert.match(await coreWeaveLease.innerText(), /18\.697 \/ 0\.649/);
+    await page.locator('[data-network-entity="ANTHROPIC"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    const anthropicLease = panel.locator("[data-lease-disclosure]");
+    assert.match(await anthropicLease.innerText(), /451\.20 \(2026-09-30\)/);
+    assert.match(await anthropicLease.innerText(), /2\.810 \/ 1\.674/);
+    assert.match(await anthropicLease.locator("a").getAttribute("href"), /anthropicpbc-424b4\.htm$/);
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {

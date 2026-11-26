@@ -9513,6 +9513,13 @@ const I18N = {
       "\u5df2\u62ab\u9732\u672a\u8d77\u79df\u4ed8\u6b3e\uff08\u5341\u4ebf\u7f8e\u5143\uff09\uff1a"
     ) + disclosedLease.uncommencedUndiscountedPayments.toFixed(2) + " (" + disclosedLease.asOf + ")" : "";
     if (disclosedLease) {
+      const liabilities = [disclosedLease.operatingLeaseLiability, disclosedLease.financeLeaseLiability];
+      if (liabilities.every(Number.isFinite)) {
+        leaseDisclosure.append(document.createElement("br"), t(
+          "Recognized operating / finance lease liabilities ($B) ",
+          "\u5df2\u786e\u8ba4\u7ecf\u8425\u79df\u8d41 / \u878d\u8d44\u79df\u8d41\u8d1f\u503a\uff08\u5341\u4ebf\u7f8e\u5143\uff09 "
+        ) + liabilities.map(value => value.toFixed(3)).join(" / "));
+      }
       const source = document.createElement("a");
       source.className = "ml-2 underline";
       source.href = disclosedLease.sourceUrl;
