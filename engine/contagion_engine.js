@@ -1727,7 +1727,7 @@
                     hop, layer: "L3_OPERATIONAL", operationalCategory: opCat,
                     from: defId, to: custId, txId: tx.id,
                     channel: `L3 Operational (${opCat}): Switching/Migration Cost (Sub ${Math.round(subAvail * 100)}%)`,
-                    impactB: migCost
+                    migrationCashCost: migCost, impactB: migCost
                   });
                 }
               }
@@ -1757,7 +1757,8 @@
                     hop, layer: "L3_OPERATIONAL", operationalCategory: opCat,
                     from: defId, to: custId, txId: tx.id,
                     channel: `L3 Operational (${opCat}): Capacity/Service Disruption (${switchWks}w switch)`,
-                    impactB: revDelay
+                    deferredRevenue: deferred, permanentRevenueLoss: money(lostCapacityRevenue - deferred),
+                    impactB: lostCapacityRevenue
                   });
                 }
               }

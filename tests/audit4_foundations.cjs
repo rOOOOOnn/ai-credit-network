@@ -845,3 +845,30 @@ for (const q of ["2026Q4", "2027Q1", "2027Q2"]) {
   assert.equal(row.gpuUtilizationRevenueAdjustment, -lostRevenue, q);
   assert.ok(Math.abs(reference.fcf - row.fcf - lostRevenue * 0.5) <= 0.0001, q);
 }
+const bilateralFixtures = [
+  ["CRWV", "OPENAI", "TX05A", "2026Q4", 0.081, 0.0654],
+  ["CRWV", "OPENAI", "TX05B", "2026Q4", 0.027, 0.0218],
+  ["CRWV", "OPENAI", "TX05C", "2026Q4", 0.0432, 0.0349],
+  ["CRWV", "MSFT", "TX25", "2026Q4", 0.1485, 0.1199],
+  ["VERTIV", "CRWV", "TX65", "2026Q4", 0.0343, 0.0541],
+  ["DELL", "CRWV", "TX64", "2026Q4", 0.025, 0.0484],
+  ["CEG", "MSFT", "TX67", "2028Q1", 0.2112, 0.1663],
+  ["VST", "META", "TX69", "2027Q1", 0.2677, 0.241],
+  ["CORZ", "CRWV", "TX66", "2026Q4", 0.0577, 0.0743],
+  ["NVDA", "CRWV", "TX24", "2026Q4", 0.462, 0.4851],
+  ["ORCL", "OPENAI", "TX03", "2027Q1", 1.26, 1.2212]
+];
+const bilateralRuns = new Map([...new Set(bilateralFixtures.map(([supplier]) => supplier))].map(supplier =>
+  [supplier, engine.runSimulation(entities, transactions, { audit4Contracts: true, forcedDefaults: [supplier] })]));
+for (const [supplier, customer, txId, firstQ, migrationCost, disruptedRevenue] of bilateralFixtures) {
+  const events = Object.values(bilateralRuns.get(supplier).timeline).flatMap(quarter =>
+    (quarter.contagionLog ?? []).filter(event => event.txId === txId && event.from === supplier &&
+      event.to === customer && event.layer === "L3_OPERATIONAL").map(event => ({ ...event, quarter: quarter.quarter })));
+  assert.equal(events[0]?.quarter, firstQ, txId);
+  const migration = events.filter(event => event.migrationCashCost != null);
+  assert.equal(migration.length, 1, txId);
+  assert.equal(migration[0].migrationCashCost, migrationCost, txId);
+  const disruption = events.find(event => event.deferredRevenue != null);
+  assert.equal(disruption.impactB, disruptedRevenue, txId);
+  assert.equal(usd(disruption.deferredRevenue + disruption.permanentRevenueLoss), disruption.impactB, txId);
+}

@@ -48,7 +48,7 @@ TX56,CRUSOE,SPV_ABILENE,Equity Investment,Financial,,,,0.0,,0.0,Actual,2024-10-1
 TX57,PRIVATE_CREDIT_OCEAN,EQIX,Corporate Bond,Financial,,22.82,22.82,0.0,,0.25,Actual,2024-01-01,2022Q1,2035Q4,https://investor.equinix.com/sec-filings/all-sec-filings/content/0001101239-26-000180/eqix-20260930.htm
 TX04A,OPENAI,AMZN,Cloud Computing Purchase,Commercial,Cloud Computing,38.0,,0.0,,1.35,Committed,2025-11-03,2026Q1,2032Q4,https://www.aboutamazon.com/news/aws/aws-open-ai-workloads-compute-infrastructure
 TX04B,OPENAI,AMZN,Cloud Computing Purchase,Commercial,Cloud Computing,100.0,0.0,0.0,,3.1,Committed,2026-02-27,2027Q1,2034Q4,https://openai.com/index/amazon-partnership/
-TX05A,OPENAI,CRWV,Take-or-Pay Contract,Commercial,Take-or-Pay,11.9,,0.0,,0.6,Committed,2025-03-09,2025Q2,2030Q1,https://computeprices.com/deals/openai-coreweave-2025-03
+TX05A,OPENAI,CRWV,Take-or-Pay Contract,Commercial,Take-or-Pay,11.9,,0.0,,0.6,Committed,2025-03-09,2025Q2,2030Q1,https://investors.coreweave.com/news/news-details/2025/CoreWeave-Announces-Agreement-with-OpenAI-to-Deliver-AI-Infrastructure/default.aspx
 TX05B,OPENAI,CRWV,Take-or-Pay Contract,Commercial,Take-or-Pay,4.0,,0.0,,0.2,Committed,2025-05-15,2025Q3,2030Q2,https://investors.coreweave.com/news/news-details/2025/CoreWeave-Expands-Agreement-with-OpenAI-by-up-to-6-5B/default.aspx
 TX05C,OPENAI,CRWV,Take-or-Pay Contract,Commercial,Take-or-Pay,6.5,,0.0,,0.32,Committed,2025-09-25,2025Q4,2030Q3,https://investors.coreweave.com/news/news-details/2025/CoreWeave-Expands-Agreement-with-OpenAI-by-up-to-6-5B/default.aspx
 TX06A,JPM,OPENAI,Direct Loan,Financial,,0.6,0.0,0.0,0.4,0.0,Committed,2024-10-03,2024Q4,2027Q4,https://openai.com/index/accelerating-the-next-phase-ai/

@@ -507,3 +507,21 @@ The three scenario panels now accept utilization and an annual usage-related mai
 ### GPU utilization and modeled revenue
 
 The panel now accepts a reference utilization and explicitly declares what share of sales can move with utilization. Revenue adjustment equals unadjusted projected revenue times that share times (scenario utilization divided by reference utilization, minus one). The remaining revenue is not sensitive to utilization. The default share is zero, and a company without a modeled opening GPU fleet does not receive this adjustment. The engine removes the previous quarter's utilization adjustment from the underlying growth base before applying the current quarter shock. This prevents a persistent utilization level from repeatedly shrinking revenue while preserving separate operating disruptions. In the test, 50% utilization versus a 100% reference and a 50% sensitive share cuts modeled revenue by 25% against the reference in each of three quarters. FCF reconciles to the associated cash margin. The export includes the revenue adjustment.
+
+### Bilateral operational pathway verification
+
+Each supplier below was forced into model default separately under the Audit 4 profile. The fixture requires exact first-period amounts, a single migration cash charge per contract, separate permanent and deferred amounts, and no earlier L3 posting. The log now reports actual modeled revenue removed after the cap and exposes its deferred and permanent components. The amounts in USD billions are scenario outputs. They are not disclosures of realized losses.
+
+| Supplier → customer | Instrument | First L3 quarter | Migration cash | Disrupted revenue |
+| --- | --- | --- | ---: | ---: |
+| CoreWeave → OpenAI | TX05A/B/C | 2026Q4 | 0.1512 | 0.1221 |
+| CoreWeave → Microsoft | TX25 | 2026Q4 | 0.1485 | 0.1199 |
+| Vertiv → CoreWeave | TX65 | 2026Q4 | 0.0343 | 0.0541 |
+| Dell → CoreWeave | TX64 | 2026Q4 | 0.0250 | 0.0484 |
+| Constellation → Microsoft | TX67 | 2028Q1 | 0.2112 | 0.1663 |
+| Vistra → Meta | TX69 | 2027Q1 | 0.2677 | 0.2410 |
+| Core Scientific → CoreWeave | TX66 | 2026Q4 | 0.0577 | 0.0743 |
+| NVIDIA → CoreWeave | TX24 | 2026Q4 | 0.4620 | 0.4851 |
+| Oracle → OpenAI | TX03 | 2027Q1 | 1.2600 | 1.2212 |
+
+TX05A now links to the primary issuer announcement confirming the up-to-$11.9B agreement. This supports the contract ceiling, while the modeled quarterly run rate remains an assumption. Core Scientific's hosting announcement corroborates the commercial relationship with CoreWeave, while the model's aggregated TX66 timing remains indicative. Transaction links identify the other starting sources. Bilateral payment calendars, supplier substitution and churn still require contract-level verification. [CoreWeave initial OpenAI announcement](https://investors.coreweave.com/news/news-details/2025/CoreWeave-Announces-Agreement-with-OpenAI-to-Deliver-AI-Infrastructure/default.aspx), [Core Scientific hosting announcement](https://investors.corescientific.com/sec-filings/all-sec-filings/content/0001628280-24-026483/corzcoreweavehpc.htm).

@@ -2047,7 +2047,7 @@
                     hop, layer: "L3_OPERATIONAL", operationalCategory: opCat,
                     from: defId, to: custId, txId: tx.id,
                     channel: `L3 Operational (${opCat}): Switching/Migration Cost (Sub ${Math.round(subAvail * 100)}%)`,
-                    impactB: migCost
+                    migrationCashCost: migCost, impactB: migCost
                   });
                 }
               }
@@ -2077,7 +2077,8 @@
                     hop, layer: "L3_OPERATIONAL", operationalCategory: opCat,
                     from: defId, to: custId, txId: tx.id,
                     channel: `L3 Operational (${opCat}): Capacity/Service Disruption (${switchWks}w switch)`,
-                    impactB: revDelay
+                    deferredRevenue: deferred, permanentRevenueLoss: money(lostCapacityRevenue - deferred),
+                    impactB: lostCapacityRevenue
                   });
                 }
               }
@@ -7702,7 +7703,7 @@ const INITIAL_TRANSACTIONS = [
     "confidence": "A",
     "currency": "USD",
     "sourceDoc": "CoreWeave S-1 / Initial OpenAI Contract (Mar 9, 2025)",
-    "sourceUrl": "https://computeprices.com/deals/openai-coreweave-2025-03",
+    "sourceUrl": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-Announces-Agreement-with-OpenAI-to-Deliver-AI-Infrastructure/default.aspx",
     "networkLayer": "Commercial",
     "substitutionAvailability": 0.55,
     "switchingTimeWeeks": 10,
