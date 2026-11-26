@@ -235,3 +235,17 @@ assert.equal(withProceeds.financingLedger.TX12B.endingOutstanding, 0);
 assert.equal(withProceeds.financingLedger.TX14A.endingOutstanding, 0);
 assert.equal(withProceeds.debtReconciliation.ANTHROPIC.unattributedDebt, 0);
 console.log("Audit 4 Anthropic reported opening cash, estimate sensitivity and note conversion checks passed");
+
+
+const diagnosticEntity = { id: "DIAG", financials: { "2026Q3": { cash: 10, debt: 0, revenue: 10, dataType: "Actual" } },
+  defaults: { grossMargin: 0.5, cashConv: 1, capex: 3, minCash: 2, revGrowth: -0.5 } };
+const diagnostic = engine.runSimulation([diagnosticEntity], [], { overrides: { DIAG: { opex: 2 } } })
+  .timeline["2026Q4"].entities.DIAG;
+assert.equal(diagnostic.ocf, 0.41);
+assert.equal(diagnostic.fcf, -2.59);
+assert.equal(diagnostic.monthlyCashBurn, 0.8633);
+assert.equal(diagnostic.availableLiquidity, 7.41);
+assert.equal(diagnostic.requiredFinancing, 0);
+assert.equal(diagnostic.fcfBreakEvenRevenue, usd((3 / 0.82 + 2) / 0.5));
+assert.equal(diagnostic.minimumRequiredRevenueGrowth, 0.1317);
+console.log("Audit 4 liquidity and minimum FCF break-even growth checks passed");

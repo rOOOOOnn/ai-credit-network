@@ -256,7 +256,7 @@
           </div>
         </div>
         <div id="paramControls" class="grid grid-cols-2 gap-2.5"></div>
-        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
+        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th><th>Financing growth</th><th>Revenue growth</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
         <div class="flex gap-2 pt-1">
           <button id="applyParamsBtn" class="flex-1 py-1.5 rounded bg-[#5B8DEF] hover:bg-[#4A7CE0] text-white font-medium transition"></button>
           <button id="resetParamsBtn" class="px-3 py-1.5 rounded bg-[#161B24] hover:bg-[#1E2532] text-slate-300 border border-[#252E3E] transition"></button>
@@ -1455,7 +1455,11 @@
         const grossProfitCash = projRev * grossMargin * cashConv;
         let ocf;
         const incrementalCompute = ov?.computePay !== undefined ? Number(ov.computePay) : 0;
-        if (calib && calib.hasCalib && ov?.opex === undefined) {
+        const calibrated = Boolean(calib?.hasCalib && ov?.opex === undefined);
+        const operatingCashCosts = (calibrated ? calib.impliedFixedOpCash : money(p.opex ?? 0)) + incrementalCompute + interestPaid;
+        const taxThreshold = calibrated ? calib.baseRev * grossMargin * cashConv - calib.impliedFixedOpCash : 0;
+        const marginalTaxRate = calibrated ? 0.15 : 0.18;
+        if (calibrated) {
           const fixedOp = calib.impliedFixedOpCash;
           const preTaxDelta = (grossProfitCash - fixedOp - incrementalCompute - interestPaid);
           const incrementalTax = preTaxDelta > (calib.baseRev * grossMargin * cashConv - fixedOp)
@@ -1471,6 +1475,11 @@
 
         ocf = money(ocf - leasePayment);
         const fcf = Number((ocf - capex).toFixed(4));
+        const ocfBeforeLeaseTarget = capex + leasePayment;
+        const preTaxTarget = ocfBeforeLeaseTarget <= taxThreshold ? ocfBeforeLeaseTarget
+          : (ocfBeforeLeaseTarget - marginalTaxRate * taxThreshold) / (1 - marginalTaxRate);
+        const fcfBreakEvenRevenue = money(Math.max(0, (preTaxTarget + operatingCashCosts) / (grossMargin * cashConv)));
+        const minimumRequiredRevenueGrowth = prevRev > 0 ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
         const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leasePayment;
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
@@ -1491,6 +1500,9 @@
           mode: p.mode || "B",
           revenue: projRev,
           requiredRevenue: Number(requiredRev.toFixed(2)),
+          fcfBreakEvenRevenue,
+          minimumRequiredRevenueGrowth,
+          priorQuarterRevenue: prevRev,
           begCash: Number(begCash.toFixed(4)),
           cash: endCash,
           debt: endDebt,
@@ -1974,6 +1986,16 @@
           const minimumCash = overrides[e.id]?.minCash ?? e.defaults?.minCash ?? 1;
           const burn = Math.max(0, -state.fcf);
           state.quarterlyCashBurn = burn;
+          state.monthlyCashBurn = money(burn / 3);
+          state.availableLiquidity = money(Math.max(0, state.cash + (state.undrawnCredit ?? 0)));
+          state.requiredFinancing = money(Math.max(0, minimumCash - state.cash - (state.undrawnCredit ?? 0)));
+          const newFinancing = (state.newDebt ?? 0) + (state.rcfDraw ?? 0) + (state.equityInflow ?? 0);
+          const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0);
+          const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0);
+          state.debtServiceCoverage = obligations > 0 ? money(cashBeforeDebtService / obligations) : null;
+          const cashUses = burn + (state.principalRepay ?? 0) + (state.gpuMarginCall ?? 0);
+          state.financingDependency = cashUses > 0 ? money(newFinancing / cashUses) : null;
+          state.revenueGrowth = state.priorQuarterRevenue > 0 ? money(state.revenue / state.priorQuarterRevenue - 1) : null;
           state.cashRunwayMonths = burn > 0 ? money(3 * Math.max(0, state.cash - minimumCash) / burn) : null;
           state.fundingGap = money(Math.max(0, minimumCash - state.cash));
           const summary = scenarioSummary[e.id] ??= { defaultQuarter: null, breakEvenQuarter: null };
@@ -8967,7 +8989,12 @@ const I18N = {
       t("Funding gap / runway months / first default / FCF break-even / refresh CapEx: ",
         "\u878d\u8d44\u7f3a\u53e3 / \u73b0\u91d1\u8dd1\u9053\u6708\u6570 / \u9996\u6b21\u8fdd\u7ea6 / FCF \u8f6c\u6b63 / \u66f4\u65b0\u8d44\u672c\u5f00\u652f：") +
       [result.fundingGap, result.cashRunwayMonths, summary.defaultQuarter, summary.breakEvenQuarter,
-        result.replacementCapex].map(value => value ?? "—").join(" / ");
+        result.replacementCapex].map(value => value ?? "—").join(" / ") + " · " +
+      t("Available liquidity / Required financing / Debt service coverage / Minimum FCF break-even revenue growth: ",
+        "\u53ef\u7528\u6d41\u52a8\u6027 / \u6240\u9700\u878d\u8d44 / \u507f\u503a\u8986\u76d6\u7387 / FCF \u8f6c\u6b63\u6240\u9700\u6700\u4f4e\u8425\u6536\u589e\u901f: ") +
+      [result.availableLiquidity, result.requiredFinancing, result.debtServiceCoverage,
+        result.minimumRequiredRevenueGrowth == null ? null : (100 * result.minimumRequiredRevenueGrowth).toFixed(1) + "%"]
+        .map(value => value ?? "—").join(" / ");
     const forecast = panel.querySelector("[data-financing-years]");
     forecast.replaceChildren();
     const selectedConfig = config ?? example;
@@ -9040,7 +9067,13 @@ const I18N = {
       const received = quartersData.reduce((sum, row) => sum + Object.values(row.financingForecast?.amounts ?? {}).reduce((a,b) => a+b, 0), 0);
       const total = Object.values(planned.amounts).reduce((a,b) => a+b, 0);
       const end = quartersData.at(-1);
-      rows.push({year, total, received, end});
+      const previous = rows.at(-1);
+      const previousRevenue = previous?.annualRevenue;
+      const annualRevenue = quartersData.every(row => Number.isFinite(row.revenue))
+        ? quartersData.reduce((sum, row) => sum + row.revenue, 0) : null;
+      const financingGrowth = previous?.total > 0 ? total / previous.total - 1 : null;
+      const revenueGrowth = previousRevenue > 0 && annualRevenue !== null ? annualRevenue / previousRevenue - 1 : null;
+      rows.push({year, total, received, end, annualRevenue});
       const tr = forecast.insertRow();
       tr.insertCell().textContent = year;
       for (const source of sources) {
@@ -9065,6 +9098,9 @@ const I18N = {
       }
       for (const value of [received, end?.financingForecast?.remainingCapacity, end?.fundingGap]) {
         tr.insertCell().textContent = Number.isFinite(value) ? value.toFixed(2) : "—";
+      }
+      for (const growth of [financingGrowth, revenueGrowth]) {
+        tr.insertCell().textContent = growth === null ? "—" : (growth * 100).toFixed(1) + "%";
       }
     }
     const scale = Math.max(1, ...rows.flatMap(row => [row.total, row.received, row.end?.fundingGap ?? 0]));

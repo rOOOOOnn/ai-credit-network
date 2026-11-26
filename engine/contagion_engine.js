@@ -1139,7 +1139,11 @@
         const grossProfitCash = projRev * grossMargin * cashConv;
         let ocf;
         const incrementalCompute = ov?.computePay !== undefined ? Number(ov.computePay) : 0;
-        if (calib && calib.hasCalib && ov?.opex === undefined) {
+        const calibrated = Boolean(calib?.hasCalib && ov?.opex === undefined);
+        const operatingCashCosts = (calibrated ? calib.impliedFixedOpCash : money(p.opex ?? 0)) + incrementalCompute + interestPaid;
+        const taxThreshold = calibrated ? calib.baseRev * grossMargin * cashConv - calib.impliedFixedOpCash : 0;
+        const marginalTaxRate = calibrated ? 0.15 : 0.18;
+        if (calibrated) {
           const fixedOp = calib.impliedFixedOpCash;
           const preTaxDelta = (grossProfitCash - fixedOp - incrementalCompute - interestPaid);
           const incrementalTax = preTaxDelta > (calib.baseRev * grossMargin * cashConv - fixedOp)
@@ -1155,6 +1159,11 @@
 
         ocf = money(ocf - leasePayment);
         const fcf = Number((ocf - capex).toFixed(4));
+        const ocfBeforeLeaseTarget = capex + leasePayment;
+        const preTaxTarget = ocfBeforeLeaseTarget <= taxThreshold ? ocfBeforeLeaseTarget
+          : (ocfBeforeLeaseTarget - marginalTaxRate * taxThreshold) / (1 - marginalTaxRate);
+        const fcfBreakEvenRevenue = money(Math.max(0, (preTaxTarget + operatingCashCosts) / (grossMargin * cashConv)));
+        const minimumRequiredRevenueGrowth = prevRev > 0 ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
         const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leasePayment;
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
@@ -1175,6 +1184,9 @@
           mode: p.mode || "B",
           revenue: projRev,
           requiredRevenue: Number(requiredRev.toFixed(2)),
+          fcfBreakEvenRevenue,
+          minimumRequiredRevenueGrowth,
+          priorQuarterRevenue: prevRev,
           begCash: Number(begCash.toFixed(4)),
           cash: endCash,
           debt: endDebt,
@@ -1658,6 +1670,16 @@
           const minimumCash = overrides[e.id]?.minCash ?? e.defaults?.minCash ?? 1;
           const burn = Math.max(0, -state.fcf);
           state.quarterlyCashBurn = burn;
+          state.monthlyCashBurn = money(burn / 3);
+          state.availableLiquidity = money(Math.max(0, state.cash + (state.undrawnCredit ?? 0)));
+          state.requiredFinancing = money(Math.max(0, minimumCash - state.cash - (state.undrawnCredit ?? 0)));
+          const newFinancing = (state.newDebt ?? 0) + (state.rcfDraw ?? 0) + (state.equityInflow ?? 0);
+          const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0);
+          const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0);
+          state.debtServiceCoverage = obligations > 0 ? money(cashBeforeDebtService / obligations) : null;
+          const cashUses = burn + (state.principalRepay ?? 0) + (state.gpuMarginCall ?? 0);
+          state.financingDependency = cashUses > 0 ? money(newFinancing / cashUses) : null;
+          state.revenueGrowth = state.priorQuarterRevenue > 0 ? money(state.revenue / state.priorQuarterRevenue - 1) : null;
           state.cashRunwayMonths = burn > 0 ? money(3 * Math.max(0, state.cash - minimumCash) / burn) : null;
           state.fundingGap = money(Math.max(0, minimumCash - state.cash));
           const summary = scenarioSummary[e.id] ??= { defaultQuarter: null, breakEvenQuarter: null };
