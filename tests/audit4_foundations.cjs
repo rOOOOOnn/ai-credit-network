@@ -1033,4 +1033,8 @@ for (const [id, opening, funded, remaining] of [
     facility.lender], [opening, funded, remaining, null]);
 }
 assert.equal(irenOpening.openingFiscalCashFlowDisclosure.borrowingsPrincipal, 10.041);
-assert.equal(liquid.timeline["2026Q4"].debtReconciliation.IREN.namedTermPrincipal, 1.98);
+assert.equal(liquid.timeline["2026Q4"].debtReconciliation.IREN.namedTermPrincipal, 9.991);
+const irenNamedOpening = Object.values(irenGpuFacilities).filter(facility => facility.borrower === "IREN")
+  .reduce((sum, facility) => sum + facility.beginningOutstanding, 0);
+assert.equal(usd(irenNamedOpening), 10.027);
+assert.equal(usd(10.041 - irenNamedOpening), 0.014);
