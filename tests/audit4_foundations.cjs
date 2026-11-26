@@ -42,3 +42,53 @@ const extended = engine.runSimulation(entities, transactions, { forecastThrough:
 assert.equal(extended.timeline["2033Q4"].status, "FORECAST");
 assert.equal(extended.allQuarters.at(-1), "2033Q4");
 console.log("Audit 4 foundational tests passed");
+
+
+const equalSources = { equity: 4, strategic: 4, prepayment: 4, other: 4 };
+const tight = { mode: "manual", annual: { 2027: equalSources }, capacity: 1.0003, quarterlyLimit: 1.0003 };
+const simulate = (overrides, other = {}) => engine.runSimulation([entities.find(e => e.id === "OPENAI"), ...entities.filter(e => e.id !== "OPENAI")], transactions, {
+  overrides: { OPENAI: overrides }, ...other
+});
+const capped = simulate({ financing: tight });
+const first = state(capped, "2027Q1");
+assert.deepEqual(Object.values(first.financingForecast.amounts).sort((a, b) => a - b), [0, 0, 0.25, 0.2501, 0.2501, 0.2501]);
+assert.equal(first.equityInflow, 1.0003);
+assert.equal(first.financingForecast.remainingCapacity, 0);
+assert.equal(state(capped, "2027Q2").equityInflow, 0);
+const zero = simulate({ financing: { ...tight, quarterlyLimit: 0 } });
+assert.equal(state(zero, "2027Q1").equityInflow, 0);
+assert.equal(state(zero, "2027Q1").financingForecast.remainingCapacity, 1.0003);
+assert.equal(Number((first.cash - state(zero, "2027Q1").cash).toFixed(4)), 1.0003);
+const mixedFunding = { ...tight, capacity: 20, quarterlyLimit: 10, annual: { 2027: { equity: 8, debt: 40, assetBacked: 40 } } };
+const constrained = state(simulate({ financing: mixedFunding }, { ocean: { maxCapacity: 0.125 } }), "2027Q1");
+const { amounts, fundedDebt, fundedRollover, remainingCapacity } = constrained.financingForecast;
+assert.equal(fundedDebt, 0.125);
+assert.equal(fundedRollover, 0);
+assert.equal(amounts.debt, 0.0625);
+assert.equal(amounts.assetBacked, 0.0625);
+assert.equal(constrained.equityInflow, amounts.equity);
+assert.equal(remainingCapacity, Number((20 - amounts.equity - 0.125).toFixed(4)));
+const priorDebt = state(simulate({ financing: mixedFunding }, { ocean: { maxCapacity: 0.125 } }), "2026Q4").debt;
+assert.equal(constrained.debt, Number(Math.max(0, priorDebt + constrained.newDebt + constrained.rcfDraw - constrained.principalRepay).toFixed(4)));
+assert.equal(constrained.cash, Number((constrained.begCash + constrained.fcf + constrained.equityInflow + constrained.newDebt +
+  constrained.rcfDraw - constrained.principalRepay - constrained.gpuMarginCall).toFixed(4)));
+const leaseOptions = { minCash: 300, financing: { ...funding, annual: { 2027: { equity: 200 } }, capacity: 200, quarterlyLimit: 50 } };
+const withoutLease = simulate(leaseOptions);
+const withLease = simulate({ ...leaseOptions, incrementalLease: lease });
+for (const [quarter, payment, cumulative] of [["2026Q4", 0, 0], ["2027Q1", 1.25, 1.25], ["2027Q2", 1.25, 2.5], ["2027Q3", 0, 2.5]]) {
+  const before = state(withoutLease, quarter);
+  const after = state(withLease, quarter);
+  assert.equal(after.incrementalLeasePayment, payment);
+  assert.equal(Number((before.ocf - after.ocf).toFixed(4)), payment);
+  assert.equal(Number((before.fcf - after.fcf).toFixed(4)), payment);
+  assert.equal(Number((before.cash - after.cash).toFixed(4)), cumulative);
+  const expectedDifference = cumulative / Math.max(0.1, after.grossMargin * after.cashConv);
+  assert.ok(Math.abs(after.requiredRevenue - before.requiredRevenue - expectedDifference) < 0.011);
+}
+const anth = includeScheduledEquity => engine.runSimulation(entities, transactions, { overrides: {
+  ANTHROPIC: { financing: { ...tight, capacity: 0 }, includeScheduledEquity }
+} }).timeline["2026Q4"].entities.ANTHROPIC;
+assert.equal(anth(true).financingForecast.scheduledEquityStatus, "Unverified legacy input");
+assert.equal(anth(false).equityInflow, 0);
+assert.equal(Number((anth(true).cash - anth(false).cash).toFixed(4)), 107.3);
+console.log("Audit 4 funding, lease and freeze regressions passed");

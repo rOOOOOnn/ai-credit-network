@@ -232,11 +232,11 @@ test('T10', 'P0-6 CoreWeave / SPV_CRWV8 / TX26 Exact Debt Reconciliation & Zero 
   assert.strictEqual(crwvRow.consolidationStatus, 'Consolidated');
   assert.strictEqual(crwvRow.parentConsolidatedDebt, 46.873);
   assert.strictEqual(crwvRow.spvFacilityCommitment, 8.5);
-  assert.strictEqual(crwvRow.spvFundedDebt, 6.0);
-  assert.strictEqual(crwvRow.spvUndrawnCommitment, 2.5);
-  assert.strictEqual(crwvRow.consolidationElimination, 6.0);
+  assert.strictEqual(crwvRow.spvFundedDebt, 4.583);
+  assert.strictEqual(crwvRow.spvUndrawnCommitment, null);
+  assert.strictEqual(crwvRow.consolidationElimination, 4.583);
   assert.strictEqual(crwvRow.netSystemWideDebt, 46.873, 'Consolidated SPV debt MUST NOT be added on top of parent debt');
-  return 'CRWV $46.873B ($41.600B rec + $5.273B non-rec); SPV_CRWV8 $8.5B fac ($6.0B funded/$2.5B undrawn) eliminated -> Net $46.873B';
+  return 'CRWV $46.873B ($41.600B rec + $5.273B non-rec); SPV_CRWV8 $8.5B fac ($4.583B principal; undrawn availability unknown) eliminated -> Net $46.873B';
 });
 
 test('T11', 'P0-6 Unconsolidated SPVs (Beignet / Sopaipilla) Not Eliminated From System Debt', () => {

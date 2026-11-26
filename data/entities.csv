@@ -31,7 +31,7 @@ AIRTRUNK,AirTrunk (BX / CPPIB),,3,,,,,13.2,Estimated
 SPV_BEIGNET,Beignet Investor LLC (Meta Hyperion SPV),,3,META,,0.65,2.0,27.3,Estimated
 SPV_JUPITER,Project Jupiter SPV (Stargate NM),,3,ORCL,,0.0,0.8,18.0,Estimated
 SPV_ABILENE,Abilene / Stargate JV SPV (TX),,3,ORCL,,0.35,1.1,9.4,Estimated
-SPV_CRWV8,CoreWeave Acq. Co. VIII SPV,,3,CRWV,CRWV,0.55,0.7,6.0,Estimated
+SPV_CRWV8,CoreWeave Acq. Co. VIII SPV,,3,CRWV,CRWV,0.55,0.7,4.583,Estimated
 SPV_XPV,Broadcom AI XPV Compute SPV,,3,AVGO,,1.2,1.5,35.0,Estimated
 SPV_VALOR,Valor Compute Infra SPV (xAI),,3,SPCX_XAI,,0.3,0.4,3.5,Estimated
 BX_FUNDS,Blackstone Credit & Infra Funds,,3,,,,,,Unavailable

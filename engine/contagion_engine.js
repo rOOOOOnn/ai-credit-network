@@ -230,7 +230,13 @@
       let undrawnEAD = 0;
       let eadBasis = "";
 
-      if (tx.amountDrawn === 0) {
+      if (tx.principalOutstanding != null) {
+        const knownPrincipal = compareQuarter(quarter, tx.principalAsOfQuarter) >= 0;
+        fundedEAD = knownPrincipal ? nonnegative(tx.principalOutstanding) : 0;
+        undrawnCommitment = knownPrincipal ? tx.remainingCommitment ?? null : null;
+        undrawnEAD = nonnegative(undrawnCommitment) * ccf;
+        eadBasis = knownPrincipal ? "Reported principal; availability may be unknown" : "Principal unavailable as of quarter";
+      } else if (tx.amountDrawn === 0) {
         // Strict P0-3: amountDrawn === 0 MUST NEVER substitute totalCommitment into fundedEAD
         fundedEAD = 0;
         undrawnCommitment = Number(Math.max(0, commit).toFixed(4));
@@ -348,9 +354,10 @@
         ? Number(spvDebtTxs.reduce((s, t) => s + Number(t.totalCommitment || 0), 0).toFixed(3))
         : Number(sFin.facilityCommitment ?? sFin.debt ?? 0);
       const fundedDebt = spvDebtTxs.length > 0
-        ? Number(spvDebtTxs.reduce((s, t) => s + Math.max(0, Number(t.amountDrawn ?? 0) - Number(t.amountRepaid ?? 0)), 0).toFixed(3))
+        ? Number(spvDebtTxs.reduce((s, t) => s + (t.principalOutstanding ?? Math.max(0, Number(t.amountDrawn ?? 0) - Number(t.amountRepaid ?? 0))), 0).toFixed(3))
         : Number(sFin.fundedDebt ?? sFin.debt ?? 0);
-      const undrawnCommitment = Number(Math.max(0, facilityCommitment - fundedDebt).toFixed(3));
+      const undrawnCommitment = spvDebtTxs.some(t => t.principalOutstanding != null && t.remainingCommitment == null)
+        ? null : Number(Math.max(0, facilityCommitment - fundedDebt).toFixed(3));
       const isConsolidated = Boolean(spv.consolidatedInParent || spv.isConsolidatedSubsidiary);
       const parentConsolidatedDebt = pFin.debt !== undefined && pFin.debt !== null ? Number(pFin.debt) : null;
       const parentRecourseDebt = pFin.recourseDebt !== undefined && pFin.recourseDebt !== null ? Number(pFin.recourseDebt) : null;
@@ -613,7 +620,7 @@
       }
       amounts[source] = amount;
     }
-    return { amounts, status: "Assumption" };
+    return { amounts, status: "Assumption", historyYears: curve === "historical" ? [prior[0], latest[0]] : null };
   }
 
   function scenarioFunding(config, quarter, remaining, availability, debtFactor) {
@@ -627,9 +634,27 @@
         (["debt", "assetBacked"].includes(source) ? debtFactor : 1)
     ]));
     const requested = Object.values(amounts).reduce((sum, value) => sum + value, 0);
-    const scale = requested > 0 ? Math.min(1, remaining / requested, nonnegative(config.quarterlyLimit) / requested) : 0;
-    for (const source of FINANCING_SOURCES) amounts[source] = money(amounts[source] * scale);
-    return { amounts, status: forecast.status };
+    const budget = Math.min(requested, remaining, nonnegative(config.quarterlyLimit));
+    return { amounts: allocateFunding(amounts, budget), status: forecast.status };
+  }
+
+  function allocateFunding(amounts, budget) {
+    const total = Object.values(amounts).reduce((sum, value) => sum + value, 0);
+    const units = Math.floor(Math.min(total, nonnegative(budget)) * 10000 + 1e-8);
+    const entries = Object.entries(amounts).map(([source, value]) => {
+      const share = total > 0 ? units * value / total : 0;
+      const whole = Math.floor(share);
+      return { source, whole, fraction: share - whole };
+    });
+    let remaining = units - entries.reduce((sum, entry) => sum + entry.whole, 0);
+    entries.sort((a, b) => b.fraction - a.fraction);
+    for (const entry of entries) {
+      if (remaining > 0 && entry.fraction > 0) {
+        entry.whole++;
+        remaining--;
+      }
+    }
+    return Object.fromEntries(entries.map(({ source, whole }) => [source, whole / 10000]));
   }
 
   function fleetRefresh(cohorts, quarter, config) {
@@ -860,15 +885,24 @@
         const funding = forecastConfig ? scenarioFunding(forecastConfig, q, remaining, availFactor, refiFactor) : null;
         const assumedDebt = funding ? funding.amounts.debt + funding.amounts.assetBacked : (p.newDebt ?? 0) * availFactor * refiFactor;
         const requestedDebt = assumedDebt + refiRollover;
-        const allowedDebt = Number(Math.max(0, Math.min(requestedDebt, Math.max(0, ocean.maxCapacity - oceanUsedThisQ))).toFixed(4));
+        const sharedDebtRoom = Math.max(0, ocean.maxCapacity - oceanUsedThisQ);
+        const fundedRollover = funding ? Math.floor(Math.min(refiRollover, sharedDebtRoom) * 10000 + 1e-8) / 10000 : null;
+        if (funding) {
+          const debt = allocateFunding({ debt: funding.amounts.debt, assetBacked: funding.amounts.assetBacked },
+            Math.max(0, sharedDebtRoom - fundedRollover));
+          Object.assign(funding.amounts, debt);
+        }
+        const allowedDebt = funding ? money(fundedRollover + funding.amounts.debt + funding.amounts.assetBacked)
+          : money(Math.max(0, Math.min(requestedDebt, sharedDebtRoom)));
         oceanUsedThisQ += allowedDebt;
 
-        const scheduledEq = (e.scheduledEquityInflows && e.scheduledEquityInflows[q]) ? e.scheduledEquityInflows[q] : 0;
+        const scheduledEq = ov?.includeScheduledEquity === false ? 0 : (e.scheduledEquityInflows?.[q] ?? 0);
+        const scheduledEquityStatus = e.id === "ANTHROPIC" && q === "2026Q4" ? "Unverified legacy input" : "Scheduled model input";
         const assumedNonDebt = funding
           ? funding.amounts.equity + funding.amounts.strategic + funding.amounts.prepayment + funding.amounts.other
           : (p.equityInflow ?? 0) * availFactor;
         const equityInflow = money(scheduledEq + assumedNonDebt);
-        const fundedScenarioDebt = Math.max(0, allowedDebt - refiRollover);
+        const fundedScenarioDebt = funding ? money(funding.amounts.debt + funding.amounts.assetBacked) : 0;
         if (funding) financingRemaining[e.id] = money(Math.max(0, remaining - fundedScenarioDebt - assumedNonDebt));
 
         const fleetConfig = ov?.gpuRefresh;
@@ -922,7 +956,7 @@
 
         ocf = money(ocf - leasePayment);
         const fcf = Number((ocf - capex).toFixed(4));
-        const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall;
+        const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leasePayment;
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
         // Exact Accounting Conservation + Auto-RCF Drawdown
@@ -953,7 +987,7 @@
           gpuMarginCall,
           computePay: incrementalCompute,
           newDebt: allowedDebt,
-          financingForecast: funding ? { ...funding, fundedDebt: fundedScenarioDebt, remainingCapacity: financingRemaining[e.id], scheduledEquity: scheduledEq } : null,
+          financingForecast: funding ? { ...funding, fundedDebt: fundedScenarioDebt, remainingCapacity: financingRemaining[e.id], scheduledEquity: scheduledEq, scheduledEquityStatus, fundedRollover, rcfDraw } : null,
           replacementCapex: refresh.replacementCapex,
           disposalProceeds: refresh.disposalProceeds,
           incrementalLeasePayment: leasePayment,
