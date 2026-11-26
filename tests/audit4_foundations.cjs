@@ -511,3 +511,27 @@ assert.equal(purchased.gpuFleetAgeYears, 0);
 assert.equal(replaced.gpuFleetAgeYears, 1.5);
 assert.equal(replaced.netGpuReplacementCashOutflow, 0.75);
 assert.equal(liquid.timeline["2026Q4"].entities.CRWV.gpuFleetAgeYears, null);
+const refreshFixture = {
+  ...entities.find(entity => entity.id === "CRWV"), id: "REFRESH_FIXTURE",
+  defaults: { mode: "B", revGrowth: 0, grossMargin: 0.5, opex: 0, capex: 0,
+    interestRate: 0, computePay: 0, debtRepay: 0, newDebt: 0, equityInflow: 0, minCash: 0, cashConv: 1 },
+  financials: { "2026Q3": { revenue: 4, cash: 100, debt: 0, ocf: 2, capex: 0 } }
+};
+const runRefreshFixture = gpuRefresh => engine.runSimulation([refreshFixture], [], {
+  forecastThrough: 2033, overrides: { REFRESH_FIXTURE: { gpuRefresh } }
+});
+const withoutRefresh = runRefreshFixture(null);
+for (const life of [3, 4, 5, 6, 7]) {
+  const fixture = runRefreshFixture({ cohorts: [{ acquired: "2026Q4", cost: 100 }],
+    economicLife: life, accountingLife: 10, physicalLife: 12,
+    replacementRatio: 0.25, residualValue: 0.2, priceDecline: 0.1 });
+  const firstQuarter = `${2026 + life}Q4`;
+  const before = fixture.timeline[`${2026 + life}Q3`].entities.REFRESH_FIXTURE;
+  const at = fixture.timeline[firstQuarter].entities.REFRESH_FIXTURE;
+  const reference = withoutRefresh.timeline[firstQuarter].entities.REFRESH_FIXTURE;
+  assert.equal(before.replacementCapex, 0, String(life));
+  assert.equal(at.replacementCapex, 22.5, String(life));
+  assert.equal(at.disposalProceeds, 5, String(life));
+  assert.equal(usd(reference.fcf - at.fcf), 22.5, String(life));
+  assert.equal(usd(reference.cash - at.cash), 17.5, String(life));
+}
