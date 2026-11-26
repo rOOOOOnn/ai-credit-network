@@ -776,12 +776,18 @@
       const terminated = project.terminationQuarter && compareQuarter(quarter, project.terminationQuarter) >= 0;
       const contingent = !terminated && (activation < 0 || age < 0);
       const active = !terminated && activation >= 0 && age >= 0 && age < term;
-      const rentPaid = !active ? 0 : project.paymentsByQuarter
-        ? Object.entries(project.paymentsByQuarter).reduce((sum, [q, amount]) =>
-          parseQuarterNumber(q) >= activation && compareQuarter(q, quarter) <= 0 ? sum + nonnegative(amount) : sum, 0)
-        : cap * age / term;
+      const scheduledEnd = project.terminationQuarter ? parseQuarterNumber(project.terminationQuarter) : Infinity;
+      const lastPaymentQuarter = Math.min(parseQuarterNumber(quarter), activation + term - 1, scheduledEnd - 1);
+      const rentPaid = activation < 0 || lastPaymentQuarter < activation ? 0 : project.paymentsByQuarter
+        ? Object.entries(project.paymentsByQuarter).reduce((sum, [q, amount]) => {
+          const paidIn = parseQuarterNumber(q);
+          return paidIn >= activation && paidIn <= lastPaymentQuarter ? sum + nonnegative(amount) : sum;
+        }, 0)
+        : cap * (lastPaymentQuarter - activation) / term;
       return {
         projectIndex: index, phase: active ? "Active" : contingent ? "Contingent" : "Expired",
+        scenarioCap: cap, readyQuarter: project.readyQuarter ?? null, leaseStartQuarter: project.leaseStartQuarter ?? null,
+        terminationQuarter: project.terminationQuarter ?? null,
         effectiveExposure: active ? Math.max(0, cap - rentPaid) : 0,
         contingentExposure: contingent ? cap : 0, rentPaid: money(rentPaid),
         calledGuarantee: previouslyCalled?.[index] ?? 0, calledThisQuarter: 0
@@ -1794,6 +1800,8 @@
                 cumCreditLossByTx[tx.id] = money((cumCreditLossByTx[tx.id] ?? 0) + callAmt);
                 creditEvents.push({
                   defaultEventId: `GUAR-${q}-${tx.id}`,
+                  projectCalls: eligibleProjects?.filter(project => project.calledThisQuarter > 0)
+                    .map(project => ({ projectIndex: project.projectIndex, amount: project.calledThisQuarter })) ?? null,
                   quarter: q,
                   txId: tx.id,
                   borrower: defId,
