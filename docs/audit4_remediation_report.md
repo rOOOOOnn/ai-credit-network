@@ -435,3 +435,7 @@ The original A–G tests retained the legacy profile as a regression. The same i
 | G | CoreWeave | -59.7036 | -5.6342 | 61.7036 | 2026Q4 |
 
 Values are scenario results in USD billions. The cash identity includes loan and lease principal, collateral-related margin, equipment sale proceeds, investment sales and explicit unallocated guarantee payments.
+
+### Operational deferred-revenue roll-forward
+
+The quarterly audit export now includes an operational revenue subledger by contract, customer and disruption quarter. It records scheduled recovery quarter, beginning amount, new deferral, recovered revenue, associated cash and ending pending amount. Each amount is removed after recovery. If customer forecast data are unavailable at the scheduled date, an item stays pending. The Core Scientific-to-CoreWeave fixture independently reconciles both initial deferrals to 2027Q2 recovery and associated cash, then confirms that recovered items do not reappear in 2027Q3. Permanent losses and migration costs remain outside the deferred balance.

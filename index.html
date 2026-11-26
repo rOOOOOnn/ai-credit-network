@@ -1156,7 +1156,7 @@
     const scenarioSummary = {};
     const facilityBalances = {};
     const sbEnergyCalls = {};
-    const deferredRevenue = [];
+    let deferredRevenue = [];
     const useAudit4Contracts = options.audit4Contracts === true;
     if (useAudit4Contracts) {
       const disclosedFacilities = entities.flatMap(entity => entity.audit4Facilities ?? []);
@@ -2024,7 +2024,7 @@
                   cust.revenue = money(cust.revenue - lostCapacityRevenue);
                   applyCashDelta(custId, -lostCapacityRevenue * cashFactor);
                   if (deferred > 0) deferredRevenue.push({
-                    txId: tx.id, customer: custId, due: operationalStartQByTx[tx.id] + switchQuarters,
+                    txId: tx.id, customer: custId, originated: stepIdx, due: operationalStartQByTx[tx.id] + switchQuarters,
                     amount: deferred, cashFactor
                   });
                   contagionLog.push({
@@ -2254,16 +2254,28 @@
         }
       }
 
-      for (const entry of deferredRevenue) {
-        if (entry.due !== stepIdx) continue;
+      const operationalRevenueLedger = deferredRevenue.map(entry => {
         const customer = states[entry.customer];
-        if (!customer || customer.insufficientData) continue;
-        customer.operationalRecoveryRevenue = money((customer.operationalRecoveryRevenue ?? 0) + entry.amount);
-        customer.operationalBaselineRevenue ??= customer.revenue;
-        customer.revenue = money(customer.revenue + entry.amount);
-        applyCashDelta(entry.customer, entry.amount * entry.cashFactor);
-        evaluateDistress(entry.customer);
-      }
+        const canRecover = entry.due <= stepIdx && customer && !customer.insufficientData;
+        const recovered = canRecover ? entry.amount : 0;
+        const cashRecovered = money(recovered * entry.cashFactor);
+        if (canRecover) {
+          customer.operationalRecoveryRevenue = money((customer.operationalRecoveryRevenue ?? 0) + recovered);
+          customer.operationalRecoveryCash = money((customer.operationalRecoveryCash ?? 0) + cashRecovered);
+          customer.operationalBaselineRevenue ??= customer.revenue;
+          customer.revenue = money(customer.revenue + recovered);
+          applyCashDelta(entry.customer, recovered * entry.cashFactor);
+          evaluateDistress(entry.customer);
+          entry.settled = true;
+        }
+        const due = parseQuarterNumber(QUARTER_PARTIAL) + entry.due;
+        return { txId: entry.txId, customer: entry.customer, originQuarter: forwardQs[entry.originated],
+          dueQuarter: `${Math.floor(due / 4)}Q${due % 4 + 1}`,
+          beginning: entry.originated === stepIdx ? 0 : entry.amount,
+          added: entry.originated === stepIdx ? entry.amount : 0,
+          recovered, cashRecovered, ending: money(entry.amount - recovered), dataType: "Forecast" };
+      });
+      deferredRevenue = deferredRevenue.filter(entry => !entry.settled);
       for (const row of Object.values(financingLedger)) {
         if (row.endingOutstanding !== null) facilityBalances[row.txId] = row;
       }
@@ -2316,7 +2328,7 @@
             : unattributedDebt > 0 ? "Partial instrument coverage" : "Reconciled"
         };
       }
-      timeline[q] = { quarter: q, status, entities: states, contagionLog, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation };
+      timeline[q] = { quarter: q, status, entities: states, contagionLog, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation, operationalRevenueLedger };
       prevStates = states;
     });
 
@@ -10038,8 +10050,8 @@ const I18N = {
       const quarters = state.simResult.allQuarters.flatMap(quarter => {
         const row = state.simResult.timeline[quarter];
         if (!row.financingLedger) return [];
-        const { financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation } = row;
-        return [{ quarter, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation }];
+        const { financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation, operationalRevenueLedger } = row;
+        return [{ quarter, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation, operationalRevenueLedger }];
       });
       triggerDownload("audit4_quarterly_credit_ledger.json", JSON.stringify({
         version: state.version,

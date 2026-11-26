@@ -753,3 +753,17 @@ for (const [name, entity, overrides, options] of cases) {
   auditedStressResults.push([name, entity, end.cash, end.fcf, end.fundingGap, result.scenarioSummary[entity].defaultQuarter]);
 }
 console.table(auditedStressResults);
+const deferralRows = q => interrupted.timeline[q].operationalRevenueLedger.filter(row => row.customer === "CRWV");
+const openingDelay = deferralRows("2026Q4").reduce((sum, row) => sum + row.added, 0);
+assert.equal(usd(openingDelay), crwv("2026Q4").operationalRevDelay);
+const recoveryRows = deferralRows("2027Q2");
+assert.equal(usd(recoveryRows.reduce((sum, row) => sum + row.recovered, 0)), crwv("2027Q2").operationalRecoveryRevenue);
+assert.equal(recoveryRows.reduce((sum, row) => sum + row.ending, 0), 0);
+assert.equal(deferralRows("2027Q3").length, 0);
+for (const [quarter, result] of Object.entries(interrupted.timeline)) {
+  for (const row of result.operationalRevenueLedger ?? []) {
+    assert.equal(row.ending, usd(row.beginning + row.added - row.recovered), quarter);
+  }
+}
+assert.ok(recoveryRows.every(row => row.dueQuarter === "2027Q2"));
+assert.equal(usd(recoveryRows.reduce((sum, row) => sum + row.cashRecovered, 0)), crwv("2027Q2").operationalRecoveryCash);
