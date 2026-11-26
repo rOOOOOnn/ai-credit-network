@@ -998,3 +998,9 @@ assert.equal(usd(anthropicLease.operatingPayments.reduce((sum, payment) => sum +
 assert.equal(usd(anthropicLease.financePayments.reduce((sum, payment) => sum + payment, 0) -
   anthropicLease.financeImputedInterest), 1.674);
 assert.equal(usd(anthropicLease.separatePurchaseCommitments.reduce((sum, payment) => sum + payment, 0)), 313.819);
+
+const coreWeaveHardware = entities.find(row => row.id === "CRWV").audit4HardwareDisclosure;
+assert.equal(coreWeaveHardware.accountingUsefulLifeYears, 6);
+assert.equal(usd(coreWeaveHardware.grossTechnologyEquipment - coreWeaveHardware.grossTechnologyEquipmentPriorYearEnd), 26.12);
+assert.deepEqual([coreWeaveHardware.gpuOnlyPurchaseCost, coreWeaveHardware.physicalUsefulLifeYears,
+  coreWeaveHardware.economicUsefulLifeYears], [null, null, null]);
