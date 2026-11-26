@@ -586,3 +586,8 @@ Payments are $47.4B divided by 28 or 68. Both scenarios reduce first-quarter FCF
 
 
 Delaying the seven-year scenario four quarters leaves the full $47.4B uncommenced and pays zero through 2027Q3. In 2027Q4 both immediate and delayed scenarios pay $1.6929B and have FCF of negative $4.4515B. Closing cash of $12.2908B in the delayed path exceeds the $5.5192B immediate-start balance by $6.7716B, equal to four installments rounded individually to four decimal places. This fixture tests the timing effect independently from the contractual cost, which remains unchanged.
+
+
+### SB Energy residual value guarantee contract conditions
+
+The November S-1 amendment confirms a residual value guarantee on nine buildings and 4.25 GW-IT. The call conditions are tenant insolvency or an uncured monetary default. The remedies include assuming the tenancy, reletting or, after unsuccessful reletting, a sale. The option to defer that election for up to one year and the first six months of security deposit/project-reserve funding can change the timing of cash paid. A qualifying tenant credit rating or replacement guarantee or lease can trigger release. The optional 3.78 GW-IT expansion is outside the committed $105B cap. TX11 now retains these disclosed terms and both primary filing links. The standardized scenario still approximates calls with modeled credit loss and lacks the actual appraisal, cure, reserve and reletting schedules. [SB Energy S-1 amendment](https://www.sec.gov/Archives/edgar/data/2133037/000162828026075026/sbenergy-sx1a3.htm), [NVIDIA CFO disclosure](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/q3fy27cfocommentary.htm).
