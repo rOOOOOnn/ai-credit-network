@@ -477,3 +477,12 @@ const explicitVst = engine.runSimulation(explicitFacilities, transactions, {
 }).timeline["2027Q2"];
 assert.equal(explicitVst.financingLedger.VST_RCF_DISCLOSED.isRevolver, true);
 assert.equal(explicitVst.entities.VST.undrawnCredit, 4.714);
+const nebiusHistory = engine.getHistoricalSnapshot(entities.find(entity => entity.id === "NBIS"), "2026Q3");
+assert.equal(nebiusHistory.debt, 14.1908);
+assert.equal(usd(nebiusHistory.shortTermDebt + nebiusHistory.longTermDebt), nebiusHistory.debt);
+assert.equal(nebiusHistory.ocf, -0.273);
+assert.equal(usd(nebiusHistory.ocf - nebiusHistory.capex), -7.5734);
+assert.equal(nebiusHistory.undrawnCredit, null);
+const nebiusOpening = liquid.timeline["2026Q4"].entities.NBIS;
+assert.equal(nebiusOpening.begCash, 7.4256);
+assert.equal(nebiusOpening.openingQuarterCashFlow.grossCashFcf, -7.5734);
