@@ -535,3 +535,21 @@ for (const life of [3, 4, 5, 6, 7]) {
   assert.equal(usd(reference.fcf - at.fcf), 22.5, String(life));
   assert.equal(usd(reference.cash - at.cash), 17.5, String(life));
 }
+const retiredAtPhysicalLimit = engine.fleetRefresh([{ acquired: "2026Q4", cost: 20 }], "2030Q4", {
+  economicLife: 6, physicalLife: 4, accountingLife: 8, replacementRatio: 0.25,
+  residualValue: 0.2, physicalResidualValue: 0.05, priceDecline: 0.1
+});
+assert.equal(retiredAtPhysicalLimit.replacementCapex, 18);
+assert.equal(retiredAtPhysicalLimit.disposalProceeds, 1);
+assert.deepEqual(retiredAtPhysicalLimit.cohorts, [{ acquired: "2030Q4", cost: 18 }]);
+const physicalFixture = runRefreshFixture({
+  cohorts: [{ acquired: "2026Q4", cost: 20 }], economicLife: 6, physicalLife: 4, accountingLife: 8,
+  replacementRatio: 0.25, residualValue: 0.2, physicalResidualValue: 0.05, priceDecline: 0.1
+});
+assert.equal(physicalFixture.timeline["2030Q3"].entities.REFRESH_FIXTURE.replacementCapex, 0);
+const physicalQuarter = physicalFixture.timeline["2030Q4"].entities.REFRESH_FIXTURE;
+const physicalReference = withoutRefresh.timeline["2030Q4"].entities.REFRESH_FIXTURE;
+assert.equal(physicalQuarter.gpuCollateralValue, 1);
+assert.equal(physicalQuarter.gpuFleetAgeYears, 0);
+assert.equal(usd(physicalReference.cash - physicalQuarter.cash), 17);
+assert.equal(usd(physicalReference.fcf - physicalQuarter.fcf), 18);
