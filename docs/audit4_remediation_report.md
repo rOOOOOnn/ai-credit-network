@@ -619,7 +619,7 @@ Audit 4 classifies TX11 settlement as a separate cash use in the scenario bridge
 
 ### Companion Audit 4 archive review
 
-An independently supplied archive was compared against the current branch and tested in isolation. Its own model and data passed 39 of 39 specialized cases. The test APIs and data schemas differ. The archive has 50 entities and 83 transactions. Its added TX83 aggregates the same $3.5B and $9.5B NVIDIA caps already represented separately on this branch and assigns an unsupported calendar. Importing it would duplicate exposure. Its company GPU installed-base values mix estimates and assumptions, including owned and leased equipment, and were left out of the baseline. Its Anthropic lessee estimate links to a generic EDGAR search page and requires a direct filing before it can change the cash baseline.
+An independently supplied archive was compared against the current branch and tested in isolation. Its own model and data passed 39 of 39 specialized cases. The test APIs and data schemas differ. The archive has 50 entities and 83 transactions. Its added TX83 aggregates the same $3.5B and $9.5B NVIDIA caps already represented separately on this branch and assigns an unsupported calendar. Importing it would duplicate exposure. Its company GPU installed-base values mix estimates and assumptions, including owned and leased equipment, and were left out of the baseline. Its Anthropic lessee estimate linked to a generic EDGAR search page. The cross-check below establishes the actual disclosure and separates it from modeled cash timing.
 
 The archive's longer financing comparison was adapted to this branch. Run `node scripts/replay_audit4_financing.cjs 2031Q4` to reproduce the table. The continuation engine ends in 2028Q4, so the common-cutoff before/after replay remains the default. The three financing paths use the same finite capacity and scheduled inflow rules as that replay. Values are scenario results in USD billions except runway months. Reported default and break-even quarters are limited to the selected cutoff. A break-even quarter records the first nonnegative FCF and can coexist with later cash burn.
 
@@ -634,3 +634,10 @@ The archive's longer financing comparison was adapted to this branch. Run `node 
 | Remediated | CRWV | Manual | -51.3712 | 53.3712 | 0 | 2029Q2 | — |
 | Remediated | CRWV | Curve | -51.3712 | 53.3712 | 0 | 2029Q2 | — |
 | Remediated | CRWV | Freeze | -80.1646 | 82.1646 | 0 | 2027Q1 | — |
+
+
+### Anthropic lease commitment independently verified
+
+The final prospectus confirms approximately $451.2B of undiscounted payments for executed leases not yet commenced at September 30, 2026. Expected commencements are generally in 2026–2028, and the disclosed weighted average term is approximately ten years. The archive's longer phase schedule was an assumption. The prospectus excludes this amount from its September contractual-obligations table. It separately identifies $105.7B of commitments entered into after the cutoff. Combining these amounts with the filing's broader compute aggregate would risk duplication. The three company pages now expose the September figure and its filing link. [Final prospectus, Contractual Obligations](https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm).
+
+A gross operating-rent overlay assumes $451.2B divided by 40 quarterly installments, or $11.28B per quarter. Immediate commencement in 2026Q4 takes closing cash from $215.2262B to $203.9462B and FCF from $2.6262B to negative $8.6538B. Moving commencement four quarters later defers the first installment to 2027Q4. The modeled 2031Q4 funding gap is $8B in the immediate case and zero in the delayed case. This overlay uses the existing disclosed-estimate IPO inflow. Actual commencement cohorts, operating/finance classification and overlap with calibrated baseline compute costs are unresolved, so the overlay is a sensitivity outside the baseline.

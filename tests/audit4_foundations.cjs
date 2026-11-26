@@ -973,3 +973,22 @@ for (const [run, quarter] of [[immediateCall, "2028Q1"], [delayedCall, "2028Q3"]
   assert.equal(actual.fcf, baseline.fcf);
   assert.equal(usd(baseline.cash - actual.cash), 3);
 }
+
+const anthropicLease = entities.find(row => row.id === "ANTHROPIC").audit4LeaseDisclosure;
+assert.deepEqual([anthropicLease.uncommencedUndiscountedPayments, anthropicLease.uncommencedStartYears,
+  anthropicLease.uncommencedWeightedAverageTermYears], [451.2, [2026, 2028], 10]);
+const anthropicLeaseScenarios = [0, 4].map(leaseDelayQuarters =>
+  engine.runSimulation(entities, transactions, { audit4Contracts: true, forecastThrough: 2031, overrides: {
+    ANTHROPIC: { leaseDelayQuarters, incrementalLeaseTranches: [{ type: "operating", startQuarter: "2026Q4",
+      termQuarters: 40, commitment: anthropicLease.uncommencedUndiscountedPayments }] }
+  } }).timeline);
+const [earlyAnthropicLease, delayedAnthropicLease] = anthropicLeaseScenarios;
+const earlyAnthropic = earlyAnthropicLease["2026Q4"].entities.ANTHROPIC;
+const delayedAnthropic = delayedAnthropicLease["2026Q4"].entities.ANTHROPIC;
+assert.equal(earlyAnthropic.incrementalLeasePayment, 11.28);
+assert.equal(delayedAnthropic.incrementalLeasePayment, 0);
+assert.equal(usd(delayedAnthropic.cash - earlyAnthropic.cash), 11.28);
+assert.equal(usd(delayedAnthropic.fcf - earlyAnthropic.fcf), 11.28);
+assert.equal(delayedAnthropicLease["2027Q4"].entities.ANTHROPIC.incrementalLeasePayment, 11.28);
+assert.equal(earlyAnthropicLease["2031Q4"].entities.ANTHROPIC.fundingGap, 8);
+assert.equal(delayedAnthropicLease["2031Q4"].entities.ANTHROPIC.fundingGap, 0);
