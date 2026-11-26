@@ -832,6 +832,7 @@
 
     const overrides = options.overrides || {};
     const financingRemaining = {};
+    const equityOwnershipRetention = {};
     const fleets = {};
     const scenarioSummary = {};
     const facilityBalances = {};
@@ -1303,6 +1304,13 @@
           ? funding.amounts.equity + funding.amounts.strategic + funding.amounts.prepayment + funding.amounts.other
           : (p.equityInflow ?? 0) * availFactor;
         const equityInflow = money(scheduledEq + assumedNonDebt);
+        const scenarioEquityIssued = funding?.amounts.equity ?? 0;
+        const equityValuation = nonnegative(p.equityPreMoneyValuation);
+        const scenarioEquityDilution = scenarioEquityIssued === 0 ? 0
+          : equityValuation > 0 ? scenarioEquityIssued / (equityValuation + scenarioEquityIssued) : null;
+        const priorRetention = Object.hasOwn(equityOwnershipRetention, e.id) ? equityOwnershipRetention[e.id] : 1;
+        const retention = priorRetention === null || scenarioEquityDilution === null ? null : priorRetention * (1 - scenarioEquityDilution);
+        equityOwnershipRetention[e.id] = retention;
         const fundedScenarioDebt = funding ? money(funding.amounts.debt + funding.amounts.assetBacked) : 0;
         if (funding) financingRemaining[e.id] = money(Math.max(0, remaining - fundedScenarioDebt - assumedNonDebt));
 
@@ -1467,6 +1475,9 @@
           gpuEconomicLife: fleetConfig?.economicLife ?? null,
           rcfDraw,
           equityInflow,
+          scenarioEquityIssued,
+          scenarioEquityDilution: scenarioEquityDilution === null ? null : money(scenarioEquityDilution),
+          cumulativeScenarioEquityDilution: retention === null ? null : money(1 - retention),
           undrawnCredit: undrawnAfter,
           rpo: prev.rpo ?? 0,
           ar: prev.ar !== undefined ? prev.ar : (e.financials?.["2026Q3"]?.ar ?? null),

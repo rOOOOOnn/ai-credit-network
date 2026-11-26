@@ -805,3 +805,19 @@ assert.deepEqual(["2027Q1", "2027Q2", "2027Q3", "2027Q4"].map(q =>
   weightedFunding.timeline[q].entities.REFRESH_FIXTURE.equityInflow), [2, 0, 2, 4]);
 assert.equal(usd(weightedFunding.timeline["2027Q4"].entities.REFRESH_FIXTURE.cash -
   withoutRefresh.timeline["2027Q4"].entities.REFRESH_FIXTURE.cash), 8);
+const dilutionInputs = {
+  mode: "manual", capacity: 8, quarterlyLimit: 4,
+  annual: { 2027: { equity: 8, strategic: 8 } }, quarterWeights: [1, 1, 0, 0]
+};
+const dilutionRun = equityPreMoneyValuation => engine.runSimulation([refreshFixture], [], {
+  overrides: { REFRESH_FIXTURE: { equityPreMoneyValuation, financing: dilutionInputs } }
+});
+const pricedDilution = dilutionRun(18);
+const dilutionFirst = pricedDilution.timeline["2027Q1"].entities.REFRESH_FIXTURE;
+const dilutionSecond = pricedDilution.timeline["2027Q2"].entities.REFRESH_FIXTURE;
+assert.equal(dilutionFirst.equityInflow, 4);
+assert.equal(dilutionFirst.scenarioEquityIssued, 2);
+assert.equal(dilutionFirst.scenarioEquityDilution, 0.1);
+assert.equal(dilutionSecond.cumulativeScenarioEquityDilution, 0.19);
+assert.equal(dilutionRun(8).timeline["2027Q2"].entities.REFRESH_FIXTURE.cumulativeScenarioEquityDilution, 0.36);
+assert.equal(dilutionRun(null).timeline["2027Q2"].entities.REFRESH_FIXTURE.cumulativeScenarioEquityDilution, null);

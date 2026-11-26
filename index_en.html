@@ -256,7 +256,7 @@
           </div>
         </div>
         <div id="paramControls" class="grid grid-cols-2 gap-2.5"></div>
-        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><p data-lease-result></p><p data-gpu-result></p><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th><th>Financing growth</th><th>Revenue growth</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
+        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><p data-lease-result></p><p data-gpu-result></p><p data-equity-dilution></p><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th><th>Financing growth</th><th>Revenue growth</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
         <div class="flex gap-2 pt-1">
           <button id="applyParamsBtn" class="flex-1 py-1.5 rounded bg-[#5B8DEF] hover:bg-[#4A7CE0] text-white font-medium transition"></button>
           <button id="resetParamsBtn" class="px-3 py-1.5 rounded bg-[#161B24] hover:bg-[#1E2532] text-slate-300 border border-[#252E3E] transition"></button>
@@ -1149,6 +1149,7 @@
 
     const overrides = options.overrides || {};
     const financingRemaining = {};
+    const equityOwnershipRetention = {};
     const fleets = {};
     const scenarioSummary = {};
     const facilityBalances = {};
@@ -1620,6 +1621,13 @@
           ? funding.amounts.equity + funding.amounts.strategic + funding.amounts.prepayment + funding.amounts.other
           : (p.equityInflow ?? 0) * availFactor;
         const equityInflow = money(scheduledEq + assumedNonDebt);
+        const scenarioEquityIssued = funding?.amounts.equity ?? 0;
+        const equityValuation = nonnegative(p.equityPreMoneyValuation);
+        const scenarioEquityDilution = scenarioEquityIssued === 0 ? 0
+          : equityValuation > 0 ? scenarioEquityIssued / (equityValuation + scenarioEquityIssued) : null;
+        const priorRetention = Object.hasOwn(equityOwnershipRetention, e.id) ? equityOwnershipRetention[e.id] : 1;
+        const retention = priorRetention === null || scenarioEquityDilution === null ? null : priorRetention * (1 - scenarioEquityDilution);
+        equityOwnershipRetention[e.id] = retention;
         const fundedScenarioDebt = funding ? money(funding.amounts.debt + funding.amounts.assetBacked) : 0;
         if (funding) financingRemaining[e.id] = money(Math.max(0, remaining - fundedScenarioDebt - assumedNonDebt));
 
@@ -1784,6 +1792,9 @@
           gpuEconomicLife: fleetConfig?.economicLife ?? null,
           rcfDraw,
           equityInflow,
+          scenarioEquityIssued,
+          scenarioEquityDilution: scenarioEquityDilution === null ? null : money(scenarioEquityDilution),
+          cumulativeScenarioEquityDilution: retention === null ? null : money(1 - retention),
           undrawnCredit: undrawnAfter,
           rpo: prev.rpo ?? 0,
           ar: prev.ar !== undefined ? prev.ar : (e.financials?.["2026Q3"]?.ar ?? null),
@@ -9420,6 +9431,10 @@ const I18N = {
       t("GPU fleet age (years) / disposal proceeds / net refresh cash outflow / FCF: ", "GPU \u6279\u6b21\u8d26\u9f84\uff08\u5e74\uff09 / \u51fa\u552e\u56de\u6b3e / \u51c0\u66f4\u65b0\u652f\u51fa / FCF\uff1a") +
       [result.gpuFleetAgeYears, result.disposalProceeds, result.netGpuReplacementCashOutflow, result.fcf]
         .map(value => value == null ? "—" : value.toFixed(2)).join(" / ");
+    panel.querySelector("[data-equity-dilution]").textContent = result.scenarioEquityIssued > 0 ||
+      result.cumulativeScenarioEquityDilution > 0 ? t("Scenario equity dilution, quarter / cumulative: ", "\u60c5\u666f\u80a1\u6743\u7a00\u91ca\uff0c\u672c\u5b63 / \u7d2f\u8ba1\uff1a") +
+      [result.scenarioEquityDilution, result.cumulativeScenarioEquityDilution]
+        .map(value => value == null ? "—" : (100 * value).toFixed(2) + "%").join(" / ") : "";
     const lease = result.leaseSchedule;
     panel.querySelector("[data-lease-result]").textContent = lease?.payment > 0 ?
       t("Incremental lease cash / finance principal / finance interest ($B): ",
@@ -9494,6 +9509,8 @@ const I18N = {
       operating.incrementalResearchCashCost ?? 0, value => { settings().incrementalResearchCashCost = Math.max(0, value); });
     setting(t("Quarterly working capital cash use ($B)", "\u5b63\u5ea6\u8425\u8fd0\u8d44\u91d1\u5360\u7528\uff08\u5341\u4ebf\u7f8e\u5143\uff09"),
       operating.workingCapitalCashUse ?? 0, value => { settings().workingCapitalCashUse = value; });
+    setting(t("Scenario equity pre-money valuation ($B)", "\u60c5\u666f\u80a1\u6743\u6295\u524d\u4f30\u503c\uff08\u5341\u4ebf\u7f8e\u5143\uff09"),
+      operating.equityPreMoneyValuation, value => { settings().equityPreMoneyValuation = value; }, undefined, true);
     const gpu = state.overrides[entity.id]?.gpuRefresh ?? {};
     for (const [key, label, fallback, min, max] of [
       ["economicLife", t("Economic GPU life (years)", "GPU \u7ecf\u6d4e\u5bff\u547d（\u5e74）"), 5, 3, 7],
@@ -9942,7 +9959,9 @@ const I18N = {
         const { financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation, operationalRevenueLedger } = row;
         const operatingCashBridges = Object.fromEntries(Object.entries(row.entities)
           .filter(([, company]) => company.operatingCashBridge)
-          .map(([id, company]) => [id, { ...company.operatingCashBridge, endingOCF: company.ocf, endingFCF: company.fcf }]));
+          .map(([id, company]) => [id, { ...company.operatingCashBridge, endingOCF: company.ocf, endingFCF: company.fcf,
+            scenarioEquityIssued: company.scenarioEquityIssued, scenarioEquityDilution: company.scenarioEquityDilution,
+            cumulativeScenarioEquityDilution: company.cumulativeScenarioEquityDilution }]));
         return [{ quarter, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation,
           operationalRevenueLedger, operatingCashBridges }];
       });
