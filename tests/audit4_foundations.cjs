@@ -497,3 +497,13 @@ assert.equal(usd(orclOperatingLeaseCash - orclMaturities.operatingImputedInteres
 assert.equal(usd(orclFinanceLeaseCash - orclMaturities.financeImputedInterest), oracleFiling.financeLeaseLiability);
 assert.equal(oracleFiling.uncommencedLeaseCommitment, 288);
 assert.equal(usd(oracleFiling.reportedLeaseCashPaid.operating + oracleFiling.reportedLeaseCashPaid.finance), 1.136);
+const lateGpuConfig = {
+  capex: 4,
+  gpuRefresh: { gpuPurchasesByQuarter: { "2027Q1": 2 }, economicLife: 7, replacementRatio: 0.5, residualValue: 0.25 }
+};
+const lateGpu = engine.runSimulation(entities, transactions, {
+  forecastThrough: 2033, includeFirstGpuRefresh: true, overrides: { CRWV: lateGpuConfig }
+});
+assert.equal(lateGpu.timeline["2033Q4"].entities.CRWV.replacementCapex, 0);
+assert.equal(lateGpu.timeline["2034Q1"]?.entities.CRWV.replacementCapex, 1);
+assert.equal(lateGpu.timeline["2034Q1"].entities.CRWV.disposalProceeds, 0.25);

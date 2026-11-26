@@ -918,7 +918,21 @@
     });
 
     // 2. Forward Simulation
-    const lastYear = Math.max(2028, Math.min(2040, Math.trunc(options.forecastThrough ?? 2028)));
+    let lastYear = Math.trunc(options.forecastThrough ?? 2028);
+    if (options.includeFirstGpuRefresh) {
+      for (const override of Object.values(options.overrides ?? {})) {
+        const refresh = override.gpuRefresh;
+        if (!refresh) continue;
+        const acquired = (refresh.cohorts ?? []).filter(cohort => cohort.cost > 0).map(cohort => cohort.acquired);
+        const purchases = Object.entries(refresh.gpuPurchasesByQuarter ?? {})
+          .filter(([, amount]) => amount > 0).map(([quarter]) => quarter);
+        for (const quarter of [...acquired, ...purchases]) {
+          const start = parseQuarterNumber(quarter);
+          if (start >= 0) lastYear = Math.max(lastYear, Math.floor((start + Math.ceil(4 * (refresh.economicLife ?? 5))) / 4));
+        }
+      }
+    }
+    lastYear = Math.max(2028, Math.min(2040, lastYear));
     const forwardQs = [QUARTER_PARTIAL, ...QUARTERS_FORECAST];
     for (let year = 2029; year <= lastYear; year++) {
       for (let quarter = 1; quarter <= 4; quarter++) forwardQs.push(`${year}Q${quarter}`);

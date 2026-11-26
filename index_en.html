@@ -1234,7 +1234,21 @@
     });
 
     // 2. Forward Simulation
-    const lastYear = Math.max(2028, Math.min(2040, Math.trunc(options.forecastThrough ?? 2028)));
+    let lastYear = Math.trunc(options.forecastThrough ?? 2028);
+    if (options.includeFirstGpuRefresh) {
+      for (const override of Object.values(options.overrides ?? {})) {
+        const refresh = override.gpuRefresh;
+        if (!refresh) continue;
+        const acquired = (refresh.cohorts ?? []).filter(cohort => cohort.cost > 0).map(cohort => cohort.acquired);
+        const purchases = Object.entries(refresh.gpuPurchasesByQuarter ?? {})
+          .filter(([, amount]) => amount > 0).map(([quarter]) => quarter);
+        for (const quarter of [...acquired, ...purchases]) {
+          const start = parseQuarterNumber(quarter);
+          if (start >= 0) lastYear = Math.max(lastYear, Math.floor((start + Math.ceil(4 * (refresh.economicLife ?? 5))) / 4));
+        }
+      }
+    }
+    lastYear = Math.max(2028, Math.min(2040, lastYear));
     const forwardQs = [QUARTER_PARTIAL, ...QUARTERS_FORECAST];
     for (let year = 2029; year <= lastYear; year++) {
       for (let quarter = 1; quarter <= 4; quarter++) forwardQs.push(`${year}Q${quarter}`);
@@ -8788,6 +8802,7 @@ const I18N = {
       ocean: state.ocean,
       overrides: state.overrides,
       forecastThrough: 2033,
+      includeFirstGpuRefresh: true,
       audit4Contracts: true,
       forcedDefaults: Array.from(state.forcedDefaults),
       gpuCollateralHaircut: state.gpuCollateralHaircut
@@ -9255,7 +9270,8 @@ const I18N = {
     ]) setting(label, gpu[key] ?? fallback, value => { (settings().gpuRefresh ??= {})[key] = Math.min(max, Math.max(min, value)); });
     if (entity.id === "ORCL") setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
       state.overrides[entity.id]?.leaseDelayQuarters ?? 0, value => { settings().leaseDelayQuarters = Math.max(0, Math.trunc(value)); });
-    for (let year = 2027; year <= 2032; year++) {
+    const lastYear = Number(state.simResult.allQuarters.at(-1).slice(0, 4));
+    for (let year = 2027; year <= lastYear; year++) {
       const planned = Engine.financingForecast(selectedConfig, year);
       const quarters = state.simResult.allQuarters.filter(q => q.startsWith(String(year)));
       const quartersData = quarters.map(q => state.simResult.timeline[q].entities[entity.id]);

@@ -61,6 +61,11 @@ async function checkPage(browser, url) {
     await scenario.fill(JSON.stringify(leaseSettings));
     await panel.locator("button").click();
     assert.match(await panel.locator("[data-lease-result]").innerText(), /2\.50 \/ 2\.00 \/ 0\.00/);
+    const gpuSettings = JSON.parse(await scenario.inputValue());
+    gpuSettings.gpuRefresh = { economicLife: 7, gpuPurchasesByQuarter: { "2027Q1": 0.1 } };
+    await scenario.fill(JSON.stringify(gpuSettings));
+    await panel.locator("button").click();
+    assert.equal(await panel.locator("tbody tr").last().locator("td").first().innerText(), "2034");
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {
