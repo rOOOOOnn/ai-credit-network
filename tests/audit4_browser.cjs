@@ -98,7 +98,7 @@ async function checkPage(browser, url) {
     const firstQuarter = ledger.quarters[0];
     assert.equal(firstQuarter.quarter, "2026Q4");
     assert.equal(firstQuarter.financingLedger.TX26.beginningOutstanding, 4.583);
-    assert.equal(firstQuarter.financingLedger.TX26.lender, "BX_FUNDS");
+    assert.equal(firstQuarter.financingLedger.TX26.lender, null);
     assert.equal(firstQuarter.financingLedger.TX26.undrawnCommitment, null);
     assert.equal(ledger.quarters.at(-1).quarter, "2034Q4");
     assert.deepEqual(errors, []);

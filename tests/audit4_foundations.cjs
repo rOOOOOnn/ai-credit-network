@@ -675,3 +675,8 @@ assert.equal(replacementQ("2027Q3").endingOutstanding, 3);
 assert.equal(trackedReplacement.timeline["2027Q3"].entities.OPENAI.newDebt, 3);
 assert.equal(trackedReplacement.timeline["2027Q3"].debtReconciliation.OPENAI.namedTermPrincipal, 3);
 assert.equal(trackedReplacement.timeline["2028Q1"].debtReconciliation.OPENAI.namedTermPrincipal, 2);
+assert.equal(liquid.timeline["2026Q4"].financingLedger.TX26.lender, null);
+const tx26Stress = engine.runSimulation(entities, transactions, { audit4Contracts: true, forcedDefaults: ["SPV_CRWV8"] });
+const tx26Credit = tx26Stress.creditEvents.find(event => event.txId === "TX26");
+assert.equal(tx26Credit.fundedEAD, 4.583);
+assert.equal(tx26Credit.lender, null);

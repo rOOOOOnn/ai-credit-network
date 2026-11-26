@@ -972,11 +972,12 @@
       const instruments = trackTermDebt ? transactions.filter(tx => DEBT_TX_TYPES.includes(tx.type)) : revolving;
       for (const tx of instruments) {
         const isRevolver = revolving.includes(tx);
+        const lender = useAudit4Contracts && tx.lenderAllocationVerified === false ? null : tx.payer;
         const knowsPrincipal = tx.amountDrawn != null || (tx.principalOutstanding != null &&
           compareQuarter(q, tx.principalAsOfQuarter) >= 0);
         if (!isRevolver && !knowsPrincipal) {
           if (isTransactionActive(tx, q)) financingLedger[tx.id] = {
-            txId: tx.id, borrower: tx.receiver, lender: tx.payer, instrumentType: tx.type,
+            txId: tx.id, borrower: tx.receiver, lender, instrumentType: tx.type,
             beginningOutstanding: null, newDrawdown: 0, principalRepayment: 0,
             endingOutstanding: null, cumulativeDrawdown: null, remainingCommitment: null,
             undrawnCommitment: null, accruedInterest: null, defaultExposure: null,
@@ -996,7 +997,7 @@
         const canDraw = active && tx.endQ !== q && !previous?.defaulted &&
           (!tx.commitmentTerminationDate || quarterEndDate(q) <= tx.commitmentTerminationDate);
         const row = {
-          txId: tx.id, borrower: tx.receiver, lender: tx.payer, instrumentType: tx.type, isRevolver,
+          txId: tx.id, borrower: tx.receiver, lender, instrumentType: tx.type, isRevolver,
           beginningOutstanding: beginning, dataType: "Forecast", exposureBasis: tx.exposureBasis ?? observed.eadBasis,
           newDrawdown: 0, principalRepayment: 0, nonCashConversion, endingOutstanding: money(beginning - nonCashConversion),
           remainingCommitment, cumulativeDrawdown, lettersOfCredit: tx.lettersOfCredit ?? null,
@@ -1665,8 +1666,8 @@
             // P0-3 Layer 1 (Direct Financial): TRUE ONE-TIME Debt Credit Loss using computeTransactionEAD
             if (tx.receiver === defId && DEBT_TX_TYPES.includes(tx.type)) {
               if (defaultedTxIds.has(tx.id)) return;
-              const lenderId = tx.payer;
               const row = financingLedger[tx.id];
+              const lenderId = row ? row.lender : tx.payer;
               const eadInfo = row && row.endingOutstanding !== null
                 ? computeTransactionEAD({ ...tx, principalOutstanding: row.endingOutstanding,
                     principalAsOfQuarter: q, remainingCommitment: row.isRevolver ? 0 : row.undrawnCommitment },

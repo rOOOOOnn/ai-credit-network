@@ -1292,11 +1292,12 @@
       const instruments = trackTermDebt ? transactions.filter(tx => DEBT_TX_TYPES.includes(tx.type)) : revolving;
       for (const tx of instruments) {
         const isRevolver = revolving.includes(tx);
+        const lender = useAudit4Contracts && tx.lenderAllocationVerified === false ? null : tx.payer;
         const knowsPrincipal = tx.amountDrawn != null || (tx.principalOutstanding != null &&
           compareQuarter(q, tx.principalAsOfQuarter) >= 0);
         if (!isRevolver && !knowsPrincipal) {
           if (isTransactionActive(tx, q)) financingLedger[tx.id] = {
-            txId: tx.id, borrower: tx.receiver, lender: tx.payer, instrumentType: tx.type,
+            txId: tx.id, borrower: tx.receiver, lender, instrumentType: tx.type,
             beginningOutstanding: null, newDrawdown: 0, principalRepayment: 0,
             endingOutstanding: null, cumulativeDrawdown: null, remainingCommitment: null,
             undrawnCommitment: null, accruedInterest: null, defaultExposure: null,
@@ -1316,7 +1317,7 @@
         const canDraw = active && tx.endQ !== q && !previous?.defaulted &&
           (!tx.commitmentTerminationDate || quarterEndDate(q) <= tx.commitmentTerminationDate);
         const row = {
-          txId: tx.id, borrower: tx.receiver, lender: tx.payer, instrumentType: tx.type, isRevolver,
+          txId: tx.id, borrower: tx.receiver, lender, instrumentType: tx.type, isRevolver,
           beginningOutstanding: beginning, dataType: "Forecast", exposureBasis: tx.exposureBasis ?? observed.eadBasis,
           newDrawdown: 0, principalRepayment: 0, nonCashConversion, endingOutstanding: money(beginning - nonCashConversion),
           remainingCommitment, cumulativeDrawdown, lettersOfCredit: tx.lettersOfCredit ?? null,
@@ -1985,8 +1986,8 @@
             // P0-3 Layer 1 (Direct Financial): TRUE ONE-TIME Debt Credit Loss using computeTransactionEAD
             if (tx.receiver === defId && DEBT_TX_TYPES.includes(tx.type)) {
               if (defaultedTxIds.has(tx.id)) return;
-              const lenderId = tx.payer;
               const row = financingLedger[tx.id];
+              const lenderId = row ? row.lender : tx.payer;
               const eadInfo = row && row.endingOutstanding !== null
                 ? computeTransactionEAD({ ...tx, principalOutstanding: row.endingOutstanding,
                     principalAsOfQuarter: q, remainingCommitment: row.isRevolver ? 0 : row.undrawnCommitment },
@@ -6625,7 +6626,11 @@ const INITIAL_TRANSACTIONS = [
     "collateral": "SPV GPU Fleet & Contracted Revenue",
     "guarantor": "Non-Recourse to CRWV Parent",
     "arranger": "MUFG, Morgan Stanley, GS, JPM",
-    "actualLender": "Blackstone Credit & Insurance (Anchor) + Insurers",
+    "actualLender": "Blackstone Credit & Insurance anchor and other syndicate members; allocations undisclosed",
+    "lenderAllocationVerified": false,
+    "facilityAnnouncementUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000129/ex991.htm",
+    "reportedRateTranches": {"date":"2026-09-30","floatingPrincipalRounded":2.2,"fixedPrincipalRounded":2.4},
+    "reportedCollateralAssets": {"date":"2026-09-30","current":0.233,"nonCurrent":5.2},
     "spv": "CoreWeave Compute Acquisition Co. VIII, LLC",
     "confidence": "A",
     "sourceDoc": "CoreWeave September 2026 Form 10-Q, Note 10",
