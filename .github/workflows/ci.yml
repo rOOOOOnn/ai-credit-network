@@ -50,7 +50,5 @@ jobs:
           node-version: 20.x
       - name: Install the pinned browser test runner
         run: npm install --no-save --no-package-lock playwright@1.55.1
-      - name: Install Chromium for interaction checks
-        run: npx playwright install --with-deps chromium
       - name: Exercise all three simulator pages
         run: node tests/audit4_browser.cjs

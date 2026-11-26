@@ -65,7 +65,7 @@ async function main() {
   await once(server, "listening");
   let browser;
   try {
-    browser = await chromium.launch();
+    browser = await chromium.launch({ channel: "chrome" });
     for (const page of pages) await checkPage(browser, "http://127.0.0.1:" + server.address().port + "/" + page);
   } finally {
     await browser?.close();
