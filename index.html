@@ -259,6 +259,7 @@
           </div>
         </div>
         <div id="paramControls" class="grid grid-cols-2 gap-2.5"></div>
+        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output></details>
         <div class="flex gap-2 pt-1">
           <button id="applyParamsBtn" class="flex-1 py-1.5 rounded bg-[#5B8DEF] hover:bg-[#4A7CE0] text-white font-medium transition"></button>
           <button id="resetParamsBtn" class="px-3 py-1.5 rounded bg-[#161B24] hover:bg-[#1E2532] text-slate-300 border border-[#252E3E] transition"></button>
@@ -382,7 +383,7 @@
 
   function quarterStatus(q) {
     if (q === QUARTER_PARTIAL) return "PARTIAL";
-    return QUARTERS_FORECAST.includes(q) ? "FORECAST" : "HISTORICAL";
+    return parseQuarterNumber(q) > parseQuarterNumber(QUARTER_PARTIAL) ? "FORECAST" : "HISTORICAL";
   }
 
   function qIndex(q) {
@@ -887,6 +888,88 @@
     return metrics;
   }
 
+  // Scenario amounts are in USD billions. No missing historical amount is imputed.
+  const FINANCING_SOURCES = ["equity", "debt", "strategic", "prepayment", "assetBacked", "other"];
+  const nonnegative = value => Number.isFinite(value) ? Math.max(0, value) : 0;
+  const money = value => Number(value.toFixed(4));
+
+  function financingForecast(config, year) {
+    const elapsed = year - (config.startYear ?? 2027);
+    if (elapsed < 0 || elapsed >= (config.horizon ?? 6)) return { amounts: {}, status: "Outside Horizon" };
+    if (config.mode === "manual") return { amounts: config.annual?.[year] ?? {}, status: "Assumption" };
+    const curve = config.curve ?? "linear";
+    const historical = config.history ?? {};
+    const entries = Object.entries(historical).filter(([y, record]) =>
+      Number(y) < (config.startYear ?? 2027) && record.dataType === "Actual" && record.fullYear === true)
+      .sort(([a], [b]) => Number(a) - Number(b));
+    const [prior, latest] = entries.slice(-2);
+    if (curve === "historical" && (!prior || Number(latest[0]) - Number(prior[0]) !== 1 ||
+        !FINANCING_SOURCES.some(source => prior[1].amounts?.[source] > 0 && Number.isFinite(latest[1].amounts?.[source])))) {
+      return { amounts: {}, status: "Insufficient Historical Data" };
+    }
+    const amounts = {};
+    for (const source of FINANCING_SOURCES) {
+      const floor = Math.max(-1, config.minimumGrowth ?? 0);
+      const initial = config.initialGrowth ?? 0;
+      const decline = nonnegative(config.annualDecline ?? 0.2);
+      let amount = nonnegative(config.base?.[source]);
+      if (curve === "historical") {
+        const first = prior[1].amounts?.[source];
+        const last = latest[1].amounts?.[source];
+        if (!(first > 0) || !Number.isFinite(last) || last < 0) continue;
+        amounts[source] = last * (last / first) ** (year - Number(latest[0]));
+        continue;
+      }
+      for (let offset = 0; offset <= elapsed; offset++) {
+        let growth = initial - decline * offset;
+        if (curve === "exponential") growth = floor + (initial - floor) * Math.exp(-decline * offset);
+        if (curve === "logistic") {
+          const midpoint = Math.max(1, (config.horizon ?? 6) / 2);
+          growth = floor + (initial - floor) * (1 + Math.exp(-decline * midpoint)) /
+            (1 + Math.exp(decline * (offset - midpoint)));
+        }
+        amount *= 1 + Math.max(floor, growth);
+      }
+      amounts[source] = amount;
+    }
+    return { amounts, status: "Assumption" };
+  }
+
+  function scenarioFunding(config, quarter, remaining, availability, debtFactor) {
+    const forecast = financingForecast(config, Number(quarter.slice(0, 4)));
+    const quarterIndex = Number(quarter.slice(-1)) - 1;
+    const weights = config.quarterWeights ?? [1, 1, 1, 1];
+    const totalWeight = weights.reduce((sum, value) => sum + nonnegative(value), 0);
+    const share = totalWeight > 0 ? nonnegative(weights[quarterIndex]) / totalWeight : 0;
+    const amounts = Object.fromEntries(FINANCING_SOURCES.map(source => [
+      source, nonnegative(forecast.amounts[source]) * share * availability *
+        (["debt", "assetBacked"].includes(source) ? debtFactor : 1)
+    ]));
+    const requested = Object.values(amounts).reduce((sum, value) => sum + value, 0);
+    const scale = requested > 0 ? Math.min(1, remaining / requested, nonnegative(config.quarterlyLimit) / requested) : 0;
+    for (const source of FINANCING_SOURCES) amounts[source] = money(amounts[source] * scale);
+    return { amounts, status: forecast.status };
+  }
+
+  function fleetRefresh(cohorts, quarter, config) {
+    let replacementCapex = 0;
+    let disposalProceeds = 0;
+    const next = [];
+    for (const cohort of cohorts) {
+      const age = parseQuarterNumber(quarter) - parseQuarterNumber(cohort.acquired);
+      const cost = nonnegative(cohort.cost);
+      const eligible = age >= 4 * (config.economicLife ?? 5);
+      const share = eligible ? Math.min(1, nonnegative(config.replacementRatio ?? 0.25)) : 0;
+      const replaced = cost * share;
+      const newCost = replaced * Math.max(0, 1 - (config.priceDecline ?? 0));
+      replacementCapex += newCost;
+      disposalProceeds += replaced * Math.min(1, nonnegative(config.residualValue));
+      if (cost > replaced) next.push({ ...cohort, cost: cost - replaced });
+      if (newCost > 0) next.push({ acquired: quarter, cost: newCost });
+    }
+    return { cohorts: next, replacementCapex: money(replacementCapex), disposalProceeds: money(disposalProceeds) };
+  }
+
   function runSimulation(entities, transactions, options = {}) {
     const ocean = Object.assign({
       fundingAvailability: 100,
@@ -897,6 +980,9 @@
     }, options.ocean || {});
 
     const overrides = options.overrides || {};
+    const financingRemaining = {};
+    const fleets = {};
+    const scenarioSummary = {};
     const forcedDefaults = new Set(options.forcedDefaults || []);
     const defaultHaircut = options.defaultHaircut ?? 0.75;
     const crisisCapExCut = options.crisisCapExCut ?? 0.40;
@@ -976,11 +1062,15 @@
     });
 
     // 2. Forward Simulation
+    const lastYear = Math.max(2028, Math.min(2040, Math.trunc(options.forecastThrough ?? 2028)));
     const forwardQs = [QUARTER_PARTIAL, ...QUARTERS_FORECAST];
+    for (let year = 2029; year <= lastYear; year++) {
+      for (let quarter = 1; quarter <= 4; quarter++) forwardQs.push(`${year}Q${quarter}`);
+    }
     let prevStates = timeline["2026Q3"].entities;
 
     forwardQs.forEach((q, stepIdx) => {
-      const status = quarterStatus(q);
+      const status = q === QUARTER_PARTIAL ? "PARTIAL" : "FORECAST";
       const visibleTxs = getVisibleTransactions(transactions, q);
       const activeTxs = visibleTxs.filter(tx => isTransactionActive(tx, q));
       const states = {};
@@ -1084,14 +1174,31 @@
         const refiRollover = Number((maturingPrincipal * availFactor * refiFactor).toFixed(4));
         const principalRepay = Number(((p.debtRepay ?? 0) + maturingPrincipal).toFixed(4));
 
-        const requestedDebt = (p.newDebt ?? 0) * availFactor * refiFactor + refiRollover;
+        const forecastConfig = ov?.financing;
+        const remaining = forecastConfig ? financingRemaining[e.id] ?? nonnegative(forecastConfig.capacity) : 0;
+        const funding = forecastConfig ? scenarioFunding(forecastConfig, q, remaining, availFactor, refiFactor) : null;
+        const assumedDebt = funding ? funding.amounts.debt + funding.amounts.assetBacked : (p.newDebt ?? 0) * availFactor * refiFactor;
+        const requestedDebt = assumedDebt + refiRollover;
         const allowedDebt = Number(Math.max(0, Math.min(requestedDebt, Math.max(0, ocean.maxCapacity - oceanUsedThisQ))).toFixed(4));
         oceanUsedThisQ += allowedDebt;
 
         const scheduledEq = (e.scheduledEquityInflows && e.scheduledEquityInflows[q]) ? e.scheduledEquityInflows[q] : 0;
-        const equityInflow = Number((scheduledEq + (p.equityInflow ?? 0) * availFactor).toFixed(4));
+        const assumedNonDebt = funding
+          ? funding.amounts.equity + funding.amounts.strategic + funding.amounts.prepayment + funding.amounts.other
+          : (p.equityInflow ?? 0) * availFactor;
+        const equityInflow = money(scheduledEq + assumedNonDebt);
+        const fundedScenarioDebt = Math.max(0, allowedDebt - refiRollover);
+        if (funding) financingRemaining[e.id] = money(Math.max(0, remaining - fundedScenarioDebt - assumedNonDebt));
 
-        const capex = Number((p.capex ?? 0).toFixed(4));
+        const fleetConfig = ov?.gpuRefresh;
+        const refresh = fleetConfig
+          ? fleetRefresh(fleets[e.id] ?? fleetConfig.cohorts ?? [], q, fleetConfig)
+          : { replacementCapex: 0, disposalProceeds: 0 };
+        if (fleetConfig) fleets[e.id] = refresh.cohorts;
+        const capex = money((p.capex ?? 0) + refresh.replacementCapex);
+        const lease = ov?.incrementalLease;
+        const leaseAge = lease ? parseQuarterNumber(q) - parseQuarterNumber(lease.startQuarter) : -1;
+        const leasePayment = leaseAge >= 0 && leaseAge < lease?.termQuarters ? nonnegative(lease.quarterlyPayment) : 0;
         const grossMargin = Math.max(0.05, Math.min(0.98, p.grossMargin ?? 0.55));
         const cashConv = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
         const minCash = p.minCash ?? 1.0;
@@ -1132,12 +1239,13 @@
           ocf = Number((preTax - taxes).toFixed(4));
         }
 
+        ocf = money(ocf - leasePayment);
         const fcf = Number((ocf - capex).toFixed(4));
         const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall;
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
         // Exact Accounting Conservation + Auto-RCF Drawdown
-        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + equityInflow - principalRepay - gpuMarginCall).toFixed(4));
+        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + equityInflow - principalRepay - gpuMarginCall + refresh.disposalProceeds).toFixed(4));
         let rcfDraw = 0;
         let endCash = preDrawCash;
         let undrawnAfter = undrawn;
@@ -1164,6 +1272,10 @@
           gpuMarginCall,
           computePay: incrementalCompute,
           newDebt: allowedDebt,
+          financingForecast: funding ? { ...funding, fundedDebt: fundedScenarioDebt, remainingCapacity: financingRemaining[e.id], scheduledEquity: scheduledEq } : null,
+          replacementCapex: refresh.replacementCapex,
+          disposalProceeds: refresh.disposalProceeds,
+          incrementalLeasePayment: leasePayment,
           rcfDraw,
           equityInflow,
           undrawnCredit: undrawnAfter,
@@ -1573,6 +1685,17 @@
       }
 
       entities.forEach(e => {
+        const state = states[e.id];
+        if (!state.insufficientData && Number.isFinite(state.cash) && Number.isFinite(state.fcf)) {
+          const minimumCash = overrides[e.id]?.minCash ?? e.defaults?.minCash ?? 1;
+          const burn = Math.max(0, -state.fcf);
+          state.quarterlyCashBurn = burn;
+          state.cashRunwayMonths = burn > 0 ? money(3 * Math.max(0, state.cash - minimumCash) / burn) : null;
+          state.fundingGap = money(Math.max(0, minimumCash - state.cash));
+          const summary = scenarioSummary[e.id] ??= { defaultQuarter: null, breakEvenQuarter: null };
+          if (state.distressLevel === 3) summary.defaultQuarter ??= q;
+          if (state.fcf >= 0) summary.breakEvenQuarter ??= q;
+        }
         const frag = computeFragilityScore(e, states[e.id], ocean, visibleTxs);
         states[e.id].fragilityScore = frag.score;
         states[e.id].fragilityDrivers = frag.drivers;
@@ -1583,7 +1706,7 @@
     });
 
     const parentSpvReconciliation = reconcileParentSpvDebt(entities, transactions);
-    return { timeline, allQuarters: ALL_QUARTERS, cumCreditLossByTx, creditEvents, parentSpvReconciliation };
+    return { timeline, allQuarters: [...QUARTERS_HIST, ...forwardQs], scenarioSummary, cumCreditLossByTx, creditEvents, parentSpvReconciliation };
   }
 
   return {
@@ -1607,6 +1730,8 @@
     getEdgeVisual,
     computeFragilityScore,
     computeEntityMetrics,
+    financingForecast,
+    fleetRefresh,
     runSimulation
   };
 });
@@ -8283,6 +8408,7 @@ const I18N = {
     state.simResult = Engine.runSimulation(state.entities, state.transactions, {
       ocean: state.ocean,
       overrides: state.overrides,
+      forecastThrough: 2033,
       forcedDefaults: Array.from(state.forcedDefaults),
       gpuCollateralHaircut: state.gpuCollateralHaircut
     });
@@ -8647,6 +8773,51 @@ const I18N = {
     }
   }
 
+  function renderFinancingScenario(entity, result) {
+    const panel = document.getElementById("financingScenario");
+    const zh = state.lang === "zh";
+    const t = (english, chinese) => zh ? chinese : english;
+    const config = state.overrides[entity.id]?.financing;
+    const summary = state.simResult.scenarioSummary[entity.id] ?? {};
+    panel.dataset.entity = entity.id;
+    panel.hidden = Boolean(entity.isOcean);
+    panel.querySelector("summary").textContent = t("Financing and GPU assumptions", "\u878d\u8d44\u4e0e GPU \u5047\u8bbe");
+    const example = {mode:"manual", capacity:100, quarterlyLimit:10,
+      annual:{2027:{equity:20,debt:8},2028:{equity:15,strategic:5}},
+      quarterWeights:[1,1,1,1],base:{equity:10},curve:"linear",initialGrowth:0.8,annualDecline:0.2,minimumGrowth:0,horizon:6};
+    const text = panel.querySelector("textarea");
+    text.value = JSON.stringify({financing:config ?? example,
+      gpuRefresh:state.overrides[entity.id]?.gpuRefresh ?? {economicLife:5,replacementRatio:0.25,residualValue:0.2,cohorts:[]},
+      incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null}, null, 2);
+    panel.querySelector("button").textContent = t("Apply assumptions", "\u5e94\u7528\u5047\u8bbe");
+    panel.querySelector("p").textContent = t(
+      "Edit annual amounts by source in USD billions. Set mode to manual or curve. Example values are assumptions.",
+      "\u6309\u878d\u8d44\u6765\u6e90\u7f16\u8f91\u5e74\u5ea6\u91d1\u989d，\u5355\u4f4d\u5341\u4ebf\u7f8e\u5143。mode \u53ef\u9009 manual \u6216 curve。\u793a\u4f8b\u6570\u503c\u5747\u4e3a\u5047\u8bbe。");
+    panel.querySelector("output").textContent = result.fundingGap === undefined ? "" :
+      t("Funding gap / runway months / first default / FCF break-even / refresh CapEx: ",
+        "\u878d\u8d44\u7f3a\u53e3 / \u73b0\u91d1\u8dd1\u9053\u6708\u6570 / \u9996\u6b21\u8fdd\u7ea6 / FCF \u8f6c\u6b63 / \u66f4\u65b0\u8d44\u672c\u5f00\u652f：") +
+      [result.fundingGap, result.cashRunwayMonths, summary.defaultQuarter, summary.breakEvenQuarter,
+        result.replacementCapex].map(value => value ?? "—").join(" / ");
+  }
+
+  function bindFinancingScenario() {
+    const panel = document.getElementById("financingScenario");
+    panel.querySelector("button").addEventListener("click", () => {
+      const output = panel.querySelector("output");
+      try {
+        const data = JSON.parse(panel.querySelector("textarea").value);
+        if (!["manual","curve"].includes(data.financing?.mode)) throw new Error("Expected manual or curve mode");
+        const settings = state.overrides[panel.dataset.entity] ??= {};
+        settings.financing = data.financing;
+        settings.gpuRefresh = data.gpuRefresh;
+        settings.incrementalLease = data.incrementalLease;
+        recompute();
+      } catch (error) {
+        output.textContent = error.message;
+      }
+    });
+  }
+
   function renderDrawer() {
     const t = T();
     const q = state.currentQuarter;
@@ -8759,6 +8930,7 @@ const I18N = {
       </label>
     `).join("");
 
+    renderFinancingScenario(entity, st);
     document.getElementById("detailCoverage").textContent = entity.filingCoverage;
     document.getElementById("detailSourceLink").href = entity.sourceUrl || "#";
     document.getElementById("sourcesList").innerHTML = visibleTxs.map(tx => `
@@ -8781,7 +8953,8 @@ const I18N = {
       : "bg-[#141D2E] text-[#7DA7F4] border-[#24385C]"
     );
     document.getElementById("versionBadge").textContent = state.version.split("-")[0];
-    document.getElementById("timelineSlider").value = Engine.ALL_QUARTERS.indexOf(q);
+    document.getElementById("timelineSlider").max = state.simResult.allQuarters.length - 1;
+    document.getElementById("timelineSlider").value = state.simResult.allQuarters.indexOf(q);
   }
 
   function renderAll() {
@@ -8793,6 +8966,7 @@ const I18N = {
   }
 
   function bindEvents() {
+    bindFinancingScenario();
     document.getElementById("langZhBtn").addEventListener("click", () => { state.lang = "zh"; renderAll(); });
     document.getElementById("langEnBtn").addEventListener("click", () => { state.lang = "en"; renderAll(); });
 
@@ -8910,14 +9084,14 @@ const I18N = {
       recompute();
     });
 
-    document.getElementById("timelineSlider").addEventListener("input", (e) => { state.currentQuarter = Engine.ALL_QUARTERS[Number(e.target.value)]; renderAll(); });
-    document.getElementById("stepBackBtn").addEventListener("click", () => { state.currentQuarter = Engine.ALL_QUARTERS[Math.max(0, Engine.ALL_QUARTERS.indexOf(state.currentQuarter) - 1)]; renderAll(); });
-    document.getElementById("stepFwdBtn").addEventListener("click", () => { state.currentQuarter = Engine.ALL_QUARTERS[Math.min(Engine.ALL_QUARTERS.length - 1, Engine.ALL_QUARTERS.indexOf(state.currentQuarter) + 1)]; renderAll(); });
+    document.getElementById("timelineSlider").addEventListener("input", (e) => { state.currentQuarter = state.simResult.allQuarters[Number(e.target.value)]; renderAll(); });
+    document.getElementById("stepBackBtn").addEventListener("click", () => { state.currentQuarter = state.simResult.allQuarters[Math.max(0, state.simResult.allQuarters.indexOf(state.currentQuarter) - 1)]; renderAll(); });
+    document.getElementById("stepFwdBtn").addEventListener("click", () => { state.currentQuarter = state.simResult.allQuarters[Math.min(state.simResult.allQuarters.length - 1, state.simResult.allQuarters.indexOf(state.currentQuarter) + 1)]; renderAll(); });
     document.getElementById("playTimelineBtn").addEventListener("click", () => {
       if (state.playTimer) { clearInterval(state.playTimer); state.playTimer = null; }
       else {
         state.playTimer = setInterval(() => {
-          state.currentQuarter = Engine.ALL_QUARTERS[(Engine.ALL_QUARTERS.indexOf(state.currentQuarter) + 1) % Engine.ALL_QUARTERS.length];
+          state.currentQuarter = state.simResult.allQuarters[(state.simResult.allQuarters.indexOf(state.currentQuarter) + 1) % state.simResult.allQuarters.length];
           renderAll();
         }, 900);
       }
@@ -8950,7 +9124,7 @@ const I18N = {
     });
     document.getElementById("dlForecastCsv").addEventListener("click", () => {
       const rows = [["quarter","entityId","revenue_B","cash_B","debt_B","fcf_B","fragilityScore","distressLevel","lostReceipts_B","creditLoss_B"]];
-      Engine.ALL_QUARTERS.slice(18).forEach(q => { const qd = state.simResult.timeline[q]; state.entities.forEach(e => { const s = qd.entities[e.id] || {}; rows.push([q, e.id, s.revenue ?? "", s.cash ?? "", s.debt ?? "", s.fcf ?? "", s.fragilityScore ?? 0, s.distressLevel ?? 0, s.lostReceipts ?? 0, s.creditLoss ?? 0]); }); });
+      state.simResult.allQuarters.slice(18).forEach(q => { const qd = state.simResult.timeline[q]; state.entities.forEach(e => { const s = qd.entities[e.id] || {}; rows.push([q, e.id, s.revenue ?? "", s.cash ?? "", s.debt ?? "", s.fcf ?? "", s.fragilityScore ?? 0, s.distressLevel ?? 0, s.lostReceipts ?? 0, s.creditLoss ?? 0]); }); });
       triggerDownload("forecast_contagion_results.csv", rows.map(r => r.join(",")).join("\n"), "text/csv;charset=utf-8");
     });
     document.getElementById("dlSnapshotJson").addEventListener("click", () => {

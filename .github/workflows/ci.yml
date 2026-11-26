@@ -2,7 +2,7 @@ name: AI Credit Network v3.0 CI
 
 on:
   push:
-    branches: [ main, "fix/**" ]
+    branches: [ main, "fix/**", audit4-financing-gpu-remediation ]
   pull_request:
     branches: [ main ]
 
@@ -36,3 +36,6 @@ jobs:
 
       - name: Run 20 v3.0 independent audit tests (T01-T20)
         run: node tests/v3_independent_audit_tests.cjs
+
+      - name: Run Audit 4 financing and GPU foundations
+        run: node tests/audit4_foundations.cjs
