@@ -9486,6 +9486,7 @@ const I18N = {
       });
       row.append(control);
       settingsPanel.append(row);
+      return control;
     }
     const settings = () => state.overrides[entity.id] ??= {};
     const assignFunding = (key, value) => { (settings().financing ??= selectedConfig)[key] = value; };
@@ -9538,7 +9539,11 @@ const I18N = {
       ["utilizationRate", t("GPU utilization ratio", "GPU\u5229\u7528\u7387"), 1, 0, 1],
       ["annualUsageMaintenanceRate", t("Annual GPU usage maintenance ratio", "GPU\u5e74\u5ea6\u4f7f\u7528\u7ef4\u62a4\u8d39\u7387"), 0, 0, 1],
       ["priceDecline", t("Replacement price decline", "\u66f4\u65b0\u91c7\u8d2d\u4ef7\u683c\u964d\u5e45"), 0, 0, 1]
-    ]) setting(label, gpu[key] ?? fallback, value => { (settings().gpuRefresh ??= {})[key] = Math.min(max, Math.max(min, value)); });
+    ]) {
+      const control = setting(label, gpu[key] ?? fallback,
+        value => { (settings().gpuRefresh ??= {})[key] = Math.min(max, Math.max(min, value)); });
+      control.dataset.gpuSetting = key;
+    }
     if (entity.id === "ORCL") setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
       state.overrides[entity.id]?.leaseDelayQuarters ?? 0, value => { settings().leaseDelayQuarters = Math.max(0, Math.trunc(value)); });
     const lastYear = Number(state.simResult.allQuarters.at(-1).slice(0, 4));
