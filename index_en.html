@@ -1419,14 +1419,24 @@
 
         // Floating-rate debt share + Ocean base rate + L4 secondary spread wiring (strictly on ACTIVE debt txs!)
         const myDebtTxs = activeTxs.filter(tx => tx.receiver === e.id && DEBT_TX_TYPES.includes(tx.type));
-        const floatingPrincipal = myDebtTxs.filter(tx => tx.isFloatingRate).reduce((s, tx) => s + loanPrincipal(tx), 0);
+        const floatingShare = tx => {
+          const tranches = useAudit4Contracts ? tx.reportedRateTranches : null;
+          if (tranches && tranches.date <= quarterEndDate(q)) {
+            const floating = nonnegative(tranches.floatingPrincipalRounded);
+            const fixed = nonnegative(tranches.fixedPrincipalRounded);
+            if (floating + fixed > 0) return floating / (floating + fixed);
+          }
+          return tx.isFloatingRate ? 1 : 0;
+        };
+        const floatingPrincipal = myDebtTxs.reduce((sum, tx) => sum + loanPrincipal(tx) * floatingShare(tx), 0);
         const totalTxPrincipal = myDebtTxs.reduce((s, tx) => s + loanPrincipal(tx), 0);
         const floatShare = totalTxPrincipal > 0 ? Math.min(1, floatingPrincipal / totalTxPrincipal) : 0.35;
 
         const baseFixedRate = p.interestRate ?? 0.06;
         const oceanBaseRate = (ocean.interestRate ?? 7.5) / 100;
         const tightening = ((ocean.creditTighteningBps ?? 0) + (secondarySpreadBpsById[e.id] || 0)) / 10000;
-        const effectiveRate = (1 - floatShare) * baseFixedRate + floatShare * Math.max(0.01, oceanBaseRate + tightening);
+        const blendedRate = share => (1 - share) * baseFixedRate + share * Math.max(0.01, oceanBaseRate + tightening);
+        const effectiveRate = blendedRate(floatShare);
         const interestPaid = Number(((begDebt * effectiveRate) / 4).toFixed(4));
         const secondaryIntAdd = secondarySpreadBpsById[e.id]
           ? Number(((begDebt * floatShare * (secondarySpreadBpsById[e.id] / 10000)) / 4).toFixed(4))
@@ -1484,7 +1494,10 @@
         const principalRepay = money(Math.min(Math.max(0, begDebt - nonCashDebtConversion), (p.debtRepay ?? 0) + maturingPrincipal + explicitRepayments));
         let repaymentRoom = principalRepay;
         for (const row of facilities ?? []) {
-          row.accruedInterest = money(row.beginningOutstanding * effectiveRate / 4);
+          const tx = myDebtTxs.find(item => item.id === row.txId);
+          const instrumentShare = useAudit4Contracts && tx ? floatingShare(tx) : floatShare;
+          row.modeledFloatingPrincipal = money(row.beginningOutstanding * instrumentShare);
+          row.accruedInterest = money(row.beginningOutstanding * blendedRate(instrumentShare) / 4);
           row.principalRepayment = money(Math.min(scheduledFacilityRepayments[row.txId], repaymentRoom));
           repaymentRoom = money(repaymentRoom - row.principalRepayment);
           row.endingOutstanding = money(row.beginningOutstanding - row.nonCashConversion - row.principalRepayment);

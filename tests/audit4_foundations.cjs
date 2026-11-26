@@ -680,3 +680,10 @@ const tx26Stress = engine.runSimulation(entities, transactions, { audit4Contract
 const tx26Credit = tx26Stress.creditEvents.find(event => event.txId === "TX26");
 assert.equal(tx26Credit.fundedEAD, 4.583);
 assert.equal(tx26Credit.lender, null);
+const mixedRateQuarter = liquid.timeline["2026Q4"];
+const mixedRateFacility = mixedRateQuarter.financingLedger.TX26;
+const mixedFloatingShare = 2.2 / (2.2 + 2.4);
+const mixedRateInterest = usd(4.583 * (mixedFloatingShare * 0.075 + (1 - mixedFloatingShare) * 0.059) / 4);
+assert.equal(mixedRateFacility.modeledFloatingPrincipal, usd(4.583 * mixedFloatingShare));
+assert.equal(mixedRateFacility.accruedInterest, mixedRateInterest);
+assert.equal(mixedRateQuarter.entities.SPV_CRWV8.interestExp, mixedRateInterest);
