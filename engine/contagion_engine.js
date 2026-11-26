@@ -992,12 +992,15 @@
         const cumulativeDrawdown = previous ? previous.cumulativeDrawdown : tx.amountDrawn ?? null;
         const remainingCommitment = cumulativeDrawdown === null ? tx.remainingCommitment ?? null
           : money(Math.max(0, nonnegative(tx.totalCommitment) - cumulativeDrawdown));
+        const canDraw = active && tx.endQ !== q && !previous?.defaulted &&
+          (!tx.commitmentTerminationDate || quarterEndDate(q) <= tx.commitmentTerminationDate);
         const row = {
           txId: tx.id, borrower: tx.receiver, lender: tx.payer, instrumentType: tx.type, isRevolver,
           beginningOutstanding: beginning, dataType: "Forecast", exposureBasis: tx.exposureBasis ?? observed.eadBasis,
           newDrawdown: 0, principalRepayment: 0, nonCashConversion, endingOutstanding: money(beginning - nonCashConversion),
           remainingCommitment, cumulativeDrawdown, lettersOfCredit: tx.lettersOfCredit ?? null,
-          undrawnCommitment: active && tx.endQ !== q && !previous?.defaulted
+          canDraw,
+          undrawnCommitment: canDraw
             ? isRevolver ? money(Math.max(0, nonnegative(tx.totalCommitment) - beginning - nonnegative(tx.lettersOfCredit))) : remainingCommitment
             : 0,
           defaultExposure: previous?.defaultExposure ?? 0,
@@ -1162,12 +1165,11 @@
         const principalRepay = money(Math.min(Math.max(0, begDebt - nonCashDebtConversion), (p.debtRepay ?? 0) + maturingPrincipal + explicitRepayments));
         let repaymentRoom = principalRepay;
         for (const row of facilities ?? []) {
-          const tx = transactions.find(item => item.id === row.txId);
           row.accruedInterest = money(row.beginningOutstanding * effectiveRate / 4);
           row.principalRepayment = money(Math.min(scheduledFacilityRepayments[row.txId], repaymentRoom));
           repaymentRoom = money(repaymentRoom - row.principalRepayment);
           row.endingOutstanding = money(row.beginningOutstanding - row.nonCashConversion - row.principalRepayment);
-          if (row.isRevolver && !row.defaulted && tx.endQ !== q && isTransactionActive(tx, q)) {
+          if (row.isRevolver && row.canDraw) {
             row.undrawnCommitment = money(row.undrawnCommitment + row.principalRepayment);
           }
         }
@@ -1176,8 +1178,6 @@
         let contractualTermDraw = 0;
         for (const row of facilities ?? []) {
           if (row.isRevolver || row.undrawnCommitment == null || row.undrawnCommitment <= 0) continue;
-          const tx = transactions.find(item => item.id === row.txId);
-          if (tx.commitmentTerminationDate && quarterEndDate(q) > tx.commitmentTerminationDate) continue;
           const draw = money(Math.min(row.undrawnCommitment, nonnegative(options.facilityDrawdowns?.[row.txId]?.[q])));
           row.newDrawdown = draw;
           row.endingOutstanding = money(row.endingOutstanding + draw);

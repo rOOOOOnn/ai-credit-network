@@ -617,3 +617,26 @@ const openAiUnverifiedHistory = engine.runSimulation(entities, transactions, { a
 }).timeline["2027Q1"].entities.OPENAI.financingForecast;
 assert.equal(openAiUnverifiedHistory.status, "Insufficient Historical Data");
 assert.equal(Object.values(openAiUnverifiedHistory.amounts).reduce((sum, amount) => sum + amount, 0), 0);
+const cutoff = { ...instrument, endQ: "2027Q4", commitmentTerminationDate: "2027-03-31" };
+const cutoffModel = engine.runSimulation(entities, [...transactions, cutoff], {
+  ...termOptions, facilityDrawdowns: { [cutoff.id]: { "2027Q1": 2, "2027Q2": 3 } }
+});
+const beforeCutoff = cutoffModel.timeline["2027Q1"].financingLedger[cutoff.id];
+const afterCutoff = cutoffModel.timeline["2027Q2"].financingLedger[cutoff.id];
+assert.equal(beforeCutoff.newDrawdown, 2);
+assert.equal(beforeCutoff.undrawnCommitment, 3);
+assert.equal(afterCutoff.newDrawdown, 0);
+assert.equal(afterCutoff.undrawnCommitment, 0);
+assert.equal(afterCutoff.remainingCommitment, 3);
+assert.equal(afterCutoff.endingOutstanding, 2);
+assert.equal(cutoffModel.timeline["2027Q4"].financingLedger[cutoff.id].principalRepayment, 2);
+const crwvRepaid = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  facilityRepayments: { CRWV_RCF_DISCLOSED: { "2026Q4": 0.4 } }
+}).timeline["2026Q4"];
+const restoredRevolver = crwvRepaid.financingLedger.CRWV_RCF_DISCLOSED;
+assert.equal(restoredRevolver.principalRepayment, 0.4);
+assert.equal(restoredRevolver.endingOutstanding, 0.8);
+assert.equal(restoredRevolver.undrawnCommitment, 1.154);
+assert.equal(crwvRepaid.entities.CRWV.undrawnCredit, 1.154);
+assert.equal(usd(liquid.timeline["2026Q4"].entities.CRWV.cash - crwvRepaid.entities.CRWV.cash), 0.4);
+assert.equal(usd(liquid.timeline["2026Q4"].entities.CRWV.debt - crwvRepaid.entities.CRWV.debt), 0.4);
