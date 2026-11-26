@@ -788,3 +788,12 @@ assert.equal(controlled.capex, 1.1);
 assert.equal(controlled.ocf, 2);
 assert.equal(controlled.fcf, 0.9);
 assert.equal(controlled.minimumRequiredRevenueGrowth, -0.45);
+const detailedOperating = engine.runSimulation([refreshFixture], [], {
+  overrides: { REFRESH_FIXTURE: { revDecel: 0, capex: 1, ocfMarginBeforeFinancing: 0.5,
+    computePay: 0.2, incrementalResearchCashCost: 0.3, workingCapitalCashUse: 0.4 } }
+}).timeline["2027Q1"].entities.REFRESH_FIXTURE;
+assert.equal(detailedOperating.ocf, 1.1);
+assert.equal(detailedOperating.fcf, 0.1);
+assert.equal(detailedOperating.operatingCashBridge.researchCashCost, 0.3);
+assert.equal(detailedOperating.operatingCashBridge.workingCapitalCashUse, 0.4);
+assert.equal(detailedOperating.minimumRequiredRevenueGrowth, -0.05);

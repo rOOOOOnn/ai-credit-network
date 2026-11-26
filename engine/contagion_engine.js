@@ -1385,9 +1385,17 @@
 
         const marginOverride = Number.isFinite(p.ocfMarginBeforeFinancing) ? p.ocfMarginBeforeFinancing : null;
         if (marginOverride !== null) ocf = projRev * marginOverride - incrementalCompute - interestPaid;
-        ocf = money(ocf - leaseOperatingCash - leaseInterestAdjustment);
+        const researchCashCost = nonnegative(p.incrementalResearchCashCost);
+        const workingCapitalCashUse = Number.isFinite(p.workingCapitalCashUse) ? p.workingCapitalCashUse : 0;
+        const operatingCashBridge = {
+          cashBeforeIncrementalResearchWorkingCapitalAndLease: money(ocf),
+          incrementalComputeCashCost: money(incrementalCompute), interestPaid,
+          researchCashCost, workingCapitalCashUse,
+          leaseOperatingCash, leaseInterestAdjustment
+        };
+        ocf = money(ocf - researchCashCost - workingCapitalCashUse - leaseOperatingCash - leaseInterestAdjustment);
         const fcf = Number((ocf - capex).toFixed(4));
-        const ocfBeforeLeaseTarget = capex + leaseOperatingCash + leaseInterestAdjustment;
+        const ocfBeforeLeaseTarget = capex + researchCashCost + workingCapitalCashUse + leaseOperatingCash + leaseInterestAdjustment;
         const preTaxTarget = ocfBeforeLeaseTarget <= taxThreshold ? ocfBeforeLeaseTarget
           : (ocfBeforeLeaseTarget - marginalTaxRate * taxThreshold) / (1 - marginalTaxRate);
         const fcfBreakEvenRevenue = marginOverride === null
@@ -1396,7 +1404,7 @@
         const minimumRequiredRevenueGrowth = prevRev > 0 && fcfBreakEvenRevenue !== null
           ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
         const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leaseOperatingCash + leasePrincipal + leaseInterestAdjustment;
-        const revenueCashNeed = totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5;
+        const revenueCashNeed = totalCashOblig + researchCashCost + workingCapitalCashUse + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5;
         const marginCashNeed = revenueCashNeed - (p.opex ?? 0) + incrementalCompute - contractualTermDraw;
         const requiredRev = marginOverride === null ? Math.max(0, revenueCashNeed / Math.max(0.1, grossMargin * cashConv))
           : marginOverride > 0 ? Math.max(0, marginCashNeed / marginOverride) : null;
@@ -1432,6 +1440,7 @@
           nonCashDebtConversion,
           gpuMarginCall,
           computePay: incrementalCompute,
+          operatingCashBridge,
           newDebt: money(allowedDebt + contractualTermDraw),
           contractualTermDraw,
           assumedNewDebt: funding ? fundedScenarioDebt : null,
