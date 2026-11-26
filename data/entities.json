@@ -1136,6 +1136,11 @@
   },
   {
     "id": "ANTHROPIC",
+    "verifiedFinancingHistory": {
+      "2023": {"dataType":"Actual","fullYear":true,"amounts":{"equity":0.448,"debt":1.750,"other":0.122},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm"},
+      "2024": {"dataType":"Actual","fullYear":true,"amounts":{"equity":1.198,"debt":6.050,"other":0},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm"},
+      "2025": {"dataType":"Actual","fullYear":true,"amounts":{"equity":16.659,"debt":3.450,"other":0},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm"}
+    },
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":95.6,"currentInvestments":36.3,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm"},
     "audit4Observations": {
       "cashAtQ3": 95.6,

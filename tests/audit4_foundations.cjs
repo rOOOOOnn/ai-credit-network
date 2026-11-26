@@ -595,3 +595,17 @@ assert.deepEqual(crwvHistorical.historyBySource.debt, { years: ["2024", "2025"],
 assert.deepEqual(crwvHistorical.historyBySource.equity, { years: ["2024", "2025"], amounts: [1.172, 1.491] });
 assert.equal(usd(crwvHistorical.amounts.equity), usd(1.491 * (1.491 / 1.172) ** 2 / 4));
 assert.ok(crwvHistorical.missingHistorySources.includes("prepayment"));
+const anthropicHistory = entities.find(entity => entity.id === "ANTHROPIC").verifiedFinancingHistory;
+assert.equal(usd(anthropicHistory[2023].amounts.equity + anthropicHistory[2023].amounts.debt +
+  anthropicHistory[2023].amounts.other), 2.32);
+assert.equal(usd(anthropicHistory[2024].amounts.equity + anthropicHistory[2024].amounts.debt), 7.248);
+assert.equal(usd(anthropicHistory[2025].amounts.equity + anthropicHistory[2025].amounts.debt - 0.149), 19.960);
+assert.equal(anthropicHistory[2026], undefined);
+const anthropicHistorical = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { ANTHROPIC: { financing: { mode: "curve", curve: "historical", capacity: 2, quarterlyLimit: 1 } } }
+});
+const anthropic2027 = anthropicHistorical.timeline["2027Q1"].entities.ANTHROPIC.financingForecast;
+assert.deepEqual(anthropic2027.historyBySource.equity, { years: ["2024", "2025"], amounts: [1.198, 16.659] });
+assert.deepEqual(anthropic2027.historyBySource.debt, { years: ["2024", "2025"], amounts: [6.05, 3.45] });
+assert.equal(usd(Object.values(anthropic2027.amounts).reduce((sum, amount) => sum + amount, 0)), 1);
+assert.equal(anthropicHistorical.timeline["2027Q2"].entities.ANTHROPIC.financingForecast.remainingCapacity, 0);
