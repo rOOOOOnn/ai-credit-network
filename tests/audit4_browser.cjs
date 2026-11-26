@@ -156,10 +156,13 @@ async function checkPage(browser, url) {
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
     const tranches = panel.locator("[data-financing-tranche]");
-    assert.equal(await tranches.count(), 3);
+    assert.equal(await tranches.count(), 6);
     const octoberTranche = panel.locator('[data-financing-tranche="2026-10-01"]');
     assert.match(await octoberTranche.innerText(), /2026-10-01 \$10B \(SoftBank Vision Fund 2\)/);
     assert.match(await octoberTranche.getAttribute("href"), /financial-report_q2fy2026_01_en\.pdf$/);
+    const amazonTranche = panel.locator('[data-financing-tranche="2026Q3"]');
+    assert.match(await amazonTranche.innerText(), /2026Q3 \$21\.3B \(Amazon\)/);
+    assert.match(await amazonTranche.getAttribute("href"), /amzn-20260930\.htm$/);
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {
