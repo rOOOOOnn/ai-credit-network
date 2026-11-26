@@ -640,3 +640,18 @@ assert.equal(restoredRevolver.undrawnCommitment, 1.154);
 assert.equal(crwvRepaid.entities.CRWV.undrawnCredit, 1.154);
 assert.equal(usd(liquid.timeline["2026Q4"].entities.CRWV.cash - crwvRepaid.entities.CRWV.cash), 0.4);
 assert.equal(usd(liquid.timeline["2026Q4"].entities.CRWV.debt - crwvRepaid.entities.CRWV.debt), 0.4);
+const rolloverModel = engine.runSimulation(entities, [...transactions, instrument], {
+  ...termOptions, ocean: { refiSuccessRate: 100, fundingAvailability: 100 },
+  overrides: { OPENAI: { ...termOptions.overrides.OPENAI, refiSuccess: 1 } },
+  facilityDrawdowns: { [instrument.id]: { "2027Q1": 3 } }
+});
+const rolloverQuarter = rolloverModel.timeline["2027Q3"];
+assert.equal(rolloverQuarter.financingLedger[instrument.id].endingOutstanding, 0);
+assert.equal(rolloverQuarter.refinancingOriginations?.find(row => row.replacesTxId === instrument.id)?.newDrawdown, 3);
+const rolloverRow = rolloverQuarter.refinancingOriginations.find(row => row.replacesTxId === instrument.id);
+assert.equal(rolloverRow.lender, null);
+assert.equal(rolloverRow.dataType, "Assumption");
+assert.equal(rolloverQuarter.financingLedger[instrument.id].principalRepayment, 3);
+assert.equal(rolloverQuarter.entities.OPENAI.financingForecast.fundedRollover, 3);
+assert.equal(rolloverQuarter.entities.OPENAI.financingForecast.fundedDebt, 0);
+assert.equal(rolloverQuarter.entities.OPENAI.newDebt, 3);

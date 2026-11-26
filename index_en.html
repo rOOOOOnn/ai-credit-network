@@ -1273,6 +1273,7 @@
       const states = {};
       let oceanUsedThisQ = 0;
       const financingLedger = {};
+      const refinancingOriginations = [];
       const guaranteeLedger = {};
       const contagionLog = [];
       if (useAudit4Contracts) {
@@ -1518,6 +1519,20 @@
         }
         const allowedDebt = funding ? money(fundedRollover + funding.amounts.debt + funding.amounts.assetBacked)
           : money(Math.max(0, Math.min(requestedDebt, sharedDebtRoom)));
+        if (trackTermDebt) {
+          const realizedRollover = fundedRollover ?? money(Math.min(refiRollover, allowedDebt));
+          const principalByFacility = Object.fromEntries(myDebtTxs.filter(tx => tx.endQ === q)
+            .map(tx => [tx.id, financingLedger[tx.id]?.principalRepayment ?? 0]));
+          const allocation = allocateFunding(principalByFacility, realizedRollover);
+          for (const [txId, amount] of Object.entries(allocation)) {
+            if (amount <= 0) continue;
+            refinancingOriginations.push({ borrower: e.id, lender: null, replacesTxId: txId,
+              newDrawdown: amount, principalAtOrigination: amount, dataType: "Assumption" });
+          }
+          const unallocated = money(realizedRollover - Object.values(allocation).reduce((sum, amount) => sum + amount, 0));
+          if (unallocated > 0) refinancingOriginations.push({ borrower: e.id, lender: null, replacesTxId: null,
+            newDrawdown: unallocated, principalAtOrigination: unallocated, dataType: "Assumption" });
+        }
         oceanUsedThisQ += allowedDebt;
 
         const scheduledEq = ov?.includeScheduledEquity === false ? 0 : (disclosedOpening?.estimatedNetProceeds ?? e.scheduledEquityInflows?.[q] ?? 0);
@@ -2200,7 +2215,7 @@
             : unattributedDebt > 0 ? "Partial instrument coverage" : "Reconciled"
         };
       }
-      timeline[q] = { quarter: q, status, entities: states, contagionLog, financingLedger, guaranteeLedger, debtReconciliation };
+      timeline[q] = { quarter: q, status, entities: states, contagionLog, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation };
       prevStates = states;
     });
 
