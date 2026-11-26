@@ -965,7 +965,7 @@
     ]));
     const requested = Object.values(amounts).reduce((sum, value) => sum + value, 0);
     const budget = Math.min(requested, remaining, nonnegative(config.quarterlyLimit));
-    return { amounts: allocateFunding(amounts, budget), status: forecast.status };
+    return { ...forecast, amounts: allocateFunding(amounts, budget) };
   }
 
   function allocateFunding(amounts, budget) {
@@ -1502,7 +1502,9 @@
           row.undrawnCommitment = money(row.undrawnCommitment - draw);
           contractualTermDraw = money(contractualTermDraw + draw);
         }
-        const forecastConfig = ov?.financing;
+        const configuredForecast = ov?.financing;
+        const forecastConfig = configuredForecast?.curve === "historical" && configuredForecast.history == null
+          ? { ...configuredForecast, history: e.verifiedFinancingHistory } : configuredForecast;
         const remaining = forecastConfig ? financingRemaining[e.id] ?? nonnegative(forecastConfig.capacity) : 0;
         const funding = forecastConfig ? scenarioFunding(forecastConfig, q, remaining, availFactor, refiFactor) : null;
         const assumedDebt = funding ? funding.amounts.debt + funding.amounts.assetBacked : (p.newDebt ?? 0) * availFactor * refiFactor;
@@ -3479,6 +3481,11 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "CRWV",
+    "verifiedFinancingHistory": {
+      "2023": {"dataType":"Actual","fullYear":true,"amounts":{"equity":0.436,"debt":1.404},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000104/crwv-20251231.htm"},
+      "2024": {"dataType":"Actual","fullYear":true,"amounts":{"equity":1.172,"debt":7.018},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000104/crwv-20251231.htm"},
+      "2025": {"dataType":"Actual","fullYear":true,"amounts":{"equity":1.491,"debt":11.829},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000104/crwv-20251231.htm"}
+    },
     "audit4Facilities": [{"id":"CRWV_RCF_DISCLOSED","type":"Direct Loan","payer":null,"receiver":"CRWV","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2029Q4","totalCommitment":2.5,"principalOutstanding":1.2,"principalAsOfQuarter":"2026Q3","amountDrawn":null,"amountRepaid":null,"remainingCommitment":null,"lettersOfCredit":0.546,"facilityKind":"Revolver","collateral":"Senior secured","isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm","exposureBasis":"Reported facility-wide principal; lender shares and cumulative drawdowns unavailable"}],
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":4.122,"currentInvestments":0.062,"knownRestrictedWithinCurrentInvestments":0,"restrictedCashSeparate":2.282,"facilityAvailabilityAggregate":5.653,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm"},
     "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":5.638,"capex":23.558,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm"},"sixMonths":{"ocf":3.663,"capex":14.117,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000366/crwv-20260630.htm"}},
@@ -9250,6 +9257,8 @@ const I18N = {
     const forecast = panel.querySelector("[data-financing-years]");
     forecast.replaceChildren();
     const selectedConfig = config ?? example;
+    const projectionConfig = selectedConfig.curve === "historical" && selectedConfig.history == null
+      ? { ...selectedConfig, history: entity.verifiedFinancingHistory } : selectedConfig;
     const mode = panel.querySelector("select");
     mode.value = selectedConfig.mode;
     const rows = [];
@@ -9316,7 +9325,7 @@ const I18N = {
       state.overrides[entity.id]?.leaseDelayQuarters ?? 0, value => { settings().leaseDelayQuarters = Math.max(0, Math.trunc(value)); });
     const lastYear = Number(state.simResult.allQuarters.at(-1).slice(0, 4));
     for (let year = 2027; year <= lastYear; year++) {
-      const planned = Engine.financingForecast(selectedConfig, year);
+      const planned = Engine.financingForecast(projectionConfig, year);
       const quarters = state.simResult.allQuarters.filter(q => q.startsWith(String(year)));
       const quartersData = quarters.map(q => state.simResult.timeline[q].entities[entity.id]);
       const received = quartersData.reduce((sum, row) => sum + Object.values(row.financingForecast?.amounts ?? {}).reduce((a,b) => a+b, 0), 0);
@@ -9375,7 +9384,7 @@ const I18N = {
       chart.append(item);
     }
     const trend = panel.querySelector("[data-financing-trend]");
-    const metadata = Engine.financingForecast(selectedConfig, selectedConfig.startYear ?? 2027);
+    const metadata = Engine.financingForecast(projectionConfig, selectedConfig.startYear ?? 2027);
     trend.textContent = selectedConfig.curve === "historical" && selectedConfig.mode === "curve" ?
       [
         ...Object.entries(metadata.historyBySource ?? {}).map(([source, history]) =>

@@ -588,3 +588,10 @@ assert.deepEqual(independentHistory.amounts, { equity: 45, debt: 16 });
 assert.deepEqual(independentHistory.historyBySource.debt, { years: ["2023", "2024"], amounts: [1, 2] });
 assert.deepEqual(independentHistory.historyBySource.equity, { years: ["2025", "2026"], amounts: [20, 30] });
 assert.ok(independentHistory.missingHistorySources.includes("strategic"));
+const crwvHistorical = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { CRWV: { financing: { mode: "curve", curve: "historical", capacity: 100, quarterlyLimit: 25 } } }
+}).timeline["2027Q1"].entities.CRWV.financingForecast;
+assert.deepEqual(crwvHistorical.historyBySource.debt, { years: ["2024", "2025"], amounts: [7.018, 11.829] });
+assert.deepEqual(crwvHistorical.historyBySource.equity, { years: ["2024", "2025"], amounts: [1.172, 1.491] });
+assert.equal(usd(crwvHistorical.amounts.equity), usd(1.491 * (1.491 / 1.172) ** 2 / 4));
+assert.ok(crwvHistorical.missingHistorySources.includes("prepayment"));

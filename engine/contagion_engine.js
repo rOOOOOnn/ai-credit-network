@@ -649,7 +649,7 @@
     ]));
     const requested = Object.values(amounts).reduce((sum, value) => sum + value, 0);
     const budget = Math.min(requested, remaining, nonnegative(config.quarterlyLimit));
-    return { amounts: allocateFunding(amounts, budget), status: forecast.status };
+    return { ...forecast, amounts: allocateFunding(amounts, budget) };
   }
 
   function allocateFunding(amounts, budget) {
@@ -1186,7 +1186,9 @@
           row.undrawnCommitment = money(row.undrawnCommitment - draw);
           contractualTermDraw = money(contractualTermDraw + draw);
         }
-        const forecastConfig = ov?.financing;
+        const configuredForecast = ov?.financing;
+        const forecastConfig = configuredForecast?.curve === "historical" && configuredForecast.history == null
+          ? { ...configuredForecast, history: e.verifiedFinancingHistory } : configuredForecast;
         const remaining = forecastConfig ? financingRemaining[e.id] ?? nonnegative(forecastConfig.capacity) : 0;
         const funding = forecastConfig ? scenarioFunding(forecastConfig, q, remaining, availFactor, refiFactor) : null;
         const assumedDebt = funding ? funding.amounts.debt + funding.amounts.assetBacked : (p.newDebt ?? 0) * availFactor * refiFactor;

@@ -34,7 +34,7 @@ async function checkPage(browser, url) {
     await panel.locator("summary").click();
     const scenario = panel.locator("textarea");
     const settings = JSON.parse(await scenario.inputValue());
-    settings.financing = { mode: "manual", capacity: 36, quarterlyLimit: 9, annual: { 2027: { equity: 4 } } };
+    settings.financing = { mode: "manual", history: {}, capacity: 36, quarterlyLimit: 9, annual: { 2027: { equity: 4 } } };
     await scenario.fill(JSON.stringify(settings));
     await panel.locator("button").click();
     const row = panel.locator("tbody tr").first();
