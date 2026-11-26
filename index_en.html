@@ -1292,7 +1292,11 @@
 
         const p = Object.assign({}, e.defaults || {}, ov || {});
         const disclosedOpening = e.id === "ANTHROPIC" && q === QUARTER_PARTIAL ? reportedAnthropic : null;
-        const begCash = disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
+        const liquidityOpening = useAudit4Contracts && q === QUARTER_PARTIAL ? e.audit4Liquidity : null;
+        const eligibleInvestments = liquidityOpening ? Math.max(0,
+          liquidityOpening.currentInvestments - liquidityOpening.knownRestrictedWithinCurrentInvestments) : 0;
+        const investmentSale = money(eligibleInvestments * Math.min(1, nonnegative(ov?.openingInvestmentSaleFraction)));
+        const begCash = liquidityOpening ? liquidityOpening.cashAndEquivalents : disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
         const begDebt = disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
         const prevRev = prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const facilities = facilityByBorrower[e.id];
@@ -1484,7 +1488,7 @@
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
         // Exact Accounting Conservation + Auto-RCF Drawdown
-        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - gpuMarginCall + refresh.disposalProceeds).toFixed(4));
+        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - gpuMarginCall + refresh.disposalProceeds + investmentSale).toFixed(4));
         let rcfDraw = 0;
         let endCash = preDrawCash;
         let undrawnAfter = undrawn;
@@ -1520,6 +1524,8 @@
           financingForecast: funding ? { ...funding, fundedDebt: fundedScenarioDebt, remainingCapacity: financingRemaining[e.id], scheduledEquity: scheduledEq, scheduledEquityStatus, fundedRollover, rcfDraw } : null,
           replacementCapex: refresh.replacementCapex,
           disposalProceeds: refresh.disposalProceeds,
+          openingInvestmentSale: investmentSale,
+          openingLiquidityDisclosure: liquidityOpening || null,
           incrementalLeasePayment: leasePayment,
           leaseSchedule,
           gpuPurchases,
@@ -2271,6 +2277,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "MSFT",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":20.281,"currentInvestments":44.228,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "name": "Microsoft Corp.",
     "ticker": "MSFT",
     "cik": "0000789019",
@@ -2425,6 +2432,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "GOOGL",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":56.334,"currentInvestments":208.764,"knownRestrictedWithinCurrentInvestments":75.2,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm"},
     "name": "Alphabet Inc. (incl. DeepMind)",
     "ticker": "GOOGL",
     "cik": "0001652044",
@@ -2605,6 +2613,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "AMZN",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":55.783,"currentInvestments":58.443,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"},
     "name": "Amazon.com, Inc. (AWS)",
     "ticker": "AMZN",
     "cik": "0001018724",
@@ -2914,6 +2923,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "META",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":11.222,"currentInvestments":71.227,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},
     "name": "Meta Platforms (incl. Meta AI)",
     "ticker": "META",
     "cik": "0001326801",
@@ -3185,6 +3195,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "ANTHROPIC",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":95.6,"currentInvestments":36.3,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm"},
     "audit4Observations": {
       "cashAtQ3": 95.6,
       "principalAtQ3": 6.2,
@@ -8980,7 +8991,7 @@ const I18N = {
     text.value = JSON.stringify({financing:config ?? example,
       gpuRefresh:state.overrides[entity.id]?.gpuRefresh ?? {economicLife:5,replacementRatio:0.25,residualValue:0.2,cohorts:[]},
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
-      includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75}, null, 2);
+      includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75, openingInvestmentSaleFraction:state.overrides[entity.id]?.openingInvestmentSaleFraction ?? 0}, null, 2);
     panel.querySelector("button").textContent = t("Apply assumptions", "\u5e94\u7528\u5047\u8bbe");
     panel.querySelector("p").textContent = t(
       "Edit annual amounts by source in USD billions. Set mode to manual or curve. Example values are assumptions. A scenario freeze excludes only scenario financing. Scheduled equity, rollover and credit draws are separate.",
@@ -9145,6 +9156,7 @@ const I18N = {
         settings.includeScheduledEquity = data.includeScheduledEquity;
         settings.leaseDelayQuarters = data.leaseDelayQuarters;
         settings.operationalRecoveryRate = data.operationalRecoveryRate;
+        settings.openingInvestmentSaleFraction = data.openingInvestmentSaleFraction;
         settings.incrementalLease = data.incrementalLease;
         recompute();
       } catch (error) {

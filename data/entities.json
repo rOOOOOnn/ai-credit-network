@@ -208,6 +208,7 @@
   },
   {
     "id": "MSFT",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":20.281,"currentInvestments":44.228,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "name": "Microsoft Corp.",
     "ticker": "MSFT",
     "cik": "0000789019",
@@ -362,6 +363,7 @@
   },
   {
     "id": "GOOGL",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":56.334,"currentInvestments":208.764,"knownRestrictedWithinCurrentInvestments":75.2,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm"},
     "name": "Alphabet Inc. (incl. DeepMind)",
     "ticker": "GOOGL",
     "cik": "0001652044",
@@ -542,6 +544,7 @@
   },
   {
     "id": "AMZN",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":55.783,"currentInvestments":58.443,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"},
     "name": "Amazon.com, Inc. (AWS)",
     "ticker": "AMZN",
     "cik": "0001018724",
@@ -851,6 +854,7 @@
   },
   {
     "id": "META",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":11.222,"currentInvestments":71.227,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},
     "name": "Meta Platforms (incl. Meta AI)",
     "ticker": "META",
     "cik": "0001326801",
@@ -1122,6 +1126,7 @@
   },
   {
     "id": "ANTHROPIC",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":95.6,"currentInvestments":36.3,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm"},
     "audit4Observations": {
       "cashAtQ3": 95.6,
       "principalAtQ3": 6.2,

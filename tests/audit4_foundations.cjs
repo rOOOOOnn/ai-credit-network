@@ -249,3 +249,17 @@ assert.equal(diagnostic.requiredFinancing, 0);
 assert.equal(diagnostic.fcfBreakEvenRevenue, usd((3 / 0.82 + 2) / 0.5));
 assert.equal(diagnostic.minimumRequiredRevenueGrowth, 0.1317);
 console.log("Audit 4 liquidity and minimum FCF break-even growth checks passed");
+
+const liquid = engine.runSimulation(entities, transactions, { audit4Contracts: true });
+for (const [id, cash] of Object.entries({ MSFT:20.281, META:11.222, AMZN:55.783, GOOGL:56.334, ANTHROPIC:95.6 })) {
+  const opening = liquid.timeline["2026Q4"].entities[id];
+  assert.equal(opening.begCash, cash, id);
+  assert.equal(opening.openingInvestmentSale, 0, id);
+}
+const withInvestments = engine.runSimulation(entities, transactions, { audit4Contracts:true,
+  overrides: { GOOGL: { openingInvestmentSaleFraction: 1 } } });
+const alph = withInvestments.timeline["2026Q4"].entities.GOOGL;
+assert.equal(alph.openingInvestmentSale, 133.564);
+assert.equal(usd(alph.cash - liquid.timeline["2026Q4"].entities.GOOGL.cash), 133.564);
+assert.equal(withInvestments.timeline["2027Q1"].entities.GOOGL.openingInvestmentSale, 0);
+console.log("Audit 4 cash classification and investment sale checks passed");

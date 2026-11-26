@@ -976,7 +976,11 @@
 
         const p = Object.assign({}, e.defaults || {}, ov || {});
         const disclosedOpening = e.id === "ANTHROPIC" && q === QUARTER_PARTIAL ? reportedAnthropic : null;
-        const begCash = disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
+        const liquidityOpening = useAudit4Contracts && q === QUARTER_PARTIAL ? e.audit4Liquidity : null;
+        const eligibleInvestments = liquidityOpening ? Math.max(0,
+          liquidityOpening.currentInvestments - liquidityOpening.knownRestrictedWithinCurrentInvestments) : 0;
+        const investmentSale = money(eligibleInvestments * Math.min(1, nonnegative(ov?.openingInvestmentSaleFraction)));
+        const begCash = liquidityOpening ? liquidityOpening.cashAndEquivalents : disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
         const begDebt = disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
         const prevRev = prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const facilities = facilityByBorrower[e.id];
@@ -1168,7 +1172,7 @@
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
         // Exact Accounting Conservation + Auto-RCF Drawdown
-        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - gpuMarginCall + refresh.disposalProceeds).toFixed(4));
+        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - gpuMarginCall + refresh.disposalProceeds + investmentSale).toFixed(4));
         let rcfDraw = 0;
         let endCash = preDrawCash;
         let undrawnAfter = undrawn;
@@ -1204,6 +1208,8 @@
           financingForecast: funding ? { ...funding, fundedDebt: fundedScenarioDebt, remainingCapacity: financingRemaining[e.id], scheduledEquity: scheduledEq, scheduledEquityStatus, fundedRollover, rcfDraw } : null,
           replacementCapex: refresh.replacementCapex,
           disposalProceeds: refresh.disposalProceeds,
+          openingInvestmentSale: investmentSale,
+          openingLiquidityDisclosure: liquidityOpening || null,
           incrementalLeasePayment: leasePayment,
           leaseSchedule,
           gpuPurchases,
