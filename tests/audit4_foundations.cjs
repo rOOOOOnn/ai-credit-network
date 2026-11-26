@@ -1044,3 +1044,19 @@ const [wardCountyDisclosure] = nvidiaGuaranteeDisclosure.counterpartyDisclosures
 assert.deepEqual([wardCountyDisclosure.maximumFaceAmount, wardCountyDisclosure.coveredRentYears,
   wardCountyDisclosure.portfolioCategory], [0.8603, 5, null]);
 assert.equal(nvidiaGuaranteeDisclosure.categories.reduce((sum, row) => sum + row.maximum, 0), 118);
+
+const openAiTranches = entities.find(row => row.id === "OPENAI").reportedFinancingTranches;
+assert.equal(openAiTranches.reduce((total, tranche) => total + tranche.amount, 0), 30);
+const q4Tranche = openAiTranches.find(tranche => tranche.date === "2026-10-01");
+const openAiFreezeOptions = { audit4Contracts: true, overrides: {
+  OPENAI: { financing: { mode: "manual", capacity: 0, annual: {} } }
+} };
+const trancheExcluded = engine.runSimulation(entities, transactions, openAiFreezeOptions);
+const trancheIncluded = engine.runSimulation(entities.map(row => row.id === "OPENAI" ? {
+  ...row, scheduledEquityInflows: { ...row.scheduledEquityInflows, "2026Q4": q4Tranche.amount }
+} : row), transactions, openAiFreezeOptions);
+assert.deepEqual([trancheExcluded.timeline["2026Q4"].entities.OPENAI.cash,
+  trancheIncluded.timeline["2026Q4"].entities.OPENAI.cash], [30.0884, 40.0884]);
+assert.deepEqual([trancheExcluded.timeline["2028Q4"].entities.OPENAI.cash,
+  trancheIncluded.timeline["2028Q4"].entities.OPENAI.cash], [-47.4052, -38.9871]);
+assert.equal(trancheIncluded.scenarioSummary.OPENAI.defaultQuarter, "2027Q4");
