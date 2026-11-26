@@ -749,6 +749,19 @@
         ? { ...tx, endQ: extension } : tx;
     });
     const useAudit4Contracts = options.audit4Contracts === true;
+    const reportedAnthropic = useAudit4Contracts && entities.find(e => e.id === "ANTHROPIC")?.audit4Observations;
+    if (reportedAnthropic) {
+      transactions = transactions.map(tx => {
+        if (!reportedAnthropic.noteExposureIds.includes(tx.id)) return tx;
+        const aggregate = tx.id === reportedAnthropic.noteExposureIds[0];
+        return {
+          ...tx, principalOutstanding: aggregate ? reportedAnthropic.principalAtQ3 : 0,
+          principalAsOfQuarter: "2026Q3", remainingCommitment: null, amountDrawn: null, amountRepaid: null,
+          endQ: aggregate ? "" : tx.endQ, nonCashConversionByQuarter: aggregate ? reportedAnthropic.nonCashConversionByQuarter : {},
+          exposureBasis: aggregate ? "Aggregate AWS note principal; maturity allocation unavailable" : "Superseded by aggregate AWS note principal"
+        };
+      });
+    }
     const trackTermDebt = options.audit4DebtLedger ?? useAudit4Contracts;
     const forcedDefaults = new Set(options.forcedDefaults || []);
     const defaultHaircut = options.defaultHaircut ?? 0.75;
@@ -869,17 +882,18 @@
           continue;
         }
         const active = isTransactionActive(tx, q);
-        if (!active && !facilityBalances[tx.id]) continue;
+        if (!active && !facilityBalances[tx.id] && !tx.exposureBasis) continue;
         const previous = facilityBalances[tx.id];
         const observed = computeTransactionEAD(tx, q, options);
         const beginning = previous?.endingOutstanding ?? observed.fundedEAD;
+        const nonCashConversion = money(Math.min(beginning, nonnegative(tx.nonCashConversionByQuarter?.[q])));
         const cumulativeDrawdown = previous ? previous.cumulativeDrawdown : tx.amountDrawn ?? null;
         const remainingCommitment = cumulativeDrawdown === null ? tx.remainingCommitment ?? null
           : money(Math.max(0, nonnegative(tx.totalCommitment) - cumulativeDrawdown));
         const row = {
           txId: tx.id, borrower: tx.receiver, lender: tx.payer, instrumentType: tx.type, isRevolver,
-          beginningOutstanding: beginning, dataType: "Forecast",
-          newDrawdown: 0, principalRepayment: 0, endingOutstanding: beginning,
+          beginningOutstanding: beginning, dataType: "Forecast", exposureBasis: tx.exposureBasis ?? observed.eadBasis,
+          newDrawdown: 0, principalRepayment: 0, nonCashConversion, endingOutstanding: money(beginning - nonCashConversion),
           remainingCommitment, cumulativeDrawdown,
           undrawnCommitment: active && tx.endQ !== q && !previous?.defaulted
             ? isRevolver ? money(Math.max(0, nonnegative(tx.totalCommitment) - beginning)) : remainingCommitment
@@ -961,8 +975,9 @@
         }
 
         const p = Object.assign({}, e.defaults || {}, ov || {});
-        const begCash = prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
-        const begDebt = prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
+        const disclosedOpening = e.id === "ANTHROPIC" && q === QUARTER_PARTIAL ? reportedAnthropic : null;
+        const begCash = disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
+        const begDebt = disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
         const prevRev = prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const facilities = facilityByBorrower[e.id];
         const revolvers = facilities?.filter(row => row.isRevolver);
@@ -1024,20 +1039,21 @@
           const tx = transactions.find(item => item.id === row.txId);
           const requested = tx.endQ === q ? row.beginningOutstanding
             : nonnegative(options.facilityRepayments?.[tx.id]?.[q]);
-          return [row.txId, row.defaulted ? 0 : Math.min(row.beginningOutstanding, requested)];
+          return [row.txId, row.defaulted ? 0 : Math.min(row.beginningOutstanding - row.nonCashConversion, requested)];
         }));
         const explicitRepayments = (facilities ?? []).reduce((sum, row) => {
           const tx = transactions.find(item => item.id === row.txId);
           return sum + (tx.endQ === q ? 0 : scheduledFacilityRepayments[row.txId]);
         }, 0);
-        const principalRepay = money(Math.min(begDebt, (p.debtRepay ?? 0) + maturingPrincipal + explicitRepayments));
+        const nonCashDebtConversion = money((facilities ?? []).reduce((sum, row) => sum + row.nonCashConversion, 0));
+        const principalRepay = money(Math.min(Math.max(0, begDebt - nonCashDebtConversion), (p.debtRepay ?? 0) + maturingPrincipal + explicitRepayments));
         let repaymentRoom = principalRepay;
         for (const row of facilities ?? []) {
           const tx = transactions.find(item => item.id === row.txId);
           row.accruedInterest = money(row.beginningOutstanding * effectiveRate / 4);
           row.principalRepayment = money(Math.min(scheduledFacilityRepayments[row.txId], repaymentRoom));
           repaymentRoom = money(repaymentRoom - row.principalRepayment);
-          row.endingOutstanding = money(row.beginningOutstanding - row.principalRepayment);
+          row.endingOutstanding = money(row.beginningOutstanding - row.nonCashConversion - row.principalRepayment);
           if (row.isRevolver && !row.defaulted && tx.endQ !== q && isTransactionActive(tx, q)) {
             row.undrawnCommitment = money(row.undrawnCommitment + row.principalRepayment);
           }
@@ -1073,8 +1089,8 @@
           : money(Math.max(0, Math.min(requestedDebt, sharedDebtRoom)));
         oceanUsedThisQ += allowedDebt;
 
-        const scheduledEq = ov?.includeScheduledEquity === false ? 0 : (e.scheduledEquityInflows?.[q] ?? 0);
-        const scheduledEquityStatus = e.id === "ANTHROPIC" && q === "2026Q4" ? "Unverified legacy input" : "Scheduled model input";
+        const scheduledEq = ov?.includeScheduledEquity === false ? 0 : (disclosedOpening?.estimatedNetProceeds ?? e.scheduledEquityInflows?.[q] ?? 0);
+        const scheduledEquityStatus = disclosedOpening ? "Issuer estimate; full option exercise confirmed" : e.id === "ANTHROPIC" && q === "2026Q4" ? "Unverified legacy input" : "Scheduled model input";
         const assumedNonDebt = funding
           ? funding.amounts.equity + funding.amounts.strategic + funding.amounts.prepayment + funding.amounts.other
           : (p.equityInflow ?? 0) * availFactor;
@@ -1152,7 +1168,7 @@
           endCash = Number((preDrawCash + rcfDraw).toFixed(4));
           undrawnAfter = Number(Math.max(0, undrawn - rcfDraw).toFixed(4));
         }
-        const endDebt = Number(Math.max(0, begDebt + allowedDebt + contractualTermDraw + rcfDraw - principalRepay).toFixed(4));
+        const endDebt = Number(Math.max(0, begDebt + allowedDebt + contractualTermDraw + rcfDraw - principalRepay - nonCashDebtConversion).toFixed(4));
 
         states[e.id] = {
           quarter: q,
@@ -1167,6 +1183,7 @@
           fcf,
           interestExp: interestPaid,
           principalRepay,
+          nonCashDebtConversion,
           gpuMarginCall,
           computePay: incrementalCompute,
           newDebt: money(allowedDebt + contractualTermDraw),

@@ -1122,6 +1122,16 @@
   },
   {
     "id": "ANTHROPIC",
+    "audit4Observations": {
+      "cashAtQ3": 95.6,
+      "principalAtQ3": 6.2,
+      "nineMonthOperatingCashFlow": 6.6,
+      "estimatedNetProceeds": 117,
+      "noteExposureIds": ["TX12A", "TX12B", "TX14A"],
+      "nonCashConversionByQuarter": {"2026Q4": 0.5793},
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm",
+      "closingSourceUrl": "https://www.anthropic.com/news/ipo-close"
+    },
     "name": "Anthropic, PBC (S-1)",
     "ticker": "ANT (IPO)",
     "cik": "0002130357",

@@ -115,3 +115,41 @@ Same inputs and reporting conventions as the first financing table. OpenAI's upd
 The Anthropic rows retain the unverified $107.3B for apples-to-apples comparison. The earlier removal sensitivity remains separate.
 
 The three HTML variants now expose editable curve and GPU controls. JavaScript syntax and local model tests were executed. The browser preview could not reach the local HTTP page and local-file navigation was denied by the browser. Browser input and repaint remain unverified. The entity source register inventories all 50 repository records and does not assert independent verification of every input.
+
+## Acceptance update: term debt, source correction and Chrome
+
+The original base remains `b727da2`. The continuation builds on `6de004c`, with term-loan coverage introduced in `d510950` and the Chrome runner verified in `097cec6`. The audit branch has no merge into main.
+
+### Term instrument reconciliation
+
+The research app now tracks known non-revolving principal alongside the RCF ledger. An instrument with no verified opening principal returns a blank balance. Configured staged draws are limited to known remaining commitment and the draw deadline. A modeled $5B term facility draws $3B and $2B across two quarters, repays $1B in the second quarter, and pays its remaining $4B at maturity. The same entries move borrower cash and debt and lender outstanding principal. Assumed generic funding remains unattributed to particular lenders. Any difference between instrument principal and borrower-reported carrying debt remains visible. Different bases and overlapping legacy instruments can produce a signed residual; the model does not erase it.
+
+### Anthropic: replacement for the legacy estimate
+
+The [final prospectus](https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm) gives a $117.0B estimate of net cash proceeds if the underwriters exercise the option in full. The [issuer confirmed full exercise and closing](https://www.anthropic.com/news/ipo-close). The research profile replaces the legacy $107.3B input with this source-backed estimate, and uses $95.6B in disclosed Q3 cash and $6.2B in disclosed aggregate note principal. The $579.3M immediately pre-close equity conversion reduces modeled debt without a cash payment. The closing quarter begins with the aggregate Amazon principal for EAD and suppresses the overlapping legacy Amazon and Google note exposures; allocation to distinct maturities still requires agreement-level amounts. The issuer's nine-month OCF is $6.6B. The modeled Q4 OCF remains a forecast, $3.0262B under the comparison scenario.
+
+With and without the estimated $117.0B, respectively, ending cash is $215.2262B and $98.2262B in 2026Q4, and $241.5204B and $124.5204B in 2028Q4. The funding gap stays zero in both runs. The legacy comparison remains reproducible when using the earlier profile.
+
+### Audit-profile comparison
+
+The same assumptions used above for the three financing modes were run with the audited research profile, which the three browser entry points enable. Values are in USD billions at 2028Q4. Funding gap is measured against minimum cash, and a dash in runway indicates nonnegative FCF.
+
+| Company | Financing | Cash | Gap | Runway months | First default | First FCF break-even |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| OpenAI | Manual | -14.7054 | 24.7054 | 0 | 2028Q2 | — |
+| OpenAI | Curve | -14.6935 | 24.6935 | 0 | 2028Q3 | — |
+| OpenAI | Scenario freeze | -47.7801 | 57.7801 | 0 | 2027Q4 | — |
+| Anthropic | Manual | 271.5204 | 0 | — | — | 2026Q4 |
+| Anthropic | Curve | 271.5204 | 0 | — | — | 2026Q4 |
+| Anthropic | Scenario freeze | 241.5204 | 0 | — | — | 2026Q4 |
+| CoreWeave | Manual | -0.9800 | 2.9800 | 0 | 2028Q4 | — |
+| CoreWeave | Curve | -0.9237 | 2.9237 | 0 | 2028Q4 | — |
+| CoreWeave | Scenario freeze | -31.3494 | 33.3494 | 0 | 2027Q1 | — |
+
+Anthropic's increase comes primarily from the corrected starting cash and the source-backed proceeds estimate. OpenAI changes modestly under the audited contract path, with the same model default dates. CoreWeave results are unchanged at the displayed precision for these three funding paths, which do not include a refresh scenario.
+
+### Acceptance evidence and remaining limits
+
+- The 48 inherited tests and dataset validation passed with unchanged thresholds. Additional fixtures independently check stated amounts, cash and principal identities, sources of funding, GPU cohorts, L3 recovery, and A–G scenario accounting.
+- Chrome actually loaded and exercised all three entry points in [the first successful browser job](https://github.com/rOOOOOnn/ai-credit-network/actions/runs/45814769744/job/139891530085). The executable checks cover annual input, chart and funding updates, switching manual to curve and back, the insufficient-history path, and advancing the timeline. The workflow repeats these checks on later commits. The same workflow runs financial checks on Ubuntu, macOS and Windows.
+- The [source register](audit4_entity_source_register.md) covers 50 entities at the inventory level and includes verified issuer findings. A full field-by-field restatement remains open. The material gaps include private operating data, quarter-level OCF bridges, project-level guarantee activation and payments, instrument carrying amounts and undrawn availability, collateral liens and GPU asset registers. For the remaining instruments and commitments, model cash paths are conditional on these gaps and the stated scenarios. Documented aggregates do not establish the missing distributions.

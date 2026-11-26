@@ -217,3 +217,21 @@ assert.equal(termResult.timeline["2027Q2"].debtReconciliation.OPENAI.namedTermPr
 assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.cumulativeDrawdown, null);
 assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.undrawnCommitment, null);
 console.log("Audit 4 term loan draw, repayment and reconciliation checks passed");
+
+
+const reportedAnthropic = includeScheduledEquity => engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, overrides: { ANTHROPIC: { financing: noFunding, includeScheduledEquity } }
+}).timeline["2026Q4"];
+const withProceeds = reportedAnthropic(true);
+const withoutProceeds = reportedAnthropic(false);
+assert.equal(withProceeds.entities.ANTHROPIC.begCash, 95.6);
+assert.equal(withProceeds.entities.ANTHROPIC.financingForecast.scheduledEquity, 117);
+assert.equal(usd(withProceeds.entities.ANTHROPIC.cash - withoutProceeds.entities.ANTHROPIC.cash), 117);
+assert.equal(withProceeds.entities.ANTHROPIC.ocf, withoutProceeds.entities.ANTHROPIC.ocf);
+assert.equal(withProceeds.financingLedger.TX12A.beginningOutstanding, 6.2);
+assert.equal(withProceeds.financingLedger.TX12A.nonCashConversion, 0.5793);
+assert.equal(withProceeds.financingLedger.TX12A.endingOutstanding, 5.6207);
+assert.equal(withProceeds.financingLedger.TX12B.endingOutstanding, 0);
+assert.equal(withProceeds.financingLedger.TX14A.endingOutstanding, 0);
+assert.equal(withProceeds.debtReconciliation.ANTHROPIC.unattributedDebt, 0);
+console.log("Audit 4 Anthropic reported opening cash, estimate sensitivity and note conversion checks passed");
