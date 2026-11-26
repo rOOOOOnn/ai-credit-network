@@ -889,3 +889,20 @@ assert.equal(irenOpening.begCash, 3.522);
 assert.equal(irenOpening.openingQuarterCashFlow.grossCashFcf, -4.295);
 assert.equal(irenOpening.openingFiscalCashFlowDisclosure.computerHardwareCashPurchases, 2.693);
 assert.equal(irenOpening.gpuPurchases, 0);
+
+for (const [id, cash, ocf, capex, fcf] of [
+  ["DLR", 0.8029, 0.3823, 1.382, -0.9997],
+  ["EQIX", 2.362, 1.243, 1.558, -0.315]
+]) {
+  const opening = liquid.timeline["2026Q4"].entities[id];
+  const actual = opening.openingQuarterCashFlow;
+  assert.equal(opening.begCash, cash, id);
+  assert.deepEqual([actual.ocf, actual.capex, actual.grossCashFcf], [ocf, capex, fcf], id);
+}
+const eqixOpening = liquid.timeline["2026Q4"].entities.EQIX;
+const eqixDisclosure = eqixOpening.openingFiscalCashFlowDisclosure;
+assert.equal(eqixDisclosure.currentBorrowings + eqixDisclosure.nonCurrentBorrowings, 22.647);
+assert.equal(usd(eqixDisclosure.operatingLeaseLiability + eqixDisclosure.financeLeaseLiability), 3.764);
+assert.equal(eqixDisclosure.uncommencedLeaseCommitment, 0.694);
+assert.equal(eqixDisclosure.borrowingsPrincipal, 22.839);
+assert.equal(liquid.timeline["2026Q4"].financingLedger.TX57.beginningOutstanding, 22.82);
