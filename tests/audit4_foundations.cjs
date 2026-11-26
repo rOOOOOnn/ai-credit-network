@@ -872,3 +872,10 @@ for (const [supplier, customer, txId, firstQ, migrationCost, disruptedRevenue] o
   assert.equal(disruption.impactB, disruptedRevenue, txId);
   assert.equal(usd(disruption.deferredRevenue + disruption.permanentRevenueLoss), disruption.impactB, txId);
 }
+const dell = liquid.timeline["2026Q4"].entities.DELL;
+assert.equal(dell.begCash, 11.569);
+assert.equal(dell.priorQuarterRevenue, 46.971);
+assert.equal(dell.openingQuarterCashFlow.grossCashFcf, 0.986);
+assert.equal(usd(dell.openingFiscalCashFlowDisclosure.currentBorrowings + dell.openingFiscalCashFlowDisclosure.nonCurrentBorrowings), 34.466);
+assert.equal(dell.laterFiscalDisclosure.periodEnd, "2026-10-30");
+assert.equal(usd(dell.laterFiscalDisclosure.ocf - dell.laterFiscalDisclosure.capex), 3.474);
