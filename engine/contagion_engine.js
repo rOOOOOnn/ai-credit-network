@@ -1106,7 +1106,7 @@
         let gpuMarginCall = 0;
         let gpuRefiPenalty = 1.0;
         const openingFleet = fleets[e.id] ?? ov?.gpuRefresh?.cohorts ?? [];
-        const fleetCollateral = openingFleet.reduce((sum, cohort) => {
+        const valueGpuCohort = cohort => {
           const age = Math.max(0, parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired));
           const life = Math.max(1, 4 * (ov?.gpuRefresh?.economicLife ?? 5));
           const physicalLife = ov?.gpuRefresh?.physicalLife;
@@ -1114,8 +1114,9 @@
           const valuation = physicalLife != null && age >= physicalLife * 4
             ? Math.min(1, nonnegative(ov.gpuRefresh.physicalResidualValue))
             : 1 - (1 - residual) * Math.min(1, age / life);
-          return sum + nonnegative(cohort.cost) * valuation;
-        }, 0);
+          return nonnegative(cohort.cost) * valuation;
+        };
+        const fleetCollateral = openingFleet.reduce((sum, cohort) => sum + valueGpuCohort(cohort), 0);
         const fleetOriginalCost = openingFleet.reduce((sum, cohort) => sum + nonnegative(cohort.cost), 0);
         const effectiveHaircut = fleetOriginalCost > 0
           ? 1 - (1 - gpuCollateralHaircut) * fleetCollateral / fleetOriginalCost : gpuCollateralHaircut;
@@ -1211,6 +1212,12 @@
           if (gpuPurchases > 0) fleets[e.id].push({ acquired: q, cost: gpuPurchases });
         }
         const closingFleet = fleets[e.id] ?? [];
+        const pledgedGpuValues = {};
+        for (const cohort of closingFleet) {
+          if (!gpuDebtTxs.some(tx => tx.id === cohort.pledgedTo)) continue;
+          pledgedGpuValues[cohort.pledgedTo] = (pledgedGpuValues[cohort.pledgedTo] ?? 0) +
+            valueGpuCohort(cohort) * (1 - Math.min(1, nonnegative(gpuCollateralHaircut)));
+        }
         const closingFleetCost = closingFleet.reduce((sum, cohort) => sum + cohort.cost, 0);
         const gpuFleetAgeYears = closingFleetCost > 0 ? money(closingFleet.reduce((sum, cohort) =>
           sum + cohort.cost * (parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired)) / 4, 0) / closingFleetCost) : null;
@@ -1331,6 +1338,7 @@
           leasePrincipal,
           leaseInterestAdjustment,
           gpuPurchases,
+          pledgedGpuValues,
           gpuCollateralValue: fleetOriginalCost > 0 ? money(fleetCollateral) : null,
           gpuAccountingLife: fleetConfig?.accountingLife ?? null,
           gpuPhysicalLife: fleetConfig?.physicalLife ?? null,
@@ -1621,8 +1629,12 @@
                 row.defaulted = true;
                 row.undrawnCommitment = 0;
               }
-              const cLoss = eadInfo.creditLossAtDefault;
-              if (cLoss > 0) {
+              const collateralValue = states[defId]?.pledgedGpuValues?.[tx.id];
+              const collateralRecovery = collateralValue == null ? null :
+                money(Math.min(eadInfo.fundedEAD, collateralValue));
+              const cLoss = collateralRecovery == null ? eadInfo.creditLossAtDefault :
+                money((eadInfo.totalEAD - collateralRecovery) * eadInfo.lgd);
+              if (cLoss > 0 || collateralRecovery > 0) {
                 defaultedTxIds.add(tx.id);
                 cumCreditLossByTx[tx.id] = cLoss;
                 creditEvents.push({
@@ -1638,6 +1650,7 @@
                   totalEAD: eadInfo.totalEAD,
                   lgd: eadInfo.lgd,
                   recognizedLoss: cLoss,
+                  collateralRecovery,
                   expectedRecovery: Number((eadInfo.totalEAD - cLoss).toFixed(4)),
                   remainingExposure: 0,
                   eadBasis: eadInfo.eadBasis
@@ -1648,7 +1661,7 @@
                 }
                 contagionLog.push({
                   hop, layer: "L1_FINANCIAL", from: defId, to: lenderId ?? defId, txId: tx.id,
-                  channel: `L1 Direct Financial: ${tx.type} Credit Loss (EAD $${eadInfo.totalEAD.toFixed(2)}B x ${Math.round(eadInfo.lgd * 100)}% LGD)`,
+                  channel: `L1 Direct Financial: ${tx.type} Credit Loss (EAD $${eadInfo.totalEAD.toFixed(2)}B with ${Math.round(eadInfo.lgd * 100)}% residual LGD)`,
                   impactB: cLoss
                 });
               }
