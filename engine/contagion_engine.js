@@ -749,6 +749,7 @@
         ? { ...tx, endQ: extension } : tx;
     });
     const useAudit4Contracts = options.audit4Contracts === true;
+    const trackTermDebt = options.audit4DebtLedger ?? useAudit4Contracts;
     const forcedDefaults = new Set(options.forcedDefaults || []);
     const defaultHaircut = options.defaultHaircut ?? 0.75;
     const crisisCapExCut = options.crisisCapExCut ?? 0.40;
@@ -852,18 +853,37 @@
       }
       const revolving = transactions.filter(tx => /\bRCF\b/i.test(tx.collateral ?? "") && DEBT_TX_TYPES.includes(tx.type));
       const facilityByBorrower = {};
-      for (const tx of revolving) {
+      const instruments = trackTermDebt ? transactions.filter(tx => DEBT_TX_TYPES.includes(tx.type)) : revolving;
+      for (const tx of instruments) {
+        const isRevolver = revolving.includes(tx);
+        const knowsPrincipal = tx.amountDrawn != null || (tx.principalOutstanding != null &&
+          compareQuarter(q, tx.principalAsOfQuarter) >= 0);
+        if (!isRevolver && !knowsPrincipal) {
+          if (isTransactionActive(tx, q)) financingLedger[tx.id] = {
+            txId: tx.id, borrower: tx.receiver, lender: tx.payer, instrumentType: tx.type,
+            beginningOutstanding: null, newDrawdown: 0, principalRepayment: 0,
+            endingOutstanding: null, cumulativeDrawdown: null, remainingCommitment: null,
+            undrawnCommitment: null, accruedInterest: null, defaultExposure: null,
+            dataType: "Unavailable"
+          };
+          continue;
+        }
         const active = isTransactionActive(tx, q);
         if (!active && !facilityBalances[tx.id]) continue;
         const previous = facilityBalances[tx.id];
-        const beginning = previous?.endingOutstanding ?? computeTransactionEAD(tx, q, options).fundedEAD;
+        const observed = computeTransactionEAD(tx, q, options);
+        const beginning = previous?.endingOutstanding ?? observed.fundedEAD;
+        const cumulativeDrawdown = previous ? previous.cumulativeDrawdown : tx.amountDrawn ?? null;
+        const remainingCommitment = cumulativeDrawdown === null ? tx.remainingCommitment ?? null
+          : money(Math.max(0, nonnegative(tx.totalCommitment) - cumulativeDrawdown));
         const row = {
-          txId: tx.id, borrower: tx.receiver, lender: tx.payer, beginningOutstanding: beginning,
+          txId: tx.id, borrower: tx.receiver, lender: tx.payer, instrumentType: tx.type, isRevolver,
+          beginningOutstanding: beginning, dataType: "Forecast",
           newDrawdown: 0, principalRepayment: 0, endingOutstanding: beginning,
-          remainingCommitment: money(Math.max(0, nonnegative(tx.totalCommitment) - (previous?.cumulativeDrawdown ?? nonnegative(tx.amountDrawn)))),
-          cumulativeDrawdown: previous?.cumulativeDrawdown ?? nonnegative(tx.amountDrawn),
+          remainingCommitment, cumulativeDrawdown,
           undrawnCommitment: active && tx.endQ !== q && !previous?.defaulted
-            ? money(Math.max(0, nonnegative(tx.totalCommitment) - beginning)) : 0,
+            ? isRevolver ? money(Math.max(0, nonnegative(tx.totalCommitment) - beginning)) : remainingCommitment
+            : 0,
           defaultExposure: previous?.defaultExposure ?? 0,
           defaulted: previous?.defaulted ?? false,
           accruedInterest: 0
@@ -873,8 +893,8 @@
       }
 
       function drawFacilities(borrower, requested) {
-        const rows = facilityByBorrower[borrower];
-        if (!rows) return money(requested);
+        const rows = facilityByBorrower[borrower]?.filter(row => row.isRevolver);
+        if (!rows?.length) return money(requested);
         const available = Object.fromEntries(rows.map(row => [row.txId, row.undrawnCommitment]));
         const allocation = allocateFunding(available, requested);
         for (const row of rows) {
@@ -945,9 +965,10 @@
         const begDebt = prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
         const prevRev = prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const facilities = facilityByBorrower[e.id];
+        const revolvers = facilities?.filter(row => row.isRevolver);
         const hasNamedFacility = revolving.some(tx => tx.receiver === e.id && compareQuarter(q, tx.startQ) >= 0);
         let undrawn = hasNamedFacility
-          ? money((facilities ?? []).reduce((sum, row) => sum + row.undrawnCommitment, 0))
+          ? money((revolvers ?? []).reduce((sum, row) => sum + row.undrawnCommitment, 0))
           : prev.undrawnCredit ?? 0;
         const loanPrincipal = tx => financingLedger[tx.id]?.beginningOutstanding ?? computeTransactionEAD(tx, q, options).fundedEAD;
 
@@ -1017,12 +1038,25 @@
           row.principalRepayment = money(Math.min(scheduledFacilityRepayments[row.txId], repaymentRoom));
           repaymentRoom = money(repaymentRoom - row.principalRepayment);
           row.endingOutstanding = money(row.beginningOutstanding - row.principalRepayment);
-          if (row.undrawnCommitment > 0 && tx.endQ !== q) {
+          if (row.isRevolver && !row.defaulted && tx.endQ !== q && isTransactionActive(tx, q)) {
             row.undrawnCommitment = money(row.undrawnCommitment + row.principalRepayment);
           }
         }
 
-        if (facilities) undrawn = money(facilities.reduce((sum, row) => sum + row.undrawnCommitment, 0));
+        if (hasNamedFacility) undrawn = money((revolvers ?? []).reduce((sum, row) => sum + row.undrawnCommitment, 0));
+        let contractualTermDraw = 0;
+        for (const row of facilities ?? []) {
+          if (row.isRevolver || row.undrawnCommitment == null || row.undrawnCommitment <= 0) continue;
+          const tx = transactions.find(item => item.id === row.txId);
+          if (tx.commitmentTerminationDate && quarterEndDate(q) > tx.commitmentTerminationDate) continue;
+          const draw = money(Math.min(row.undrawnCommitment, nonnegative(options.facilityDrawdowns?.[row.txId]?.[q])));
+          row.newDrawdown = draw;
+          row.endingOutstanding = money(row.endingOutstanding + draw);
+          if (row.cumulativeDrawdown !== null) row.cumulativeDrawdown = money(row.cumulativeDrawdown + draw);
+          row.remainingCommitment = money(row.remainingCommitment - draw);
+          row.undrawnCommitment = money(row.undrawnCommitment - draw);
+          contractualTermDraw = money(contractualTermDraw + draw);
+        }
         const forecastConfig = ov?.financing;
         const remaining = forecastConfig ? financingRemaining[e.id] ?? nonnegative(forecastConfig.capacity) : 0;
         const funding = forecastConfig ? scenarioFunding(forecastConfig, q, remaining, availFactor, refiFactor) : null;
@@ -1109,7 +1143,7 @@
         const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
 
         // Exact Accounting Conservation + Auto-RCF Drawdown
-        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + equityInflow - principalRepay - gpuMarginCall + refresh.disposalProceeds).toFixed(4));
+        const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - gpuMarginCall + refresh.disposalProceeds).toFixed(4));
         let rcfDraw = 0;
         let endCash = preDrawCash;
         let undrawnAfter = undrawn;
@@ -1118,7 +1152,7 @@
           endCash = Number((preDrawCash + rcfDraw).toFixed(4));
           undrawnAfter = Number(Math.max(0, undrawn - rcfDraw).toFixed(4));
         }
-        const endDebt = Number(Math.max(0, begDebt + allowedDebt + rcfDraw - principalRepay).toFixed(4));
+        const endDebt = Number(Math.max(0, begDebt + allowedDebt + contractualTermDraw + rcfDraw - principalRepay).toFixed(4));
 
         states[e.id] = {
           quarter: q,
@@ -1135,7 +1169,9 @@
           principalRepay,
           gpuMarginCall,
           computePay: incrementalCompute,
-          newDebt: allowedDebt,
+          newDebt: money(allowedDebt + contractualTermDraw),
+          contractualTermDraw,
+          assumedNewDebt: funding ? fundedScenarioDebt : null,
           financingForecast: funding ? { ...funding, fundedDebt: fundedScenarioDebt, remainingCapacity: financingRemaining[e.id], scheduledEquity: scheduledEq, scheduledEquityStatus, fundedRollover, rcfDraw } : null,
           replacementCapex: refresh.replacementCapex,
           disposalProceeds: refresh.disposalProceeds,
@@ -1396,12 +1432,13 @@
               const lenderId = tx.payer;
               if (!states[lenderId]) return;
               const row = financingLedger[tx.id];
-              const eadInfo = row
-                ? computeTransactionEAD({ ...tx, amountDrawn: row.endingOutstanding, amountRepaid: 0,
-                    totalCommitment: row.endingOutstanding }, q, { lgd, guaranteeCallRate })
+              const eadInfo = row && row.endingOutstanding !== null
+                ? computeTransactionEAD({ ...tx, principalOutstanding: row.endingOutstanding,
+                    principalAsOfQuarter: q, remainingCommitment: row.isRevolver ? 0 : row.undrawnCommitment },
+                    q, { lgd, guaranteeCallRate })
                 : computeTransactionEAD(tx, q, { lgd, guaranteeCallRate });
-              if (row) {
-                row.defaultExposure = eadInfo.fundedEAD;
+              if (row && row.endingOutstanding !== null) {
+                row.defaultExposure = eadInfo.totalEAD;
                 row.defaulted = true;
                 row.undrawnCommitment = 0;
               }
@@ -1590,7 +1627,9 @@
         applyCashDelta(entry.customer, entry.amount * entry.cashFactor);
         evaluateDistress(entry.customer);
       }
-      for (const row of Object.values(financingLedger)) facilityBalances[row.txId] = row;
+      for (const row of Object.values(financingLedger)) {
+        if (row.endingOutstanding !== null) facilityBalances[row.txId] = row;
+      }
       for (const [id, guarantee] of Object.entries(guaranteeLedger)) {
         guarantee.calledGuarantee = cumCreditLossByTx[id] ?? 0;
         guarantee.remainingGuaranteeLiability = money(Math.max(0, guarantee.effectiveExposure - guarantee.calledGuarantee));
@@ -1617,11 +1656,14 @@
       for (const entity of entities) {
         const state = states[entity.id];
         if (!Number.isFinite(state.debt) || entity.isOcean || state.insufficientData) continue;
-        const namedRevolverPrincipal = money((facilityByBorrower[entity.id] ?? [])
+        const rows = facilityByBorrower[entity.id] ?? [];
+        const namedRevolverPrincipal = money(rows.filter(row => row.isRevolver)
           .reduce((sum, row) => sum + row.endingOutstanding, 0));
-        const unattributedDebt = money(state.debt - namedRevolverPrincipal);
+        const namedTermPrincipal = money(rows.filter(row => !row.isRevolver)
+          .reduce((sum, row) => sum + row.endingOutstanding, 0));
+        const unattributedDebt = money(state.debt - namedRevolverPrincipal - namedTermPrincipal);
         debtReconciliation[entity.id] = {
-          modeledDebt: state.debt, namedRevolverPrincipal, unattributedDebt,
+          modeledDebt: state.debt, namedRevolverPrincipal, namedTermPrincipal, unattributedDebt,
           coverage: unattributedDebt < 0 ? "Overallocated: review debt classification"
             : unattributedDebt > 0 ? "Partial instrument coverage" : "Reconciled"
         };

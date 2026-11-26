@@ -191,3 +191,29 @@ for (const [name, entity, overrides, options] of cases) {
 }
 console.table(stressResults);
 console.log("Audit 4 A–G stress accounting checks passed");
+
+
+const instrument = { id: "Audit4-term", type: "Direct Loan", payer: "JPM", receiver: "OPENAI",
+  announcedDate: "2026-12-01", startQ: "2026Q4", endQ: "2027Q3", amountDrawn: 0,
+  amountRepaid: 0, totalCommitment: 5, remainingCommitment: 5 };
+const termOptions = { audit4DebtLedger: true, ocean: { refiSuccessRate: 0 }, overrides: {
+  OPENAI: { financing: { mode: "manual", capacity: 30, quarterlyLimit: 7.5, annual: { 2027: { equity: 30 } } } }
+} };
+const termResult = engine.runSimulation(entities, [...transactions, instrument], {
+  ...termOptions, facilityDrawdowns: { [instrument.id]: { "2027Q1": 3, "2027Q2": 4 } },
+  facilityRepayments: { [instrument.id]: { "2027Q2": 1 } }
+});
+const termRow = q => termResult.timeline[q].financingLedger[instrument.id];
+assert.equal(termRow("2027Q1").newDrawdown, 3);
+assert.equal(termRow("2027Q1").endingOutstanding, 3);
+assert.equal(termResult.timeline["2027Q1"].entities.OPENAI.contractualTermDraw, 3);
+assert.equal(termRow("2027Q2").principalRepayment, 1);
+assert.equal(termRow("2027Q2").newDrawdown, 2);
+assert.equal(termRow("2027Q2").endingOutstanding, 4);
+assert.equal(termRow("2027Q2").remainingCommitment, 0);
+assert.equal(termRow("2027Q3").principalRepayment, 4);
+assert.equal(termRow("2027Q3").endingOutstanding, 0);
+assert.equal(termResult.timeline["2027Q2"].debtReconciliation.OPENAI.namedTermPrincipal, 4);
+assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.cumulativeDrawdown, null);
+assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.undrawnCommitment, null);
+console.log("Audit 4 term loan draw, repayment and reconciliation checks passed");
