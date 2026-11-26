@@ -91,6 +91,9 @@ async function checkPage(browser, url) {
     const capexGrowth = panel.getByLabel(/Base CapEx growth per quarter|基础资本开支季度增速/);
     await capexGrowth.fill("0.1");
     await capexGrowth.press("Tab");
+    const utilization = panel.getByLabel(/GPU utilization ratio|GPU利用率/);
+    await utilization.fill("0.5");
+    await utilization.press("Tab");
     const equityValuation = panel.getByLabel(/Scenario equity pre-money valuation|情景股权投前估值/);
     await equityValuation.fill("18");
     await equityValuation.press("Tab");
@@ -102,6 +105,7 @@ async function checkPage(browser, url) {
     const ledger = JSON.parse(await fs.readFile(await download.path(), "utf8"));
     assert.equal(ledger.currency, "USD billions");
     assert.ok(Object.values(ledger.simulationOptions.overrides).some(row => row.capexGrowth === 0.1));
+    assert.ok(Object.values(ledger.simulationOptions.overrides).some(row => row.gpuRefresh?.utilizationRate === 0.5));
     assert.ok(Object.values(ledger.simulationOptions.overrides).some(row => row.equityPreMoneyValuation === 18));
     const firstQuarter = ledger.quarters[0];
     assert.equal(firstQuarter.quarter, "2026Q4");

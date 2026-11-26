@@ -821,3 +821,15 @@ assert.equal(dilutionFirst.scenarioEquityDilution, 0.1);
 assert.equal(dilutionSecond.cumulativeScenarioEquityDilution, 0.19);
 assert.equal(dilutionRun(8).timeline["2027Q2"].entities.REFRESH_FIXTURE.cumulativeScenarioEquityDilution, 0.36);
 assert.equal(dilutionRun(null).timeline["2027Q2"].entities.REFRESH_FIXTURE.cumulativeScenarioEquityDilution, null);
+const utilizedGpu = runRefreshFixture({ cohorts: [{ acquired: "2026Q4", cost: 20 }],
+  economicLife: 4, residualValue: 0.2, utilizationRate: 0.5, annualUsageMaintenanceRate: 0.08
+}).timeline["2028Q4"].entities.REFRESH_FIXTURE;
+assert.equal(utilizedGpu.gpuCollateralValue, 6);
+assert.equal(utilizedGpu.gpuUtilizationRate, 0.5);
+assert.equal(utilizedGpu.operatingCashBridge.gpuUsageMaintenanceCash, 0.2);
+assert.equal(usd(withoutRefresh.timeline["2028Q4"].entities.REFRESH_FIXTURE.fcf - utilizedGpu.fcf), 0.2);
+const lowerMarketGpu = runRefreshFixture({ cohorts: [{ acquired: "2026Q4", cost: 20, marketValueFactor: 0.75 }],
+  economicLife: 4, residualValue: 0.2, utilizationRate: 0.5
+}).timeline["2028Q4"].entities.REFRESH_FIXTURE;
+assert.equal(lowerMarketGpu.gpuCollateralValue, 4.5);
+assert.equal(lowerMarketGpu.operatingCashBridge.gpuUsageMaintenanceCash, 0);

@@ -1471,6 +1471,7 @@
         let gpuMarginCall = 0;
         let gpuRefiPenalty = 1.0;
         const openingFleet = fleets[e.id] ?? ov?.gpuRefresh?.cohorts ?? [];
+        const gpuUtilization = Math.min(1, nonnegative(ov?.gpuRefresh?.utilizationRate ?? 1));
         const valueGpuCohort = cohort => {
           const age = Math.max(0, parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired));
           const life = Math.max(1, 4 * (ov?.gpuRefresh?.economicLife ?? 5));
@@ -1478,11 +1479,14 @@
           const residual = Math.min(1, nonnegative(ov?.gpuRefresh?.residualValue));
           const valuation = physicalLife != null && age >= physicalLife * 4
             ? Math.min(1, nonnegative(ov.gpuRefresh.physicalResidualValue))
-            : 1 - (1 - residual) * Math.min(1, age / life);
+            : (1 - (1 - residual) * Math.min(1, age / life)) * gpuUtilization *
+              Math.min(1, nonnegative(cohort.marketValueFactor ?? 1));
           return nonnegative(cohort.cost) * valuation;
         };
         const fleetCollateral = openingFleet.reduce((sum, cohort) => sum + valueGpuCohort(cohort), 0);
         const fleetOriginalCost = openingFleet.reduce((sum, cohort) => sum + nonnegative(cohort.cost), 0);
+        const gpuUsageMaintenanceCash = money(fleetOriginalCost * gpuUtilization *
+          nonnegative(ov?.gpuRefresh?.annualUsageMaintenanceRate) / 4);
         const effectiveHaircut = fleetOriginalCost > 0
           ? 1 - (1 - gpuCollateralHaircut) * fleetCollateral / fleetOriginalCost : gpuCollateralHaircut;
         if (effectiveHaircut > 0 && gpuDebtTxs.length > 0) {
@@ -1718,12 +1722,12 @@
         const operatingCashBridge = {
           cashBeforeIncrementalResearchWorkingCapitalAndLease: money(ocf),
           incrementalComputeCashCost: money(incrementalCompute), interestPaid,
-          researchCashCost, workingCapitalCashUse,
+          researchCashCost, workingCapitalCashUse, gpuUsageMaintenanceCash,
           leaseOperatingCash, leaseInterestAdjustment
         };
-        ocf = money(ocf - researchCashCost - workingCapitalCashUse - leaseOperatingCash - leaseInterestAdjustment);
+        ocf = money(ocf - researchCashCost - workingCapitalCashUse - gpuUsageMaintenanceCash - leaseOperatingCash - leaseInterestAdjustment);
         const fcf = Number((ocf - capex).toFixed(4));
-        const ocfBeforeLeaseTarget = capex + researchCashCost + workingCapitalCashUse + leaseOperatingCash + leaseInterestAdjustment;
+        const ocfBeforeLeaseTarget = capex + researchCashCost + workingCapitalCashUse + gpuUsageMaintenanceCash + leaseOperatingCash + leaseInterestAdjustment;
         const preTaxTarget = ocfBeforeLeaseTarget <= taxThreshold ? ocfBeforeLeaseTarget
           : (ocfBeforeLeaseTarget - marginalTaxRate * taxThreshold) / (1 - marginalTaxRate);
         const fcfBreakEvenRevenue = marginOverride === null
@@ -1732,7 +1736,7 @@
         const minimumRequiredRevenueGrowth = prevRev > 0 && fcfBreakEvenRevenue !== null
           ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
         const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leaseOperatingCash + leasePrincipal + leaseInterestAdjustment;
-        const revenueCashNeed = totalCashOblig + researchCashCost + workingCapitalCashUse + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5;
+        const revenueCashNeed = totalCashOblig + researchCashCost + workingCapitalCashUse + gpuUsageMaintenanceCash + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5;
         const marginCashNeed = revenueCashNeed - (p.opex ?? 0) + incrementalCompute - contractualTermDraw;
         const requiredRev = marginOverride === null ? Math.max(0, revenueCashNeed / Math.max(0.1, grossMargin * cashConv))
           : marginOverride > 0 ? Math.max(0, marginCashNeed / marginOverride) : null;
@@ -1777,6 +1781,7 @@
           disposalProceeds: refresh.disposalProceeds,
           netGpuReplacementCashOutflow: money(refresh.replacementCapex - refresh.disposalProceeds),
           gpuFleetAgeYears,
+          gpuUtilizationRate: closingFleetCost > 0 ? gpuUtilization : null,
           openingInvestmentSale: investmentSale,
           openingLiquidityDisclosure: liquidityOpening || null,
           openingFiscalCashFlowDisclosure: fiscalOpening || null,
@@ -9580,8 +9585,9 @@ const I18N = {
         result.minimumRequiredRevenueGrowth == null ? null : (100 * result.minimumRequiredRevenueGrowth).toFixed(1) + "%"]
         .map(value => value ?? "—").join(" / ");
     panel.querySelector("[data-gpu-result]").textContent = result.gpuFleetAgeYears == null ? "" :
-      t("GPU fleet age (years) / disposal proceeds / net refresh cash outflow / FCF: ", "GPU \u6279\u6b21\u8d26\u9f84\uff08\u5e74\uff09 / \u51fa\u552e\u56de\u6b3e / \u51c0\u66f4\u65b0\u652f\u51fa / FCF\uff1a") +
-      [result.gpuFleetAgeYears, result.disposalProceeds, result.netGpuReplacementCashOutflow, result.fcf]
+      t("GPU fleet age (years) / disposal proceeds / net refresh cash outflow / FCF / utilization / usage maintenance: ", "GPU \u6279\u6b21\u8d26\u9f84\uff08\u5e74\uff09 / \u51fa\u552e\u56de\u6b3e / \u51c0\u66f4\u65b0\u652f\u51fa / FCF\uff1a") +
+      [result.gpuFleetAgeYears, result.disposalProceeds, result.netGpuReplacementCashOutflow, result.fcf,
+        result.gpuUtilizationRate, result.operatingCashBridge?.gpuUsageMaintenanceCash]
         .map(value => value == null ? "—" : value.toFixed(2)).join(" / ");
     panel.querySelector("[data-equity-dilution]").textContent = result.scenarioEquityIssued > 0 ||
       result.cumulativeScenarioEquityDilution > 0 ? t("Scenario equity dilution, quarter / cumulative: ", "\u60c5\u666f\u80a1\u6743\u7a00\u91ca\uff0c\u672c\u5b63 / \u7d2f\u8ba1\uff1a") +
@@ -9671,6 +9677,8 @@ const I18N = {
       ["replacementRatio", t("Quarterly replacement ratio", "\u5b63\u5ea6\u66f4\u65b0\u6bd4\u4f8b"), 0.25, 0, 1],
       ["residualValue", t("Residual value ratio", "\u6b8b\u503c\u6bd4\u4f8b"), 0.2, 0, 0.6],
       ["physicalResidualValue", t("Physical retirement residual ratio", "\u7269\u7406\u9000\u5f79\u6b8b\u503c\u6bd4\u7387"), 0, 0, 0.6],
+      ["utilizationRate", t("GPU utilization ratio", "GPU\u5229\u7528\u7387"), 1, 0, 1],
+      ["annualUsageMaintenanceRate", t("Annual GPU usage maintenance ratio", "GPU\u5e74\u5ea6\u4f7f\u7528\u7ef4\u62a4\u8d39\u7387"), 0, 0, 1],
       ["priceDecline", t("Replacement price decline", "\u66f4\u65b0\u91c7\u8d2d\u4ef7\u683c\u964d\u5e45"), 0, 0, 1]
     ]) setting(label, gpu[key] ?? fallback, value => { (settings().gpuRefresh ??= {})[key] = Math.min(max, Math.max(min, value)); });
     if (entity.id === "ORCL") setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),

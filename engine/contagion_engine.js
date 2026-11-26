@@ -1151,6 +1151,7 @@
         let gpuMarginCall = 0;
         let gpuRefiPenalty = 1.0;
         const openingFleet = fleets[e.id] ?? ov?.gpuRefresh?.cohorts ?? [];
+        const gpuUtilization = Math.min(1, nonnegative(ov?.gpuRefresh?.utilizationRate ?? 1));
         const valueGpuCohort = cohort => {
           const age = Math.max(0, parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired));
           const life = Math.max(1, 4 * (ov?.gpuRefresh?.economicLife ?? 5));
@@ -1158,11 +1159,14 @@
           const residual = Math.min(1, nonnegative(ov?.gpuRefresh?.residualValue));
           const valuation = physicalLife != null && age >= physicalLife * 4
             ? Math.min(1, nonnegative(ov.gpuRefresh.physicalResidualValue))
-            : 1 - (1 - residual) * Math.min(1, age / life);
+            : (1 - (1 - residual) * Math.min(1, age / life)) * gpuUtilization *
+              Math.min(1, nonnegative(cohort.marketValueFactor ?? 1));
           return nonnegative(cohort.cost) * valuation;
         };
         const fleetCollateral = openingFleet.reduce((sum, cohort) => sum + valueGpuCohort(cohort), 0);
         const fleetOriginalCost = openingFleet.reduce((sum, cohort) => sum + nonnegative(cohort.cost), 0);
+        const gpuUsageMaintenanceCash = money(fleetOriginalCost * gpuUtilization *
+          nonnegative(ov?.gpuRefresh?.annualUsageMaintenanceRate) / 4);
         const effectiveHaircut = fleetOriginalCost > 0
           ? 1 - (1 - gpuCollateralHaircut) * fleetCollateral / fleetOriginalCost : gpuCollateralHaircut;
         if (effectiveHaircut > 0 && gpuDebtTxs.length > 0) {
@@ -1398,12 +1402,12 @@
         const operatingCashBridge = {
           cashBeforeIncrementalResearchWorkingCapitalAndLease: money(ocf),
           incrementalComputeCashCost: money(incrementalCompute), interestPaid,
-          researchCashCost, workingCapitalCashUse,
+          researchCashCost, workingCapitalCashUse, gpuUsageMaintenanceCash,
           leaseOperatingCash, leaseInterestAdjustment
         };
-        ocf = money(ocf - researchCashCost - workingCapitalCashUse - leaseOperatingCash - leaseInterestAdjustment);
+        ocf = money(ocf - researchCashCost - workingCapitalCashUse - gpuUsageMaintenanceCash - leaseOperatingCash - leaseInterestAdjustment);
         const fcf = Number((ocf - capex).toFixed(4));
-        const ocfBeforeLeaseTarget = capex + researchCashCost + workingCapitalCashUse + leaseOperatingCash + leaseInterestAdjustment;
+        const ocfBeforeLeaseTarget = capex + researchCashCost + workingCapitalCashUse + gpuUsageMaintenanceCash + leaseOperatingCash + leaseInterestAdjustment;
         const preTaxTarget = ocfBeforeLeaseTarget <= taxThreshold ? ocfBeforeLeaseTarget
           : (ocfBeforeLeaseTarget - marginalTaxRate * taxThreshold) / (1 - marginalTaxRate);
         const fcfBreakEvenRevenue = marginOverride === null
@@ -1412,7 +1416,7 @@
         const minimumRequiredRevenueGrowth = prevRev > 0 && fcfBreakEvenRevenue !== null
           ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
         const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leaseOperatingCash + leasePrincipal + leaseInterestAdjustment;
-        const revenueCashNeed = totalCashOblig + researchCashCost + workingCapitalCashUse + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5;
+        const revenueCashNeed = totalCashOblig + researchCashCost + workingCapitalCashUse + gpuUsageMaintenanceCash + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5;
         const marginCashNeed = revenueCashNeed - (p.opex ?? 0) + incrementalCompute - contractualTermDraw;
         const requiredRev = marginOverride === null ? Math.max(0, revenueCashNeed / Math.max(0.1, grossMargin * cashConv))
           : marginOverride > 0 ? Math.max(0, marginCashNeed / marginOverride) : null;
@@ -1457,6 +1461,7 @@
           disposalProceeds: refresh.disposalProceeds,
           netGpuReplacementCashOutflow: money(refresh.replacementCapex - refresh.disposalProceeds),
           gpuFleetAgeYears,
+          gpuUtilizationRate: closingFleetCost > 0 ? gpuUtilization : null,
           openingInvestmentSale: investmentSale,
           openingLiquidityDisclosure: liquidityOpening || null,
           openingFiscalCashFlowDisclosure: fiscalOpening || null,
