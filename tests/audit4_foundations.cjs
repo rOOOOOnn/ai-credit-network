@@ -927,3 +927,15 @@ for (const [termQuarters, payment, ocf, fcf, cash, requiredRevenue] of [
   assert.equal(usd(stress.cash + payment), 5.8911);
   assert.equal(usd(stress.fcf + payment), -3.0415);
 }
+
+const delayedCoreWeaveLease = engine.runSimulation(entities, transactions, { audit4Contracts: true, overrides: {
+  CRWV: { leaseDelayQuarters: 4, incrementalLeaseTranches: [{ type: "operating", startQuarter: "2026Q4",
+    termQuarters: 28, commitment: coreWeaveLeases.uncommencedUndiscountedPayments }] }
+} }).timeline;
+const preCommencement = delayedCoreWeaveLease["2027Q3"].entities.CRWV;
+const atCommencement = delayedCoreWeaveLease["2027Q4"].entities.CRWV;
+assert.deepEqual([preCommencement.incrementalLeasePayment, preCommencement.leaseSchedule.uncommencedCommitment,
+  preCommencement.fcf, preCommencement.cash], [0, 47.4, -2.7039, 11.9317]);
+assert.deepEqual([atCommencement.incrementalLeasePayment, atCommencement.leaseSchedule.uncommencedCommitment,
+  atCommencement.fcf, atCommencement.cash], [1.6929, 0, -4.4515, 12.2908]);
+assert.equal(usd(atCommencement.cash - 5.5192), 4 * usd(47.4 / 28));

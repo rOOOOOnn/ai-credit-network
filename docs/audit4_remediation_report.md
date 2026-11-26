@@ -583,3 +583,6 @@ The following 2026Q4 overlay treats the $47.4B undiscounted aggregate as increme
 | Immediate start, seventeen years | 0.6971 | 1.4614 | -3.7386 | 5.1940 | 0.54 |
 
 Payments are $47.4B divided by 28 or 68. Both scenarios reduce first-quarter FCF and ending cash by the payment amount and leave the first-quarter funding gap at zero. The tests execute both paths via model overrides and verify those amounts. The $16.9B separate contractual maximum and unquantified variable arrangements are outside these scenarios. [CoreWeave September 10-Q, Note 8](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm).
+
+
+Delaying the seven-year scenario four quarters leaves the full $47.4B uncommenced and pays zero through 2027Q3. In 2027Q4 both immediate and delayed scenarios pay $1.6929B and have FCF of negative $4.4515B. Closing cash of $12.2908B in the delayed path exceeds the $5.5192B immediate-start balance by $6.7716B, equal to four installments rounded individually to four decimal places. This fixture tests the timing effect independently from the contractual cost, which remains unchanged.
