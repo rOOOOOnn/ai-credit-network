@@ -879,3 +879,13 @@ assert.equal(dell.openingQuarterCashFlow.grossCashFcf, 0.986);
 assert.equal(usd(dell.openingFiscalCashFlowDisclosure.currentBorrowings + dell.openingFiscalCashFlowDisclosure.nonCurrentBorrowings), 34.466);
 assert.equal(dell.laterFiscalDisclosure.periodEnd, "2026-10-30");
 assert.equal(usd(dell.laterFiscalDisclosure.ocf - dell.laterFiscalDisclosure.capex), 3.474);
+const apldOpening = liquid.timeline["2026Q4"].entities.APLD;
+assert.equal(apldOpening.begCash, 2.9499);
+assert.equal(apldOpening.openingQuarterCashFlow.grossCashFcf, -2.0108);
+assert.equal(usd(apldOpening.openingFiscalCashFlowDisclosure.currentBorrowings +
+  apldOpening.openingFiscalCashFlowDisclosure.nonCurrentBorrowings), 6.3766);
+const irenOpening = liquid.timeline["2026Q4"].entities.IREN;
+assert.equal(irenOpening.begCash, 3.522);
+assert.equal(irenOpening.openingQuarterCashFlow.grossCashFcf, -4.295);
+assert.equal(irenOpening.openingFiscalCashFlowDisclosure.computerHardwareCashPurchases, 2.693);
+assert.equal(irenOpening.gpuPurchases, 0);
