@@ -447,3 +447,24 @@ The audit profile now charges the new intra-quarter spread against the modeled o
 ### L4 peer classification
 
 The audited peer rule now requires a shared populated entity type or sector, or membership in the cloud/neocloud category for both sides. The legacy profile remains available for the inherited regression. The audit regression reproduces the original issue of a CoreWeave default widening Dell's spread solely because both type fields were missing. The corrected path still widens Oracle's spread as a cloud peer and preserves contractual contagion paths. The refreshed A–G and nine-path comparisons above show the effect of using the narrower, data-backed peer condition. Actual market cross-sector correlations remain unavailable in this calibration.
+
+### Financing sustainability across five comparable stresses
+
+Run `node scripts/replay_audit4_sustainability.cjs`. Each row is a scenario output at 2028Q4. Balances and cash flows use USD billions. Financing dependency and minimum FCF revenue growth are ratios in decimal form. A dash means the event is absent in the horizon or the ratio has no positive denominator. Required financing nets available undrawn credit against the funding gap.
+
+The Base path requests $20B and $18B of annual scenario equity in 2027 and 2028. Revenue slowdown halves the initial modeled growth input and adds 50 basis points to fixed and floating rate assumptions. The Downside taper requests $12B and $6B and adds 100 basis points. Freeze sets scenario issuance to zero and adds 200 basis points. Combined severe stress halves initial growth, freezes scenario issuance and adds 250 basis points. The floating shock acts at market level while the fixed adjustment is applied to the selected company. The paths share a $38B cumulative cap and $5B quarterly cap. Scheduled equity, contractual draws and rollovers follow separate rules. These are normalized tests and do not represent commitments.
+
+| Entity | Scenario | End cash | OCF | FCF | Quarterly burn | Funding dependency | Available liquidity | Runway (months) | Funding gap | Required financing | Minimum FCF revenue growth | First default | First FCF break-even |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| OPENAI | Base | -4.9107 | -6.87 | -8.37 | 8.37 | 0.5376 | 0 | 0 | 14.9107 | 14.9107 | 1.2562 | 2028Q3 | — |
+| OPENAI | Revenue slowdown | -21.2172 | -10.408 | -11.908 | 11.908 | 0.3779 | 0 | 0 | 31.2172 | 31.2172 | 3.1142 | 2028Q2 | — |
+| OPENAI | Funding taper (downside) | -30.9871 | -6.551 | -8.051 | 8.051 | 0.1863 | 0 | 0 | 40.9871 | 40.9871 | 1.2778 | 2027Q4 | — |
+| OPENAI | Funding freeze | -47.4452 | -6.5821 | -8.0821 | 8.0821 | 0 | 0 | 0 | 57.4452 | 57.4452 | 1.2824 | 2027Q4 | — |
+| OPENAI | Combined severe stress | -61.6883 | -11.1582 | -12.6582 | 12.6582 | 0 | 0 | 0 | 71.6883 | 71.6883 | 3.2266 | 2027Q3 | — |
+| ANTHROPIC | Base | 279.5204 | 3.143 | 2.743 | 0 | — | 294.5204 | — | 0 | 0 | -0.3666 | — | 2026Q4 |
+| ANTHROPIC | Revenue slowdown | 268.1146 | 0.9111 | 0.5111 | 0 | — | 283.1146 | — | 0 | 0 | -0.1606 | — | 2026Q4 |
+| ANTHROPIC | Funding taper (downside) | 259.4114 | 3.1311 | 2.7311 | 0 | — | 274.4114 | — | 0 | 0 | -0.3651 | — | 2026Q4 |
+| ANTHROPIC | Funding freeze | 241.303 | 3.1192 | 2.7192 | 0 | — | 256.303 | — | 0 | 0 | -0.3635 | — | 2026Q4 |
+| ANTHROPIC | Combined severe stress | 229.8803 | 0.883 | 0.483 | 0 | — | 244.8803 | — | 0 | 0 | -0.1565 | — | 2026Q4 |
+
+In the OpenAI paths, the modeled funding gap grows from $14.9107B in Base to $40.9871B under the Downside taper and $71.6883B under Combined severe stress. First model default advances from 2028Q3 to 2027Q3 between Base and Combined severe stress. Anthropic's strong opening liquidity and separate IPO proceeds estimate support positive ending cash in all five paths. Under Combined severe stress its quarterly FCF is $0.483B, versus $2.743B in Base. That result depends on the opening cash and operating assumptions. The separate no-proceeds sensitivity remains in the report. Minimum revenue growth is a local break-even calculation at existing costs and margins, not an annual growth forecast.
