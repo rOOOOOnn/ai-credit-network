@@ -1112,7 +1112,8 @@
         const fiscalOpening = useAudit4Contracts && q === QUARTER_PARTIAL ? e.audit4FiscalCashFlow : null;
         const begDebt = fiscalOpening ? money(fiscalOpening.currentBorrowings + fiscalOpening.nonCurrentBorrowings)
           : disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
-        const prevRev = fiscalOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
+        const priorQuarterRevenue = fiscalOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
+        const prevRev = Math.max(0, priorQuarterRevenue - (prev.gpuUtilizationRevenueAdjustment ?? 0));
         const facilities = facilityByBorrower[e.id];
         const revolvers = facilities?.filter(row => row.isRevolver);
         const hasNamedFacility = revolving.some(tx => tx.receiver === e.id && compareQuarter(q, tx.startQ) >= 0);
@@ -1372,6 +1373,12 @@
           projRev = Number(Math.max(0, prevRev * (1 + boundedG)).toFixed(4));
         }
 
+        const gpuRevenueShare = fleetOriginalCost > 0 ? Math.min(1, nonnegative(fleetConfig?.utilizationRevenueShare)) : 0;
+        const referenceUtilization = fleetConfig?.referenceUtilizationRate ?? 1;
+        const gpuUtilizationRevenueAdjustment = referenceUtilization > 0
+          ? money(projRev * gpuRevenueShare * (gpuUtilization / Math.min(1, referenceUtilization) - 1)) : 0;
+        projRev = money(projRev + gpuUtilizationRevenueAdjustment);
+
         // Calibrated OCF
         const calib = ocfCalibById[e.id];
         const grossProfitCash = projRev * grossMargin * cashConv;
@@ -1402,7 +1409,7 @@
         const operatingCashBridge = {
           cashBeforeIncrementalResearchWorkingCapitalAndLease: money(ocf),
           incrementalComputeCashCost: money(incrementalCompute), interestPaid,
-          researchCashCost, workingCapitalCashUse, gpuUsageMaintenanceCash,
+          researchCashCost, workingCapitalCashUse, gpuUsageMaintenanceCash, gpuUtilizationRevenueAdjustment,
           leaseOperatingCash, leaseInterestAdjustment
         };
         ocf = money(ocf - researchCashCost - workingCapitalCashUse - gpuUsageMaintenanceCash - leaseOperatingCash - leaseInterestAdjustment);
@@ -1413,8 +1420,8 @@
         const fcfBreakEvenRevenue = marginOverride === null
           ? money(Math.max(0, (preTaxTarget + operatingCashCosts) / (grossMargin * cashConv)))
           : marginOverride > 0 ? money(Math.max(0, (ocfBeforeLeaseTarget + incrementalCompute + interestPaid) / marginOverride)) : null;
-        const minimumRequiredRevenueGrowth = prevRev > 0 && fcfBreakEvenRevenue !== null
-          ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
+        const minimumRequiredRevenueGrowth = priorQuarterRevenue > 0 && fcfBreakEvenRevenue !== null
+          ? money(fcfBreakEvenRevenue / priorQuarterRevenue - 1) : null;
         const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leaseOperatingCash + leasePrincipal + leaseInterestAdjustment;
         const revenueCashNeed = totalCashOblig + researchCashCost + workingCapitalCashUse + gpuUsageMaintenanceCash + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5;
         const marginCashNeed = revenueCashNeed - (p.opex ?? 0) + incrementalCompute - contractualTermDraw;
@@ -1440,7 +1447,7 @@
           requiredRevenue: requiredRev === null ? null : Number(requiredRev.toFixed(2)),
           fcfBreakEvenRevenue,
           minimumRequiredRevenueGrowth,
-          priorQuarterRevenue: prevRev,
+          priorQuarterRevenue,
           begCash: Number(begCash.toFixed(4)),
           cash: endCash,
           debt: endDebt,
@@ -1461,6 +1468,7 @@
           disposalProceeds: refresh.disposalProceeds,
           netGpuReplacementCashOutflow: money(refresh.replacementCapex - refresh.disposalProceeds),
           gpuFleetAgeYears,
+          gpuUtilizationRevenueAdjustment,
           gpuUtilizationRate: closingFleetCost > 0 ? gpuUtilization : null,
           openingInvestmentSale: investmentSale,
           openingLiquidityDisclosure: liquidityOpening || null,

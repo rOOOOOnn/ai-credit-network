@@ -833,3 +833,15 @@ const lowerMarketGpu = runRefreshFixture({ cohorts: [{ acquired: "2026Q4", cost:
 }).timeline["2028Q4"].entities.REFRESH_FIXTURE;
 assert.equal(lowerMarketGpu.gpuCollateralValue, 4.5);
 assert.equal(lowerMarketGpu.operatingCashBridge.gpuUsageMaintenanceCash, 0);
+const gpuRevenueModel = runRefreshFixture({
+  cohorts: [{ acquired: "2026Q4", cost: 20 }], economicLife: 4,
+  utilizationRate: 0.5, referenceUtilizationRate: 1, utilizationRevenueShare: 0.5
+});
+for (const q of ["2026Q4", "2027Q1", "2027Q2"]) {
+  const row = gpuRevenueModel.timeline[q].entities.REFRESH_FIXTURE;
+  const reference = withoutRefresh.timeline[q].entities.REFRESH_FIXTURE;
+  const lostRevenue = usd(reference.revenue * 0.25);
+  assert.equal(row.revenue, usd(reference.revenue - lostRevenue), q);
+  assert.equal(row.gpuUtilizationRevenueAdjustment, -lostRevenue, q);
+  assert.ok(Math.abs(reference.fcf - row.fcf - lostRevenue * 0.5) <= 0.0001, q);
+}
