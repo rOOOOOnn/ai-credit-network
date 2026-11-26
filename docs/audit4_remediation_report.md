@@ -72,3 +72,46 @@ The nine equivalent manual, curve and scenario-freeze paths in the financing tab
 All three entry points include a mode selector, an inline annual by-source editing table in manual mode, actual scenario funding and remaining-capacity columns, and a financing and funding-gap bar chart. Curve parameters are still edited through JSON. Historical mode lists the years and supported sources when complete actual records are supplied. The repository still lacks verified annual financing histories for many sources.
 
 The original 48 cases, data validation and Audit 4 regressions passed locally. See the branch Actions history for platform-specific results. GPU ownership, explicit acquisitions, useful lives and collateral links, the dynamic RCF lender ledger, NVIDIA guarantee milestones, Oracle default lease tranches, deferred-revenue recovery, the full entity-level source review and the A–G integration suite remain open.
+## Continuation after `6f6541a`
+
+### RCF, operating recovery and contracts
+
+- **RCF ledger.** Identified revolving facilities carry quarter-opening principal, draws, payments, quarter-end principal, cumulative draw, remaining commitment, available revolver room, accrued interest and default exposure. In the OpenAI freeze and extra compute case, 2027Q1 draws $0.6B on TX06A and $4.1B on TX06B. The same $4.7B increases borrower cash and debt and becomes lender-funded EAD on default. Once a line defaults its unused room closes, and the outstanding default claim is not treated as a successfully paid maturity. Facility extensions and explicit payments are supported as assumptions. Full allocation of generic balance-sheet debt, repayments and new borrowing to non-RCF tranches remains open where instrument detail is missing.
+- **L3 recovery.** Disrupted revenue is split by the scenario recovery rate, default 75%. The recoverable portion is queued until the switching window ends. The remainder is permanent loss. For the CORZ → CoreWeave example, the model recovers $0.0835B of revenue in 2027Q2, the sum of $0.0557B and $0.0278B deferred during the two preceding quarters. Migration cost stays in OCF and the recovery does not inflate the following quarter's revenue growth base.
+- **Oracle.** The research UI enables an explicit illustrative $288B profile with three assumed $96B cohorts, each paid over 68 quarters. Payments start in 2027Q1, 2028Q1 and 2029Q1, with a configurable delay. The scenario exposes uncommenced commitments and remaining commenced payments separately. Those payments are undiscounted and the financing/operating lease split and recognized liability still require an accounting schedule. [Oracle August 2026 10-Q](https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm)
+- **NVIDIA SB Energy.** The research UI enables nine illustrative project cohorts with separate ready-for-service, lease commencement and termination conditions. Scheduled rent or a supplied payment record reduces available exposure, and guarantee calls are recorded against it. The nine centers and $105B aggregate cap are disclosed. Equal project caps and their assigned calendar quarters are assumptions. The old schedule can still be reproduced using the legacy simulation setting. The $3.5B of other NVIDIA guarantees remains separately disclosed in the source and outside this project schedule. [NVIDIA 10-Q](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm)
+- **GPU.** Explicit hardware purchases are capped by and included in baseline CapEx, then added to the applicable cohort once. Residual proceeds are a financing-neutral investing cash receipt outside the model's OCF-minus-CapEx FCF convention. Unrefreshed equipment remains in its original cohort. Opening fleet age and residual assumptions reduce the collateral proxy used for margin calls and refinancing. Actual secured principal remains a separate exposure measure. Actual inventory, liens, liquidation costs and depreciation lives remain incomplete across companies.
+
+### Integrated A–G smoke and accounting checks
+
+The test suite independently recomputes operating-to-free-cash conversion, cash conservation and the funding gap. Selected unit checks also derive lease payments, GPU CapEx, residual recovery and scheduled debt flows directly from inputs. The following amounts are USD billions in 2027Q1, with defaults observed through 2028Q4.
+
+| Case | Entity | Cash | FCF | Funding gap | First model default |
+| --- | --- | ---: | ---: | ---: | --- |
+| A | OpenAI | 19.8376 | -12.3234 | 0 | 2027Q4 |
+| B | Anthropic | 39.5794 | 2.2729 | 0 | — |
+| C | CoreWeave | -4.9025 | -8.7260 | 6.9025 | 2027Q1 |
+| D | Oracle | 14.8450 | -15.5952 | 0 | 2027Q3 |
+| E | CoreWeave | -5.5155 | -8.8050 | 7.5155 | 2027Q1 |
+| F | CoreWeave | -6.3886 | -8.8217 | 8.3886 | 2027Q1 |
+| G | CoreWeave | -8.4885 | -9.4636 | 10.4885 | 2027Q1 |
+
+### Financing comparison after RCF and recovery changes
+
+Same inputs and reporting conventions as the first financing table. OpenAI's updated credit room closes at the facility maturity or default; the remaining risk also depends on funded interest and repayment. Cross-network recovery can change the counterparties' paths even with unchanged financing inputs.
+
+| Entity | Path | 2028Q4 cash | Gap | Runway months | First default | FCF break-even |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| OpenAI | Manual | -14.5707 | 24.5707 | 0 | 2028Q2 | — |
+| OpenAI | Curve | -14.5648 | 24.5648 | 0 | 2028Q3 | — |
+| OpenAI | Freeze | -47.6455 | 57.6455 | 0 | 2027Q4 | — |
+| Anthropic | Manual | 201.8728 | 0 | — | — | 2026Q4 |
+| Anthropic | Curve | 201.8728 | 0 | — | — | 2026Q4 |
+| Anthropic | Freeze | 171.8728 | 0 | — | — | 2026Q4 |
+| CoreWeave | Manual | -0.9800 | 2.9800 | 0 | 2028Q4 | — |
+| CoreWeave | Curve | -0.9237 | 2.9237 | 0 | 2028Q4 | — |
+| CoreWeave | Freeze | -31.3494 | 33.3494 | 0 | 2027Q1 | — |
+
+The Anthropic rows retain the unverified $107.3B for apples-to-apples comparison. The earlier removal sensitivity remains separate.
+
+The three HTML variants now expose editable curve and GPU controls. JavaScript syntax and local model tests were executed. The browser preview could not reach the local HTTP page and local-file navigation was denied by the browser. Browser input and repaint remain unverified. The entity source register inventories all 50 repository records and does not assert independent verification of every input.

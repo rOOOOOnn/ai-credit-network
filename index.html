@@ -259,7 +259,7 @@
           </div>
         </div>
         <div id="paramControls" class="grid grid-cols-2 gap-2.5"></div>
-        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
+        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
         <div class="flex gap-2 pt-1">
           <button id="applyParamsBtn" class="flex-1 py-1.5 rounded bg-[#5B8DEF] hover:bg-[#4A7CE0] text-white font-medium transition"></button>
           <button id="resetParamsBtn" class="px-3 py-1.5 rounded bg-[#161B24] hover:bg-[#1E2532] text-slate-300 border border-[#252E3E] transition"></button>
@@ -995,6 +995,58 @@
     return { cohorts: next, replacementCapex: money(replacementCapex), disposalProceeds: money(disposalProceeds) };
   }
 
+  const ORACLE_LEASE_SCENARIO = [2027, 2028, 2029].map(year => ({
+    startQuarter: year + "Q1", termQuarters: 68, commitment: 96
+  }));
+  const SB_ENERGY_SCENARIO = Array.from({ length: 9 }, (_, index) => {
+    const quarter = (2028 + Math.floor(index / 4)) + "Q" + (index % 4 + 1);
+    return { readyQuarter: quarter, leaseStartQuarter: quarter, termQuarters: 80, cap: 105 / 9 };
+  });
+
+  function incrementalLeaseSchedule(tranches, quarter, delay = 0) {
+    let payment = 0;
+    let uncommencedCommitment = 0;
+    let commencedRemainingPayments = 0;
+    for (const tranche of tranches) {
+      const age = parseQuarterNumber(quarter) - parseQuarterNumber(tranche.startQuarter) - Math.max(0, Math.trunc(delay));
+      const term = Math.trunc(nonnegative(tranche.termQuarters));
+      if (!term) continue;
+      const installment = tranche.quarterlyPayment ?? nonnegative(tranche.commitment) / term;
+      if (age < 0) uncommencedCommitment += installment * term;
+      if (age >= 0 && age < term) {
+        payment += installment;
+        commencedRemainingPayments += installment * (term - age - 1);
+      }
+    }
+    return { payment: money(payment), uncommencedCommitment: money(uncommencedCommitment),
+      commencedRemainingPayments: money(commencedRemainingPayments), dataType: "Assumption" };
+  }
+
+  function phasedGuarantee(projects, quarter, maximum, called = 0) {
+    let active = 0;
+    let contingent = 0;
+    for (const project of projects) {
+      const activation = Math.max(parseQuarterNumber(project.readyQuarter), parseQuarterNumber(project.leaseStartQuarter));
+      const age = parseQuarterNumber(quarter) - activation;
+      const cap = nonnegative(project.cap);
+      const term = nonnegative(project.termQuarters);
+      if (activation < 0 || age < 0) contingent += cap;
+      if (activation >= 0 && age >= 0 && age < term &&
+          (!project.terminationQuarter || compareQuarter(quarter, project.terminationQuarter) < 0)) {
+        const rentPaid = project.paymentsByQuarter
+          ? Object.entries(project.paymentsByQuarter).reduce((sum, [q, amount]) =>
+            parseQuarterNumber(q) >= activation && compareQuarter(q, quarter) <= 0 ? sum + nonnegative(amount) : sum, 0)
+          : cap * age / term;
+        active += Math.max(0, cap - rentPaid);
+      }
+    }
+    const effective = Math.min(maximum, active);
+    return { disclosedMaximum: maximum, effectiveExposure: money(effective),
+      contingentExposure: money(Math.min(Math.max(0, maximum - effective), contingent)),
+      calledGuarantee: money(called), remainingGuaranteeLiability: money(Math.max(0, effective - called)),
+      dataType: "Assumption" };
+  }
+
   function runSimulation(entities, transactions, options = {}) {
     const ocean = Object.assign({
       fundingAvailability: 100,
@@ -1008,6 +1060,14 @@
     const financingRemaining = {};
     const fleets = {};
     const scenarioSummary = {};
+    const facilityBalances = {};
+    const deferredRevenue = [];
+    transactions = transactions.map(tx => {
+      const extension = options.facilityExtensions?.[tx.id];
+      return extension && /\bRCF\b/i.test(tx.collateral ?? "") && compareQuarter(extension, tx.endQ) > 0
+        ? { ...tx, endQ: extension } : tx;
+    });
+    const useAudit4Contracts = options.audit4Contracts === true;
     const forcedDefaults = new Set(options.forcedDefaults || []);
     const defaultHaircut = options.defaultHaircut ?? 0.75;
     const crisisCapExCut = options.crisisCapExCut ?? 0.40;
@@ -1100,6 +1160,52 @@
       const activeTxs = visibleTxs.filter(tx => isTransactionActive(tx, q));
       const states = {};
       let oceanUsedThisQ = 0;
+      const financingLedger = {};
+      const guaranteeLedger = {};
+      if (useAudit4Contracts) {
+        const tx = transactions.find(item => item.id === "TX11");
+        if (tx && getTransactionLifecycle(tx, q).isVisible) {
+          guaranteeLedger[tx.id] = phasedGuarantee(options.sbEnergyProjects ?? SB_ENERGY_SCENARIO, q,
+            tx.totalCommitment, cumCreditLossByTx[tx.id] ?? 0);
+        }
+      }
+      const revolving = transactions.filter(tx => /\bRCF\b/i.test(tx.collateral ?? "") && DEBT_TX_TYPES.includes(tx.type));
+      const facilityByBorrower = {};
+      for (const tx of revolving) {
+        const active = isTransactionActive(tx, q);
+        if (!active && !facilityBalances[tx.id]) continue;
+        const previous = facilityBalances[tx.id];
+        const beginning = previous?.endingOutstanding ?? computeTransactionEAD(tx, q, options).fundedEAD;
+        const row = {
+          txId: tx.id, borrower: tx.receiver, lender: tx.payer, beginningOutstanding: beginning,
+          newDrawdown: 0, principalRepayment: 0, endingOutstanding: beginning,
+          remainingCommitment: money(Math.max(0, nonnegative(tx.totalCommitment) - (previous?.cumulativeDrawdown ?? nonnegative(tx.amountDrawn)))),
+          cumulativeDrawdown: previous?.cumulativeDrawdown ?? nonnegative(tx.amountDrawn),
+          undrawnCommitment: active && tx.endQ !== q && !previous?.defaulted
+            ? money(Math.max(0, nonnegative(tx.totalCommitment) - beginning)) : 0,
+          defaultExposure: previous?.defaultExposure ?? 0,
+          defaulted: previous?.defaulted ?? false,
+          accruedInterest: 0
+        };
+        financingLedger[tx.id] = row;
+        (facilityByBorrower[tx.receiver] ??= []).push(row);
+      }
+
+      function drawFacilities(borrower, requested) {
+        const rows = facilityByBorrower[borrower];
+        if (!rows) return money(requested);
+        const available = Object.fromEntries(rows.map(row => [row.txId, row.undrawnCommitment]));
+        const allocation = allocateFunding(available, requested);
+        for (const row of rows) {
+          const draw = allocation[row.txId];
+          row.newDrawdown = money(row.newDrawdown + draw);
+          row.endingOutstanding = money(row.endingOutstanding + draw);
+          row.cumulativeDrawdown = money(row.cumulativeDrawdown + draw);
+          row.remainingCommitment = money(Math.max(0, row.remainingCommitment - draw));
+          row.undrawnCommitment = money(row.undrawnCommitment - draw);
+        }
+        return money(Object.values(allocation).reduce((sum, draw) => sum + draw, 0));
+      }
 
       // Decay prior growth penalties & secondary spreads by 50% each quarter
       Object.keys(nextQGrowthPenalty).forEach(id => {
@@ -1156,13 +1262,18 @@
         const p = Object.assign({}, e.defaults || {}, ov || {});
         const begCash = prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
         const begDebt = prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
-        const prevRev = prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6));
-        const undrawn = prev.undrawnCredit !== null && prev.undrawnCredit !== undefined ? prev.undrawnCredit : 0.0;
+        const prevRev = prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
+        const facilities = facilityByBorrower[e.id];
+        const hasNamedFacility = revolving.some(tx => tx.receiver === e.id && compareQuarter(q, tx.startQ) >= 0);
+        let undrawn = hasNamedFacility
+          ? money((facilities ?? []).reduce((sum, row) => sum + row.undrawnCommitment, 0))
+          : prev.undrawnCredit ?? 0;
+        const loanPrincipal = tx => financingLedger[tx.id]?.beginningOutstanding ?? computeTransactionEAD(tx, q, options).fundedEAD;
 
         // Floating-rate debt share + Ocean base rate + L4 secondary spread wiring (strictly on ACTIVE debt txs!)
         const myDebtTxs = activeTxs.filter(tx => tx.receiver === e.id && DEBT_TX_TYPES.includes(tx.type));
-        const floatingPrincipal = myDebtTxs.filter(tx => tx.isFloatingRate).reduce((s, tx) => s + computeTransactionEAD(tx, q, options).fundedEAD, 0);
-        const totalTxPrincipal = myDebtTxs.reduce((s, tx) => s + computeTransactionEAD(tx, q, options).fundedEAD, 0);
+        const floatingPrincipal = myDebtTxs.filter(tx => tx.isFloatingRate).reduce((s, tx) => s + loanPrincipal(tx), 0);
+        const totalTxPrincipal = myDebtTxs.reduce((s, tx) => s + loanPrincipal(tx), 0);
         const floatShare = totalTxPrincipal > 0 ? Math.min(1, floatingPrincipal / totalTxPrincipal) : 0.35;
 
         const baseFixedRate = p.interestRate ?? 0.06;
@@ -1178,13 +1289,23 @@
         const gpuDebtTxs = myDebtTxs.filter(tx => tx.type === "GPU-backed Financing" || tx.type === "Equipment Financing");
         let gpuMarginCall = 0;
         let gpuRefiPenalty = 1.0;
-        if (gpuCollateralHaircut > 0 && gpuDebtTxs.length > 0) {
+        const openingFleet = fleets[e.id] ?? ov?.gpuRefresh?.cohorts ?? [];
+        const fleetCollateral = openingFleet.reduce((sum, cohort) => {
+          const age = Math.max(0, parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired));
+          const life = Math.max(1, 4 * (ov?.gpuRefresh?.economicLife ?? 5));
+          const residual = Math.min(1, nonnegative(ov?.gpuRefresh?.residualValue));
+          return sum + nonnegative(cohort.cost) * (1 - (1 - residual) * Math.min(1, age / life));
+        }, 0);
+        const fleetOriginalCost = openingFleet.reduce((sum, cohort) => sum + nonnegative(cohort.cost), 0);
+        const effectiveHaircut = fleetOriginalCost > 0
+          ? 1 - (1 - gpuCollateralHaircut) * fleetCollateral / fleetOriginalCost : gpuCollateralHaircut;
+        if (effectiveHaircut > 0 && gpuDebtTxs.length > 0) {
           const baseLtv = 0.65;
-          const stressedLtv = baseLtv / Math.max(0.2, 1 - gpuCollateralHaircut);
+          const stressedLtv = baseLtv / Math.max(0.2, 1 - effectiveHaircut);
           if (stressedLtv > 0.85) {
-            const gpuDrawn = gpuDebtTxs.reduce((s, tx) => s + computeTransactionEAD(tx, q, options).fundedEAD, 0);
-            gpuMarginCall = Number((gpuDrawn * 0.12 * gpuCollateralHaircut).toFixed(4));
-            gpuRefiPenalty = Math.max(0.2, 1 - gpuCollateralHaircut * 1.2);
+            const gpuDrawn = gpuDebtTxs.reduce((s, tx) => s + loanPrincipal(tx), 0);
+            gpuMarginCall = Number((gpuDrawn * 0.12 * effectiveHaircut).toFixed(4));
+            gpuRefiPenalty = Math.max(0.2, 1 - effectiveHaircut * 1.2);
           }
         }
 
@@ -1194,11 +1315,33 @@
 
         // 100% Maturity Wall with Refinancing Rollover (strictly on fundedEAD of maturing ACTIVE debt)
         const maturingPrincipal = myDebtTxs
-          .filter(tx => tx.endQ === q)
-          .reduce((s, tx) => s + computeTransactionEAD(tx, q, options).fundedEAD, 0);
+          .filter(tx => tx.endQ === q && !financingLedger[tx.id]?.defaulted)
+          .reduce((s, tx) => s + loanPrincipal(tx), 0);
         const refiRollover = Number((maturingPrincipal * availFactor * refiFactor).toFixed(4));
-        const principalRepay = Number(((p.debtRepay ?? 0) + maturingPrincipal).toFixed(4));
+        const scheduledFacilityRepayments = Object.fromEntries((facilities ?? []).map(row => {
+          const tx = transactions.find(item => item.id === row.txId);
+          const requested = tx.endQ === q ? row.beginningOutstanding
+            : nonnegative(options.facilityRepayments?.[tx.id]?.[q]);
+          return [row.txId, row.defaulted ? 0 : Math.min(row.beginningOutstanding, requested)];
+        }));
+        const explicitRepayments = (facilities ?? []).reduce((sum, row) => {
+          const tx = transactions.find(item => item.id === row.txId);
+          return sum + (tx.endQ === q ? 0 : scheduledFacilityRepayments[row.txId]);
+        }, 0);
+        const principalRepay = money(Math.min(begDebt, (p.debtRepay ?? 0) + maturingPrincipal + explicitRepayments));
+        let repaymentRoom = principalRepay;
+        for (const row of facilities ?? []) {
+          const tx = transactions.find(item => item.id === row.txId);
+          row.accruedInterest = money(row.beginningOutstanding * effectiveRate / 4);
+          row.principalRepayment = money(Math.min(scheduledFacilityRepayments[row.txId], repaymentRoom));
+          repaymentRoom = money(repaymentRoom - row.principalRepayment);
+          row.endingOutstanding = money(row.beginningOutstanding - row.principalRepayment);
+          if (row.undrawnCommitment > 0 && tx.endQ !== q) {
+            row.undrawnCommitment = money(row.undrawnCommitment + row.principalRepayment);
+          }
+        }
 
+        if (facilities) undrawn = money(facilities.reduce((sum, row) => sum + row.undrawnCommitment, 0));
         const forecastConfig = ov?.financing;
         const remaining = forecastConfig ? financingRemaining[e.id] ?? nonnegative(forecastConfig.capacity) : 0;
         const funding = forecastConfig ? scenarioFunding(forecastConfig, q, remaining, availFactor, refiFactor) : null;
@@ -1228,11 +1371,17 @@
         const refresh = fleetConfig
           ? fleetRefresh(fleets[e.id] ?? fleetConfig.cohorts ?? [], q, fleetConfig)
           : { replacementCapex: 0, disposalProceeds: 0 };
-        if (fleetConfig) fleets[e.id] = refresh.cohorts;
+        const gpuPurchases = Math.min(nonnegative(p.capex), nonnegative(fleetConfig?.gpuPurchasesByQuarter?.[q]));
+        if (fleetConfig) {
+          fleets[e.id] = [...refresh.cohorts];
+          if (gpuPurchases > 0) fleets[e.id].push({ acquired: q, cost: gpuPurchases });
+        }
         const capex = money((p.capex ?? 0) + refresh.replacementCapex);
-        const lease = ov?.incrementalLease;
-        const leaseAge = lease ? parseQuarterNumber(q) - parseQuarterNumber(lease.startQuarter) : -1;
-        const leasePayment = leaseAge >= 0 && leaseAge < lease?.termQuarters ? nonnegative(lease.quarterlyPayment) : 0;
+        const legacyLease = ov?.incrementalLease;
+        const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
+          : useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []);
+        const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);
+        const leasePayment = leaseSchedule.payment;
         const grossMargin = Math.max(0.05, Math.min(0.98, p.grossMargin ?? 0.55));
         const cashConv = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
         const minCash = p.minCash ?? 1.0;
@@ -1284,7 +1433,7 @@
         let endCash = preDrawCash;
         let undrawnAfter = undrawn;
         if (preDrawCash < 0 && undrawn > 0) {
-          rcfDraw = Number(Math.min(-preDrawCash, undrawn).toFixed(4));
+          rcfDraw = drawFacilities(e.id, Math.min(-preDrawCash, undrawn));
           endCash = Number((preDrawCash + rcfDraw).toFixed(4));
           undrawnAfter = Number(Math.max(0, undrawn - rcfDraw).toFixed(4));
         }
@@ -1310,6 +1459,12 @@
           replacementCapex: refresh.replacementCapex,
           disposalProceeds: refresh.disposalProceeds,
           incrementalLeasePayment: leasePayment,
+          leaseSchedule,
+          gpuPurchases,
+          gpuCollateralValue: fleetOriginalCost > 0 ? money(fleetCollateral) : null,
+          gpuAccountingLife: fleetConfig?.accountingLife ?? null,
+          gpuPhysicalLife: fleetConfig?.physicalLife ?? null,
+          gpuEconomicLife: fleetConfig?.economicLife ?? null,
           rcfDraw,
           equityInflow,
           undrawnCredit: undrawnAfter,
@@ -1339,12 +1494,13 @@
         const st = states[id];
         if (!st || isPoolId(id) || st.insufficientData) return;
         st.ocf = Number((st.ocf + ocfDelta).toFixed(4));
-        st.capex = Number(Math.max(0, st.capex + capexDelta).toFixed(4));
+        const previousCapex = st.capex;
+        st.capex = Number(Math.max(st.replacementCapex ?? 0, st.capex + capexDelta).toFixed(4));
         st.fcf = Number((st.ocf - st.capex).toFixed(4));
-        const netDelta = ocfDelta - capexDelta;
+        const netDelta = ocfDelta - (st.capex - previousCapex);
         let newCash = Number((st.cash + netDelta).toFixed(4));
         if (newCash < 0 && st.undrawnCredit > 0) {
-          const extraDraw = Number(Math.min(-newCash, st.undrawnCredit).toFixed(4));
+          const extraDraw = drawFacilities(id, Math.min(-newCash, st.undrawnCredit));
           st.rcfDraw = Number((st.rcfDraw + extraDraw).toFixed(4));
           st.debt = Number((st.debt + extraDraw).toFixed(4));
           st.undrawnCredit = Number(Math.max(0, st.undrawnCredit - extraDraw).toFixed(4));
@@ -1528,9 +1684,20 @@
                 const decay = Math.pow(0.5, quartersElapsed);
                 const revDelay = Number((opBase * Math.min(1, switchWks / 13) * friction * 0.45 * disruptionMult * decay).toFixed(4));
                 if (revDelay > 0) {
-                  cust.operationalRevDelay = Number((cust.operationalRevDelay + revDelay).toFixed(4));
-                  cust.revenue = Number(Math.max(0, cust.revenue - revDelay).toFixed(4));
-                  applyCashDelta(custId, -(revDelay * cust.grossMargin * cust.cashConv), 0);
+                  const lostCapacityRevenue = money(Math.min(cust.revenue, revDelay));
+                  const recoveryRate = Math.min(1, nonnegative(overrides[custId]?.operationalRecoveryRate ?? 0.75));
+                  const deferred = money(lostCapacityRevenue * recoveryRate);
+                  const cashFactor = cust.grossMargin * cust.cashConv;
+                  cust.operationalRevDelay = money(cust.operationalRevDelay + deferred);
+                  cust.operationalPermanentRevenueLoss = money((cust.operationalPermanentRevenueLoss ?? 0) + lostCapacityRevenue - deferred);
+                  cust.operationalCapacityRevenueImpact = money((cust.operationalCapacityRevenueImpact ?? 0) + lostCapacityRevenue);
+                  cust.operationalBaselineRevenue = money((cust.operationalBaselineRevenue ?? cust.revenue) - (lostCapacityRevenue - deferred));
+                  cust.revenue = money(cust.revenue - lostCapacityRevenue);
+                  applyCashDelta(custId, -lostCapacityRevenue * cashFactor);
+                  if (deferred > 0) deferredRevenue.push({
+                    txId: tx.id, customer: custId, due: operationalStartQByTx[tx.id] + switchQuarters,
+                    amount: deferred, cashFactor
+                  });
                   contagionLog.push({
                     hop, layer: "L3_OPERATIONAL", operationalCategory: opCat,
                     from: defId, to: custId, txId: tx.id,
@@ -1547,7 +1714,16 @@
               if (defaultedTxIds.has(tx.id)) return;
               const lenderId = tx.payer;
               if (!states[lenderId]) return;
-              const eadInfo = computeTransactionEAD(tx, q, { lgd, guaranteeCallRate });
+              const row = financingLedger[tx.id];
+              const eadInfo = row
+                ? computeTransactionEAD({ ...tx, amountDrawn: row.endingOutstanding, amountRepaid: 0,
+                    totalCommitment: row.endingOutstanding }, q, { lgd, guaranteeCallRate })
+                : computeTransactionEAD(tx, q, { lgd, guaranteeCallRate });
+              if (row) {
+                row.defaultExposure = eadInfo.fundedEAD;
+                row.defaulted = true;
+                row.undrawnCommitment = 0;
+              }
               const cLoss = eadInfo.creditLossAtDefault;
               if (cLoss > 0) {
                 defaultedTxIds.add(tx.id);
@@ -1584,7 +1760,12 @@
               if (defaultedTxIds.has(tx.id)) return;
               const guarId = tx.payer;
               if (isPoolId(guarId) || !states[guarId] || states[guarId].insufficientData) return;
-              const eadInfo = computeTransactionEAD(tx, q, { lgd, guaranteeCallRate });
+              const scenario = guaranteeLedger[tx.id];
+              const exposure = scenario?.remainingGuaranteeLiability;
+              const eadInfo = exposure === undefined
+                ? computeTransactionEAD(tx, q, { lgd, guaranteeCallRate })
+                : { guaranteeEAD: exposure, totalEAD: exposure, lgd: guaranteeCallRate,
+                    creditLossAtDefault: money(exposure * guaranteeCallRate), eadBasis: "Project phase scenario" };
               const callAmt = eadInfo.creditLossAtDefault;
               if (callAmt > 0) {
                 defaultedTxIds.add(tx.id);
@@ -1718,6 +1899,22 @@
         }
       }
 
+      for (const entry of deferredRevenue) {
+        if (entry.due !== stepIdx) continue;
+        const customer = states[entry.customer];
+        if (!customer || customer.insufficientData) continue;
+        customer.operationalRecoveryRevenue = money((customer.operationalRecoveryRevenue ?? 0) + entry.amount);
+        customer.operationalBaselineRevenue ??= customer.revenue;
+        customer.revenue = money(customer.revenue + entry.amount);
+        applyCashDelta(entry.customer, entry.amount * entry.cashFactor);
+        evaluateDistress(entry.customer);
+      }
+      for (const row of Object.values(financingLedger)) facilityBalances[row.txId] = row;
+      for (const [id, guarantee] of Object.entries(guaranteeLedger)) {
+        guarantee.calledGuarantee = cumCreditLossByTx[id] ?? 0;
+        guarantee.remainingGuaranteeLiability = money(Math.max(0, guarantee.effectiveExposure - guarantee.calledGuarantee));
+      }
+
       entities.forEach(e => {
         const state = states[e.id];
         if (!state.insufficientData && Number.isFinite(state.cash) && Number.isFinite(state.fcf)) {
@@ -1735,7 +1932,20 @@
         states[e.id].fragilityDrivers = frag.drivers;
       });
 
-      timeline[q] = { quarter: q, status, entities: states, contagionLog };
+      const debtReconciliation = {};
+      for (const entity of entities) {
+        const state = states[entity.id];
+        if (!Number.isFinite(state.debt) || entity.isOcean || state.insufficientData) continue;
+        const namedRevolverPrincipal = money((facilityByBorrower[entity.id] ?? [])
+          .reduce((sum, row) => sum + row.endingOutstanding, 0));
+        const unattributedDebt = money(state.debt - namedRevolverPrincipal);
+        debtReconciliation[entity.id] = {
+          modeledDebt: state.debt, namedRevolverPrincipal, unattributedDebt,
+          coverage: unattributedDebt < 0 ? "Overallocated: review debt classification"
+            : unattributedDebt > 0 ? "Partial instrument coverage" : "Reconciled"
+        };
+      }
+      timeline[q] = { quarter: q, status, entities: states, contagionLog, financingLedger, guaranteeLedger, debtReconciliation };
       prevStates = states;
     });
 
@@ -1766,6 +1976,8 @@
     computeEntityMetrics,
     financingForecast,
     fleetRefresh,
+    incrementalLeaseSchedule,
+    phasedGuarantee,
     runSimulation
   };
 });
@@ -8448,6 +8660,7 @@ const I18N = {
       ocean: state.ocean,
       overrides: state.overrides,
       forecastThrough: 2033,
+      audit4Contracts: true,
       forcedDefaults: Array.from(state.forcedDefaults),
       gpuCollateralHaircut: state.gpuCollateralHaircut
     });
@@ -8828,7 +9041,7 @@ const I18N = {
     text.value = JSON.stringify({financing:config ?? example,
       gpuRefresh:state.overrides[entity.id]?.gpuRefresh ?? {economicLife:5,replacementRatio:0.25,residualValue:0.2,cohorts:[]},
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
-      includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true}, null, 2);
+      includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75}, null, 2);
     panel.querySelector("button").textContent = t("Apply assumptions", "\u5e94\u7528\u5047\u8bbe");
     panel.querySelector("p").textContent = t(
       "Edit annual amounts by source in USD billions. Set mode to manual or curve. Example values are assumptions. A scenario freeze excludes only scenario financing. Scheduled equity, rollover and credit draws are separate.",
@@ -8845,6 +9058,64 @@ const I18N = {
     mode.value = selectedConfig.mode;
     const rows = [];
     const sources = ["equity", "debt", "strategic", "prepayment", "assetBacked", "other"];
+    const settingsPanel = panel.querySelector("[data-audit-settings]");
+    settingsPanel.replaceChildren();
+    function setting(label, value, onChange, choices) {
+      const row = document.createElement("label");
+      row.className = "block";
+      row.textContent = label + " ";
+      const control = document.createElement(choices ? "select" : "input");
+      control.className = "bg-slate-950 border border-slate-700";
+      if (choices) {
+        for (const [key, text] of choices) control.add(new Option(text, key));
+      } else {
+        control.type = "number";
+        control.step = "any";
+      }
+      control.value = value ?? "";
+      control.addEventListener("change", () => {
+        if (choices || Number.isFinite(control.valueAsNumber)) {
+          onChange(choices ? control.value : control.valueAsNumber);
+          recompute();
+        }
+      });
+      row.append(control);
+      settingsPanel.append(row);
+    }
+    const settings = () => state.overrides[entity.id] ??= {};
+    const assignFunding = (key, value) => { (settings().financing ??= selectedConfig)[key] = value; };
+    for (const [key, label, fallback] of [
+      ["capacity", t("Total financing limit ($B)", "\u7d2f\u8ba1\u878d\u8d44\u4e0a\u9650（\u5341\u4ebf\u7f8e\u5143）"), 0],
+      ["quarterlyLimit", t("Quarterly financing limit ($B)", "\u5b63\u5ea6\u878d\u8d44\u4e0a\u9650（\u5341\u4ebf\u7f8e\u5143）"), 0]
+    ]) setting(label, selectedConfig[key] ?? fallback, value => assignFunding(key, Math.max(0, value)));
+    if (selectedConfig.mode === "curve") {
+      setting(t("Curve", "\u66f2\u7ebf"), selectedConfig.curve ?? "linear", value => assignFunding("curve", value),
+        [["linear", t("Linear", "\u7ebf\u6027")], ["exponential", t("Exponential", "\u6307\u6570")],
+          ["logistic", t("Logistic", "\u903b\u8f91\u65af\u8482")], ["historical", t("Historical", "\u5386\u53f2\u8d8b\u52bf")]]);
+      for (const [key, label, fallback] of [
+        ["initialGrowth", t("Initial financing growth", "\u521d\u59cb\u878d\u8d44\u589e\u901f"), 0],
+        ["annualDecline", t("Annual decline", "\u5e74\u5ea6\u589e\u901f\u964d\u5e45"), 0.2],
+        ["minimumGrowth", t("Minimum growth", "\u6700\u4f4e\u589e\u901f"), 0],
+        ["horizon", t("Forecast years", "\u9884\u6d4b\u5e74\u6570"), 6]
+      ]) setting(label, selectedConfig[key] ?? fallback, value => assignFunding(key, value));
+      if (selectedConfig.curve !== "historical") {
+        for (const source of sources) setting(source + " ($B)", selectedConfig.base?.[source] ?? 0, value => {
+          const financing = settings().financing ??= selectedConfig;
+          (financing.base ??= {})[source] = Math.max(0, value);
+        });
+      }
+    }
+    const gpu = state.overrides[entity.id]?.gpuRefresh ?? {};
+    for (const [key, label, fallback, min, max] of [
+      ["economicLife", t("Economic GPU life (years)", "GPU \u7ecf\u6d4e\u5bff\u547d（\u5e74）"), 5, 3, 7],
+      ["physicalLife", t("Physical GPU life (years)", "GPU \u7269\u7406\u5bff\u547d（\u5e74）"), null, 1, 30],
+      ["accountingLife", t("Accounting GPU life (years)", "GPU \u6298\u65e7\u5e74\u9650"), null, 1, 30],
+      ["replacementRatio", t("Quarterly replacement ratio", "\u5b63\u5ea6\u66f4\u65b0\u6bd4\u4f8b"), 0.25, 0, 1],
+      ["residualValue", t("Residual value ratio", "\u6b8b\u503c\u6bd4\u4f8b"), 0.2, 0, 0.6],
+      ["priceDecline", t("Replacement price decline", "\u66f4\u65b0\u91c7\u8d2d\u4ef7\u683c\u964d\u5e45"), 0, 0, 1]
+    ]) setting(label, gpu[key] ?? fallback, value => { (settings().gpuRefresh ??= {})[key] = Math.min(max, Math.max(min, value)); });
+    if (entity.id === "ORCL") setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
+      state.overrides[entity.id]?.leaseDelayQuarters ?? 0, value => { settings().leaseDelayQuarters = Math.max(0, Math.trunc(value)); });
     for (let year = 2027; year <= 2032; year++) {
       const planned = Engine.financingForecast(selectedConfig, year);
       const quarters = state.simResult.allQuarters.filter(q => q.startsWith(String(year)));
@@ -8919,6 +9190,8 @@ const I18N = {
         settings.financing = data.financing;
         settings.gpuRefresh = data.gpuRefresh;
         settings.includeScheduledEquity = data.includeScheduledEquity;
+        settings.leaseDelayQuarters = data.leaseDelayQuarters;
+        settings.operationalRecoveryRate = data.operationalRecoveryRate;
         settings.incrementalLease = data.incrementalLease;
         recompute();
       } catch (error) {

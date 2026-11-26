@@ -92,3 +92,102 @@ assert.equal(anth(true).financingForecast.scheduledEquityStatus, "Unverified leg
 assert.equal(anth(false).equityInflow, 0);
 assert.equal(Number((anth(true).cash - anth(false).cash).toFixed(4)), 107.3);
 console.log("Audit 4 funding, lease and freeze regressions passed");
+
+
+const usd = value => Number(value.toFixed(4));
+const unrestricted = engine.runSimulation(entities, transactions, {
+  overrides: { OPENAI: { computePay: 30, financing: { mode: "manual", capacity: 0, quarterlyLimit: 0 } } }
+});
+const drawQuarter = unrestricted.timeline["2027Q1"];
+const [lead, syndicate] = ["TX06A", "TX06B"].map(id => drawQuarter.financingLedger[id]);
+assert.equal(lead.newDrawdown, 0.6);
+assert.equal(syndicate.newDrawdown, 4.1);
+assert.equal(lead.defaultExposure, 0.6);
+assert.equal(syndicate.defaultExposure, 4.1);
+assert.equal(drawQuarter.entities.OPENAI.rcfDraw, 4.7);
+assert.equal(drawQuarter.entities.OPENAI.debt, 4.7);
+assert.equal(drawQuarter.entities.OPENAI.cash, usd(drawQuarter.entities.OPENAI.begCash + drawQuarter.entities.OPENAI.fcf + 4.7));
+for (const row of [lead, syndicate]) {
+  assert.equal(row.endingOutstanding, usd(row.beginningOutstanding + row.newDrawdown - row.principalRepayment));
+  const event = unrestricted.creditEvents.find(event => event.txId === row.txId);
+  assert.equal(event.fundedEAD, row.endingOutstanding);
+  assert.equal(event.undrawnEAD, 0);
+}
+assert.equal(unrestricted.timeline["2027Q4"].financingLedger.TX06A.principalRepayment, 0);
+
+const interrupted = engine.runSimulation(entities, transactions, { forcedDefaults: ["CORZ"] });
+const crwv = quarter => interrupted.timeline[quarter].entities.CRWV;
+assert.equal(crwv("2027Q2").operationalRecoveryRevenue,
+  usd(crwv("2026Q4").operationalRevDelay + crwv("2027Q1").operationalRevDelay));
+assert.equal(crwv("2026Q4").operationalCapacityRevenueImpact,
+  usd(crwv("2026Q4").operationalRevDelay + crwv("2026Q4").operationalPermanentRevenueLoss));
+assert.equal(crwv("2027Q3").operationalRecoveryRevenue, undefined);
+
+const projects = [{ readyQuarter: "2028Q2", leaseStartQuarter: "2028Q3", termQuarters: 8, cap: 12,
+  paymentsByQuarter: { "2028Q2": 2, "2028Q4": 3 }, terminationQuarter: "2029Q1" }];
+assert.equal(engine.phasedGuarantee(projects, "2028Q2", 105).effectiveExposure, 0);
+assert.equal(engine.phasedGuarantee(projects, "2028Q3", 105).effectiveExposure, 12);
+assert.equal(engine.phasedGuarantee(projects, "2028Q4", 105, 2).remainingGuaranteeLiability, 7);
+assert.equal(engine.phasedGuarantee(projects, "2029Q1", 105).effectiveExposure, 0);
+
+const contracts = engine.runSimulation(entities, transactions, { audit4Contracts: true, forcedDefaults: ["OPENAI"] });
+assert.equal(contracts.timeline["2026Q4"].entities.ORCL.leaseSchedule.uncommencedCommitment, 288);
+assert.equal(contracts.timeline["2027Q1"].entities.ORCL.incrementalLeasePayment, usd(96 / 68));
+assert.equal(contracts.timeline["2028Q1"].entities.ORCL.incrementalLeasePayment, usd(192 / 68));
+assert.equal(contracts.timeline["2027Q4"].guaranteeLedger.TX11.calledGuarantee, 0);
+assert.equal(contracts.timeline["2028Q1"].guaranteeLedger.TX11.calledGuarantee, usd(105 / 9 * 0.25));
+
+const purchaseCase = engine.runSimulation(entities, transactions, {
+  forecastThrough: 2030, overrides: { CRWV: { capex: 4, gpuRefresh: {
+    cohorts: [], gpuPurchasesByQuarter: { "2027Q1": 2 }, economicLife: 3,
+    accountingLife: 6, physicalLife: 8, replacementRatio: 0.5, residualValue: 0.25
+  } } }
+});
+const purchased = purchaseCase.timeline["2027Q1"].entities.CRWV;
+const replaced = purchaseCase.timeline["2030Q1"].entities.CRWV;
+assert.equal(purchased.gpuPurchases, 2);
+assert.equal(purchased.capex, 4);
+assert.equal(replaced.replacementCapex, 1);
+assert.equal(replaced.disposalProceeds, 0.25);
+assert.equal(replaced.gpuCollateralValue, 0.5);
+assert.equal(replaced.fcf, usd(replaced.ocf - replaced.capex));
+console.log("Audit 4 RCF, operational recovery, contract phase and GPU cohort tests passed");
+
+
+const noFunding = { mode: "manual", capacity: 0, quarterlyLimit: 0 };
+const smallerFunding = { mode: "manual", capacity: 10, quarterlyLimit: 2.5, annual: { 2027: { equity: 10 } } };
+const legacyFleet = { cohorts: [{ acquired: "2023Q1", cost: 20 }], economicLife: 4,
+  replacementRatio: 0.25, residualValue: 0.2 };
+const cases = [
+  ["A", "OPENAI", { OPENAI: { revGrowth: 0.02, financing: smallerFunding } }],
+  ["B", "ANTHROPIC", { ANTHROPIC: { revGrowth: 0.01, interestRate: 0.12, includeScheduledEquity: false } }],
+  ["C", "CRWV", { CRWV: { gpuRefresh: legacyFleet, financing: smallerFunding } }],
+  ["D", "ORCL", { OPENAI: { revGrowth: -0.05 }, ORCL: { incrementalLeaseTranches: [
+    { startQuarter: "2027Q1", termQuarters: 4, commitment: 8 }
+  ] } }, { forcedDefaults: ["OPENAI"] }],
+  ["E", "CRWV", { CRWV: { gpuRefresh: { ...legacyFleet, residualValue: 0 } } }, { ocean: { refiSuccessRate: 25 } }],
+  ["F", "CRWV", { CRWV: { gpuRefresh: legacyFleet } }, { ocean: { fundingAvailability: 25 } }],
+  ["G", "CRWV", { CRWV: { revGrowth: -0.05, gpuRefresh: legacyFleet, financing: noFunding } },
+    { ocean: { fundingAvailability: 0, refiSuccessRate: 0 } }]
+];
+const stressResults = [];
+for (const [name, entity, overrides, options] of cases) {
+  const result = engine.runSimulation(entities, transactions, { overrides, ...options });
+  const quarter = result.timeline["2027Q1"];
+  const observed = quarter.entities[entity];
+  const minimum = entities.find(row => row.id === entity).defaults.minCash;
+  assert.equal(observed.fcf, usd(observed.ocf - observed.capex), name);
+  assert.ok(Math.abs(observed.cash - (observed.begCash + observed.fcf + observed.newDebt +
+    observed.equityInflow + observed.rcfDraw - observed.principalRepay -
+    observed.gpuMarginCall + observed.disposalProceeds)) < 0.002, name);
+  assert.equal(observed.fundingGap, usd(Math.max(0, minimum - observed.cash)), name);
+  if (["C", "E", "F", "G"].includes(name)) {
+    assert.equal(observed.replacementCapex, 5, name);
+    assert.equal(observed.disposalProceeds, name === "E" ? 0 : 1, name);
+  }
+  if (name === "D") assert.equal(observed.incrementalLeasePayment, 2);
+  if (name === "G") assert.equal(observed.newDebt, 0);
+  stressResults.push([name, entity, observed.cash, observed.fcf, observed.fundingGap, result.scenarioSummary[entity].defaultQuarter]);
+}
+console.table(stressResults);
+console.log("Audit 4 A–G stress accounting checks passed");
