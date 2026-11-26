@@ -728,6 +728,18 @@
       dataType: "Assumption" };
   }
 
+  function auditCashFlowObservation(bridge) {
+    if (bridge?.quarter !== "2026Q3") return null;
+    const { direct, nineMonths, sixMonths, quarter } = bridge;
+    const ocf = direct?.ocf ?? money(nineMonths.ocf - sixMonths.ocf);
+    const capex = direct?.capex ?? money(nineMonths.capex - sixMonths.capex);
+    return {
+      quarter, ocf, capex, grossCashFcf: money(ocf - capex),
+      propertySaleAndIncentiveProceeds: direct?.propertySaleAndIncentiveProceeds ?? null,
+      basis: direct ? "Reported quarter" : "Nine months less first six months"
+    };
+  }
+
   function runSimulation(entities, transactions, options = {}) {
     const ocean = Object.assign({
       fundingAvailability: 100,
@@ -800,8 +812,9 @@
         ? { ...originalQ3, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;
       const bridge = useAudit4Contracts ? e.audit4CashFlowBridge : null;
-      const q3 = existingQ3 && bridge?.quarter === "2026Q3"
-        ? { ...existingQ3, ocf: money(bridge.nineMonths.ocf - bridge.sixMonths.ocf) }
+      const quarterlyCash = auditCashFlowObservation(bridge);
+      const q3 = existingQ3 && quarterlyCash
+        ? { ...existingQ3, ocf: quarterlyCash.ocf }
         : existingQ3;
       const p = e.defaults || {};
       const hasCashAndRev = Boolean(q3 && q3.cash !== null && q3.cash !== undefined && q3.revenue !== null && q3.revenue !== undefined);
@@ -1221,6 +1234,7 @@
           openingInvestmentSale: investmentSale,
           openingLiquidityDisclosure: liquidityOpening || null,
           openingFiscalCashFlowDisclosure: fiscalOpening || null,
+          openingQuarterCashFlow: useAudit4Contracts && q === QUARTER_PARTIAL ? auditCashFlowObservation(e.audit4CashFlowBridge) : null,
           incrementalLeasePayment: leasePayment,
           leaseSchedule,
           gpuPurchases,

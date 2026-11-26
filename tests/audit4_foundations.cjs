@@ -296,3 +296,18 @@ assert.equal(msftFiling.noncashFinanceLeaseAcquisitions, 5.192);
 assert.equal(msftOpening.incrementalLeasePayment, 0);
 assert.ok(Number.isFinite(msftOpening.fcf));
 console.log("Audit 4 Microsoft cash flow and lease classification checks passed");
+
+for (const [id, ocf, capex, fcf] of [
+  ["GOOGL", 42.29, 51.355, -9.065],
+  ["META", 32.785, 33.942, -1.157],
+  ["AMZN", 42.422, 77.259, -34.837]
+]) {
+  const opening = liquid.timeline["2026Q4"].entities[id];
+  assert.equal(opening.openingQuarterCashFlow.ocf, ocf, id);
+  assert.equal(opening.openingQuarterCashFlow.capex, capex, id);
+  assert.equal(opening.openingQuarterCashFlow.grossCashFcf, fcf, id);
+}
+const amznReported = liquid.timeline["2026Q4"].entities.AMZN.openingQuarterCashFlow;
+assert.equal(amznReported.propertySaleAndIncentiveProceeds, 1.381);
+assert.equal(usd(amznReported.grossCashFcf + amznReported.propertySaleAndIncentiveProceeds), -33.456);
+console.log("Audit 4 Alphabet, Amazon and Meta quarterly cash-flow checks passed");

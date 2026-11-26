@@ -203,3 +203,19 @@ Note 12 separately reports $27.477B operating and $70.973B finance lease liabili
 With unchanged forward financing and CapEx assumptions, audited 2028Q4 cash changes from $155.4063B to $236.5666B and quarterly FCF from $24.3724B to $33.3884B. Neither scenario triggers Microsoft model default through 2028Q4. The difference primarily reflects the $9.020B higher reported OCF anchor. These outputs do not estimate the cash effects of the uncommenced aggregate.
 
 Source: [Microsoft September 2026 Form 10-Q, income and cash flow statements and Notes 9 and 12](https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm).
+
+### Alphabet, Meta and Amazon single-quarter cash flow
+
+The audit profile now calibrates Q3 OCF against reported cash-flow statements for three additional entities. Alphabet and Meta use fiscal YTD subtraction of the June figures from the September figures. Amazon supplies a direct three-month column. The historical fixture and assumed future CapEx remain separate from the verified opening observation.
+
+| Entity | Q3 OCF | Gross cash PP&E purchases | OCF less gross cash PP&E |
+| --- | ---: | ---: | ---: |
+| Alphabet | 42.290 | 51.355 | -9.065 |
+| Meta | 32.785 | 33.942 | -1.157 |
+| Amazon | 42.422 | 77.259 | -34.837 |
+
+Figures are USD billions. Meta's separately reported $34.91B capital expenditure measure includes finance lease principal. Amazon reports $1.381B of property sale proceeds and incentives, implying -$33.456B after these receipts. The model keeps gross PP&E, asset sale proceeds, and financing lease payments on distinct bases. None of the consolidated cash PP&E figures establish GPU-only cash purchases.
+
+Under unchanged forward assumptions, 2028Q4 cash and FCF are $116.6262B and $19.3636B for Alphabet, $83.4815B and $15.4546B for Meta, and $0 and -$10.5609B for Amazon. Amazon's $35B minimum-cash gap persists. No first default occurs for the three under this run. The revised quarterly amounts do not validate entity-specific GPU cohorts, debt availability, or lease commencement schedules.
+
+Primary sources: [Alphabet September](https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm), [Alphabet June](https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm), [Meta September](https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm), [Meta June](https://www.sec.gov/Archives/edgar/data/1326801/000162828026050705/meta-20260630.htm), and [Amazon September](https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm).

@@ -1047,6 +1047,18 @@
       dataType: "Assumption" };
   }
 
+  function auditCashFlowObservation(bridge) {
+    if (bridge?.quarter !== "2026Q3") return null;
+    const { direct, nineMonths, sixMonths, quarter } = bridge;
+    const ocf = direct?.ocf ?? money(nineMonths.ocf - sixMonths.ocf);
+    const capex = direct?.capex ?? money(nineMonths.capex - sixMonths.capex);
+    return {
+      quarter, ocf, capex, grossCashFcf: money(ocf - capex),
+      propertySaleAndIncentiveProceeds: direct?.propertySaleAndIncentiveProceeds ?? null,
+      basis: direct ? "Reported quarter" : "Nine months less first six months"
+    };
+  }
+
   function runSimulation(entities, transactions, options = {}) {
     const ocean = Object.assign({
       fundingAvailability: 100,
@@ -1119,8 +1131,9 @@
         ? { ...originalQ3, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;
       const bridge = useAudit4Contracts ? e.audit4CashFlowBridge : null;
-      const q3 = existingQ3 && bridge?.quarter === "2026Q3"
-        ? { ...existingQ3, ocf: money(bridge.nineMonths.ocf - bridge.sixMonths.ocf) }
+      const quarterlyCash = auditCashFlowObservation(bridge);
+      const q3 = existingQ3 && quarterlyCash
+        ? { ...existingQ3, ocf: quarterlyCash.ocf }
         : existingQ3;
       const p = e.defaults || {};
       const hasCashAndRev = Boolean(q3 && q3.cash !== null && q3.cash !== undefined && q3.revenue !== null && q3.revenue !== undefined);
@@ -1540,6 +1553,7 @@
           openingInvestmentSale: investmentSale,
           openingLiquidityDisclosure: liquidityOpening || null,
           openingFiscalCashFlowDisclosure: fiscalOpening || null,
+          openingQuarterCashFlow: useAudit4Contracts && q === QUARTER_PARTIAL ? auditCashFlowObservation(e.audit4CashFlowBridge) : null,
           incrementalLeasePayment: leasePayment,
           leaseSchedule,
           gpuPurchases,
@@ -2447,6 +2461,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "GOOGL",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":127.149,"capex":131.953,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm"},"sixMonths":{"ocf":84.859,"capex":80.598,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm"}},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":56.334,"currentInvestments":208.764,"knownRestrictedWithinCurrentInvestments":75.2,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm"},
     "name": "Alphabet Inc. (incl. DeepMind)",
     "ticker": "GOOGL",
@@ -2628,6 +2643,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "AMZN",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","direct":{"ocf":42.422,"capex":77.259,"propertySaleAndIncentiveProceeds":1.381,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"}},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":55.783,"currentInvestments":58.443,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"},
     "name": "Amazon.com, Inc. (AWS)",
     "ticker": "AMZN",
@@ -2940,6 +2956,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "META",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":96.873,"capex":83.055,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},"sixMonths":{"ocf":64.088,"capex":49.113,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026050705/meta-20260630.htm"}},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":11.222,"currentInvestments":71.227,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},
     "name": "Meta Platforms (incl. Meta AI)",
     "ticker": "META",

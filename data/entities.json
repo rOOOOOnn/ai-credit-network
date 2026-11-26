@@ -364,6 +364,7 @@
   },
   {
     "id": "GOOGL",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":127.149,"capex":131.953,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm"},"sixMonths":{"ocf":84.859,"capex":80.598,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm"}},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":56.334,"currentInvestments":208.764,"knownRestrictedWithinCurrentInvestments":75.2,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm"},
     "name": "Alphabet Inc. (incl. DeepMind)",
     "ticker": "GOOGL",
@@ -545,6 +546,7 @@
   },
   {
     "id": "AMZN",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","direct":{"ocf":42.422,"capex":77.259,"propertySaleAndIncentiveProceeds":1.381,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"}},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":55.783,"currentInvestments":58.443,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"},
     "name": "Amazon.com, Inc. (AWS)",
     "ticker": "AMZN",
@@ -857,6 +859,7 @@
   },
   {
     "id": "META",
+    "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":96.873,"capex":83.055,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},"sixMonths":{"ocf":64.088,"capex":49.113,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026050705/meta-20260630.htm"}},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":11.222,"currentInvestments":71.227,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},
     "name": "Meta Platforms (incl. Meta AI)",
     "ticker": "META",
