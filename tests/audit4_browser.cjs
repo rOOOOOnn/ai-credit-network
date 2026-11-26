@@ -127,6 +127,10 @@ async function checkPage(browser, url) {
     assert.match(await coreWeaveLease.innerText(), /47\.40 \(2026-09-30\)/);
     assert.match(await coreWeaveLease.locator("a").getAttribute("href"), /crwv-20260930\.htm$/);
     assert.match(await coreWeaveLease.innerText(), /18\.697 \/ 0\.649/);
+    const hardwareDisclosure = panel.locator("[data-gpu-disclosure]");
+    assert.match(await hardwareDisclosure.innerText(), /6/);
+    assert.match(await hardwareDisclosure.locator("a").getAttribute("href"), /crwv-20251231\.htm$/);
+    assert.equal(await panel.locator('[data-gpu-setting="economicLife"]').inputValue(), "5");
     await page.locator('[data-network-entity="ANTHROPIC"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();

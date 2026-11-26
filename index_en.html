@@ -256,7 +256,7 @@
           </div>
         </div>
         <div id="paramControls" class="grid grid-cols-2 gap-2.5"></div>
-        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><p data-lease-disclosure></p><p data-lease-result></p><p data-gpu-result></p><p data-equity-dilution></p><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th><th>Financing growth</th><th>Revenue growth</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
+        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><p data-lease-disclosure></p><p data-lease-result></p><p data-gpu-disclosure></p><p data-gpu-result></p><p data-equity-dilution></p><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th><th>Financing growth</th><th>Revenue growth</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
         <div class="flex gap-2 pt-1">
           <button id="applyParamsBtn" class="flex-1 py-1.5 rounded bg-[#5B8DEF] hover:bg-[#4A7CE0] text-white font-medium transition"></button>
           <button id="resetParamsBtn" class="px-3 py-1.5 rounded bg-[#161B24] hover:bg-[#1E2532] text-slate-300 border border-[#252E3E] transition"></button>
@@ -9498,6 +9498,21 @@ const I18N = {
       [result.availableLiquidity, result.requiredFinancing, result.debtServiceCoverage,
         result.minimumRequiredRevenueGrowth == null ? null : (100 * result.minimumRequiredRevenueGrowth).toFixed(1) + "%"]
         .map(value => value ?? "—").join(" / ");
+    const hardware = entity.audit4HardwareDisclosure;
+    const gpuDisclosure = panel.querySelector("[data-gpu-disclosure]");
+    gpuDisclosure.replaceChildren();
+    if (hardware) {
+      const source = document.createElement("a");
+      source.href = hardware.accountingSourceUrl;
+      source.textContent = t("SEC filing", "SEC \u62a5\u544a");
+      source.className = "ml-2 underline";
+      gpuDisclosure.append(
+        t("Reported technology equipment depreciation life (years) ",
+          "\u5df2\u62ab\u9732\u7684\u6280\u672f\u8bbe\u5907\u6298\u65e7\u5e74\u9650\uff08\u5e74\uff09 ") +
+          hardware.accountingUsefulLifeYears, source, document.createElement("br"),
+        t("Actual GPU physical life, economic life and GPU-only purchase costs are unavailable.",
+          "GPU \u5b9e\u9645\u7269\u7406\u5bff\u547d\u3001\u7ecf\u6d4e\u5bff\u547d\u548c\u4e13\u9879\u91c7\u8d2d\u6210\u672c\u7f3a\u5c11\u62ab\u9732\u3002"));
+    }
     panel.querySelector("[data-gpu-result]").textContent = result.gpuFleetAgeYears == null ? "" :
       t("GPU fleet age (years) / disposal proceeds / net refresh cash outflow / FCF / utilization / usage maintenance: ", "GPU \u6279\u6b21\u8d26\u9f84\uff08\u5e74\uff09 / \u51fa\u552e\u56de\u6b3e / \u51c0\u66f4\u65b0\u652f\u51fa / FCF\uff1a") +
       [result.gpuFleetAgeYears, result.disposalProceeds, result.netGpuReplacementCashOutflow, result.fcf,
