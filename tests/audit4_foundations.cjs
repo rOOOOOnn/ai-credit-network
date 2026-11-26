@@ -1009,3 +1009,9 @@ assert.deepEqual(entities.find(row => row.id === "MSFT").audit4HardwareDisclosur
 const amazonHardware = entities.find(row => row.id === "AMZN").audit4HardwareDisclosure;
 assert.deepEqual([amazonHardware.priorAccountingUsefulLifeYears, amazonHardware.accountingUsefulLifeYears,
   amazonHardware.accountingLifeAppliesToSubset, amazonHardware.incrementalDepreciationExpense], [6, 5, true, 1.4]);
+
+assert.equal(entities.find(row => row.id === "GOOGL").audit4HardwareDisclosure.accountingUsefulLifeYears, 6);
+assert.equal(entities.find(row => row.id === "ORCL").audit4HardwareDisclosure.accountingUsefulLifeYears, 6);
+const metaHardware = entities.find(row => row.id === "META").audit4HardwareDisclosure;
+assert.deepEqual(metaHardware.accountingUsefulLifeRangeYears, [5, 5.5]);
+assert.equal(metaHardware.reportedServerNetworkDepreciationExpense, 13.36);

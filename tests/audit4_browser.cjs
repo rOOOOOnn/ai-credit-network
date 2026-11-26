@@ -140,7 +140,10 @@ async function checkPage(browser, url) {
     assert.match(await anthropicLease.locator("a").getAttribute("href"), /anthropicpbc-424b4\.htm$/);
     for (const [id, life, filing] of [
       ["MSFT", /2–6/, /msft-20260630\.htm$/],
-      ["AMZN", /5.*(?:subset|\u90e8\u5206)/, /amzn-20251231\.htm$/]
+      ["AMZN", /5.*(?:subset|\u90e8\u5206)/, /amzn-20251231\.htm$/],
+      ["GOOGL", /6/, /goog-20251231\.htm$/],
+      ["META", /5–5\.5/, /meta-20251231\.htm$/],
+      ["ORCL", /6/, /orcl-20260831\.htm$/]
     ]) {
       await page.locator('[data-network-entity="' + id + '"]').dispatchEvent("click");
       await page.locator("#tabBtnForecast").click();
