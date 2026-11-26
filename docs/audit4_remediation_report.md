@@ -419,3 +419,19 @@ The full-quarter regression covers 840 facility rows, reconciles opening plus dr
 The guarantee ledger now shows project phases, credited rent, effective exposure, current calls and remaining liability. Both readiness and lease commencement are required. Early termination ends the relevant exposure. During persistent borrower default, a later eligible project may trigger its own one-time call; an earlier project's call does not transfer to it. The assumed cash calls are still bounded by the disclosed $105B maximum across all quarters. A two-project fixture with $80B per project and a 100% scenario call rate pays $80B on the first and only $25B on the second after the first terminates. The default nine-project scenario also verifies a second call without repeating the first. The modeled installments, payment profiles and call rate remain assumptions.
 
 Project rows now retain credited rent after termination and retain the scenario cap and milestone dates in the downloadable ledger. Payments before activation or on or after termination do not enter cumulative credited rent. A credit event also gives the project indexes and call amounts that reconcile to its recognized loss. In the termination fixture, $3B of eligible prior rent remains visible with zero effective exposure. A second-quarter call event under persistent default separately identifies the second project and its $2.9167B assumed payment.
+
+### A–G stress tests on the audited profile
+
+The original A–G tests retained the legacy profile as a regression. The same inputs now also run against the audit profile and independently reconcile modeled cash, FCF, funding gap and loan principal for all eligible borrower-quarters through 2028Q4. This found a mismatch in Case F at SPV_XPV. When only defaulted facilities remained, assumed generic principal payments could decrease aggregate debt with no corresponding instrument repayment. The model now limits generic payments to unidentified opening debt and performing principal available after identified amortization. Defaulted principal remains in the workout ledger while no workout payment is specified.
+
+| Case | Entity | 2028Q4 cash | 2028Q4 FCF | Funding gap | First model default |
+| --- | --- | ---: | ---: | ---: | --- |
+| A | OpenAI | -64.0448 | -13.2799 | 74.0448 | 2027Q4 |
+| B | Anthropic | 104.8591 | -0.8568 | 0 | — |
+| C | CoreWeave | -35.5392 | -3.2401 | 37.5392 | 2027Q1 |
+| D | Oracle | -79.9571 | -20.1235 | 89.9571 | 2027Q4 |
+| E | CoreWeave | -34.0347 | -3.3120 | 36.0347 | 2027Q1 |
+| F | CoreWeave | -43.5490 | -4.8271 | 45.5490 | 2027Q1 |
+| G | CoreWeave | -59.7036 | -5.6342 | 61.7036 | 2026Q4 |
+
+Values are scenario results in USD billions. The cash identity includes loan and lease principal, collateral-related margin, equipment sale proceeds, investment sales and explicit unallocated guarantee payments.

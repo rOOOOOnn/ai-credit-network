@@ -1511,7 +1511,14 @@
           return sum + (tx.endQ === q ? 0 : scheduledFacilityRepayments[row.txId]);
         }, 0);
         const nonCashDebtConversion = money((facilities ?? []).reduce((sum, row) => sum + row.nonCashConversion, 0));
-        const principalRepay = money(Math.min(Math.max(0, begDebt - nonCashDebtConversion), (p.debtRepay ?? 0) + maturingPrincipal + explicitRepayments));
+        const namedOpening = (facilities ?? []).reduce((sum, row) => sum + row.beginningOutstanding, 0);
+        const unidentifiedOpening = Math.max(0, begDebt - namedOpening);
+        const performingPrincipal = (facilities ?? []).reduce((sum, row) => row.defaulted ? sum :
+          sum + Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledFacilityRepayments[row.txId]), 0);
+        const genericRepayment = useAudit4Contracts && facilities?.length
+          ? Math.min(p.debtRepay ?? 0, unidentifiedOpening + performingPrincipal) : p.debtRepay ?? 0;
+        const principalRepay = money(Math.min(Math.max(0, begDebt - nonCashDebtConversion),
+          genericRepayment + maturingPrincipal + explicitRepayments));
         let repaymentRoom = principalRepay;
         for (const row of facilities ?? []) {
           const tx = myDebtTxs.find(item => item.id === row.txId);
@@ -1527,8 +1534,6 @@
         }
 
         if (useAudit4Contracts && repaymentRoom > 0 && facilities?.length) {
-          const namedOpening = facilities.reduce((sum, row) => sum + row.beginningOutstanding, 0);
-          const unidentifiedOpening = Math.max(0, begDebt - namedOpening);
           const namedBudget = money(Math.max(0, repaymentRoom - unidentifiedOpening));
           const eligible = facilities.filter(row => !row.defaulted && row.endingOutstanding > 0);
           const inferredRepayments = allocateFunding(Object.fromEntries(eligible.map(row =>

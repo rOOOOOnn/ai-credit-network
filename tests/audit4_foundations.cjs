@@ -726,3 +726,30 @@ assert.equal(expiredProject.leaseStartQuarter, "2028Q3");
 const secondProjectEvent = contracts.creditEvents.find(event => event.txId === "TX11" && event.quarter === "2028Q2");
 assert.deepEqual(secondProjectEvent.projectCalls, [{ projectIndex: 1, amount: 2.9167 }]);
 assert.equal(secondProjectEvent.recognizedLoss, 2.9167);
+const auditedStressResults = [];
+for (const [name, entity, overrides, options] of cases) {
+  const result = engine.runSimulation(entities, transactions, { audit4Contracts: true, overrides, ...options });
+  for (const quarter of Object.values(result.timeline)) {
+    if (!quarter.financingLedger) continue;
+    for (const row of Object.values(quarter.financingLedger)) {
+      if (row.endingOutstanding == null) continue;
+      assert.equal(row.endingOutstanding, usd(row.beginningOutstanding + row.newDrawdown -
+        row.principalRepayment - row.nonCashConversion), `${name} ${quarter.quarter} ${row.txId}`);
+    }
+    for (const [id, state] of Object.entries(quarter.entities)) {
+      if (!quarter.debtReconciliation[id] || !Number.isFinite(state.begCash)) continue;
+      const label = `${name} ${quarter.quarter} ${id}`;
+      assert.ok(quarter.debtReconciliation[id].unattributedDebt >= 0, label + " unattributed debt");
+      assert.equal(state.fcf, usd(state.ocf - state.capex), label);
+      const cash = state.begCash + state.fcf + state.newDebt + state.equityInflow + state.rcfDraw -
+        state.principalRepay - state.leasePrincipal - state.gpuMarginCall + state.disposalProceeds +
+        state.openingInvestmentSale - (state.unallocatedGuaranteeCashPaid ?? 0);
+      assert.ok(Math.abs(state.cash - cash) <= 0.002, `${label} cash: ${state.cash} vs ${cash}`);
+      const minimum = overrides[id]?.minCash ?? entities.find(row => row.id === id).defaults?.minCash ?? 1;
+      assert.equal(state.fundingGap, usd(Math.max(0, minimum - state.cash)), label);
+    }
+  }
+  const end = result.timeline["2028Q4"].entities[entity];
+  auditedStressResults.push([name, entity, end.cash, end.fcf, end.fundingGap, result.scenarioSummary[entity].defaultQuarter]);
+}
+console.table(auditedStressResults);
