@@ -91,7 +91,7 @@ async function checkPage(browser, url) {
     const capexGrowth = panel.getByLabel(/Base CapEx growth per quarter|基础资本开支季度增速/);
     await capexGrowth.fill("0.1");
     await capexGrowth.press("Tab");
-    const utilization = panel.getByLabel(/GPU utilization ratio|GPU利用率/);
+    const utilization = panel.getByLabel(/^(?:GPU utilization ratio|GPU利用率)$/);
     await utilization.fill("0.5");
     await utilization.press("Tab");
     const gpuRevenueShare = panel.getByLabel(/GPU utilization-sensitive revenue share|GPU利用率敏感收入占比/);
