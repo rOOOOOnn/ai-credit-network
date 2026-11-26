@@ -1020,6 +1020,13 @@
   },
   {
     "id": "OPENAI",
+    "financingAnnouncements": [
+      {"date":"2024-10-02","amount":6.6,"kind":"round","sourceUrl":"https://openai.com/index/scale-the-benefits-of-ai/"},
+      {"date":"2024-10-03","amount":4,"kind":"undrawnRevolver","sourceUrl":"https://openai.com/index/new-credit-facility-enhances-financial-flexibility/"},
+      {"date":"2025-03-31","amount":40,"kind":"round","sourceUrl":"https://openai.com/index/march-funding-updates/"},
+      {"date":"2026-03-31","amount":122,"kind":"committedCapital","sourceUrl":"https://openai.com/index/accelerating-the-next-phase-ai/"},
+      {"date":"2026-03-31","amount":4.7,"kind":"undrawnRevolver","sourceUrl":"https://openai.com/index/accelerating-the-next-phase-ai/"}
+    ],
     "name": "OpenAI Group PBC",
     "ticker": "PRIVATE",
     "cik": null,

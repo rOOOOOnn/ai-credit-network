@@ -609,3 +609,11 @@ assert.deepEqual(anthropic2027.historyBySource.equity, { years: ["2024", "2025"]
 assert.deepEqual(anthropic2027.historyBySource.debt, { years: ["2024", "2025"], amounts: [6.05, 3.45] });
 assert.equal(usd(Object.values(anthropic2027.amounts).reduce((sum, amount) => sum + amount, 0)), 1);
 assert.equal(anthropicHistorical.timeline["2027Q2"].entities.ANTHROPIC.financingForecast.remainingCapacity, 0);
+const openAiData = entities.find(entity => entity.id === "OPENAI");
+assert.deepEqual(openAiData.financingAnnouncements.map(event => [event.kind, event.amount]),
+  [["round", 6.6], ["undrawnRevolver", 4], ["round", 40], ["committedCapital", 122], ["undrawnRevolver", 4.7]]);
+const openAiUnverifiedHistory = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { OPENAI: { financing: { mode: "curve", curve: "historical", capacity: 200, quarterlyLimit: 100 } } }
+}).timeline["2027Q1"].entities.OPENAI.financingForecast;
+assert.equal(openAiUnverifiedHistory.status, "Insufficient Historical Data");
+assert.equal(Object.values(openAiUnverifiedHistory.amounts).reduce((sum, amount) => sum + amount, 0), 0);
