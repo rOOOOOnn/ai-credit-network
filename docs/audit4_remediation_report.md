@@ -670,3 +670,8 @@ The September debt note identifies $0.409B of outstanding delayed-draw principal
 
 
 The matching September debt note identifies six convertible notes with $6.745B combined principal plus GPU Financing 2.0 and 3.0 with $0.947B and $0.355B principal. These eight rows now join the original two GPU financing instruments in the audit ledger. Named opening principal totals $10.027B versus $10.041B consolidated principal. The $0.014B residual matches the issuer's other-debt grouping and remains unattributed. Reported effective rates stay with the disclosures as a separate field from cash coupon modeling. Undrawn commitments, lender allocations and actual amortization remain unknown where the debt table establishes only closing balances. [IREN debt note](https://www.sec.gov/Archives/edgar/data/1878848/000187884826000066/R25.htm).
+
+
+### NVIDIA Ward County counterparty corroboration
+
+ION Digital reports that NVIDIA guarantees rent on Nscale's Ward County facility for the first five years, capped at $0.8603B under the 126-month lease. Nscale's parent guarantees the period starting in year six. The audit export now records the counterparty-side disclosure. NVIDIA's own $118B aggregate remains the portfolio control total. Public filings do not establish which NVIDIA category includes the Ward County guarantee, so the model leaves the category unallocated and does not add $0.8603B to portfolio exposure. No quarterly payment, call or release profile is inferred. [ION Digital prospectus supplement](https://www.sec.gov/Archives/edgar/data/2007691/000200769126000026/iondq32026propsupp333-2971.htm), [NVIDIA CFO disclosure](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/q3fy27cfocommentary.htm).

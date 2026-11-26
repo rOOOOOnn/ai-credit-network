@@ -1038,3 +1038,9 @@ const irenNamedOpening = Object.values(irenGpuFacilities).filter(facility => fac
   .reduce((sum, facility) => sum + facility.beginningOutstanding, 0);
 assert.equal(usd(irenNamedOpening), 10.027);
 assert.equal(usd(10.041 - irenNamedOpening), 0.014);
+
+const nvidiaGuaranteeDisclosure = entities.find(row => row.id === "NVDA").audit4GuaranteeDisclosure;
+const [wardCountyDisclosure] = nvidiaGuaranteeDisclosure.counterpartyDisclosures;
+assert.deepEqual([wardCountyDisclosure.maximumFaceAmount, wardCountyDisclosure.coveredRentYears,
+  wardCountyDisclosure.portfolioCategory], [0.8603, 5, null]);
+assert.equal(nvidiaGuaranteeDisclosure.categories.reduce((sum, row) => sum + row.maximum, 0), 118);
