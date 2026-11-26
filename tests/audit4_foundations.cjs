@@ -1087,3 +1087,12 @@ for (const margin of [undefined, 0.5]) {
     assert.equal(quarter.financingLedger["DRAW-TX"].endingOutstanding, draw);
   }
 }
+
+for (const margin of [undefined, 0.5]) {
+  const state = engine.runSimulation([contractedCashFixture], [contractedCashLoan], {
+    audit4Contracts: true, overrides: { DRAW_TEST: { ocfMarginBeforeFinancing: margin, computePay: 5 } },
+    facilityDrawdowns: { "DRAW-TX": { "2026Q4": 3 } }
+  }).timeline["2026Q4"].entities.DRAW_TEST;
+  assert.deepEqual([state.operatingCashBridge.incrementalComputeCashCost, state.cash, state.ocf,
+    state.fcf, state.requiredRevenue], [5, 100, -3, -3, 104]);
+}

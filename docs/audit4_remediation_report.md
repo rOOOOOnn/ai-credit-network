@@ -695,3 +695,6 @@ Microsoft's funding under its separate $13B OpenAI investment commitment increas
 ### Contracted term draws and required revenue
 
 The standard margin calculation previously omitted contracted term-loan proceeds from the cash target even after they increased borrower cash and lender principal. Both operating methods now subtract the realized draw once. In the independent fixture, a $150B closing cash target, $100B opening cash and a 50% cash margin imply $100B required revenue without a term draw. Funding $3B reduces required revenue to $94B and increases closing cash from $102B to $105B. OCF and FCF remain $2B, and the financing ledger increases principal by exactly $3B. The test reproduces the same bridge with the explicit 50% cash operating margin.
+
+
+The same cash target check uncovered a second omission in the standard margin path: incremental compute cash was already charged to OCF and FCF but omitted from required revenue. Both paths now include it once. Adding $5B of external compute cost to the $3B term-draw case lowers closing cash from $105B to $100B and lowers OCF and FCF from $2B to negative $3B. At a 50% margin it adds $10B to required revenue, from $94B to $104B. The regression reproduced the former $94B error before applying the fix.
