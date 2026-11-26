@@ -1310,7 +1310,8 @@
         const refresh = fleetConfig
           ? fleetRefresh(fleets[e.id] ?? fleetConfig.cohorts ?? [], q, fleetConfig)
           : { replacementCapex: 0, disposalProceeds: 0 };
-        const gpuPurchases = Math.min(nonnegative(p.capex), nonnegative(fleetConfig?.gpuPurchasesByQuarter?.[q]));
+        const baseCapex = money(nonnegative(p.capex) * (1 + Math.max(-1, p.capexGrowth ?? 0)) ** stepIdx);
+        const gpuPurchases = Math.min(baseCapex, nonnegative(fleetConfig?.gpuPurchasesByQuarter?.[q]));
         if (fleetConfig) {
           fleets[e.id] = [...refresh.cohorts];
           if (gpuPurchases > 0) fleets[e.id].push({ acquired: q, cost: gpuPurchases });
@@ -1325,7 +1326,7 @@
         const closingFleetCost = closingFleet.reduce((sum, cohort) => sum + cohort.cost, 0);
         const gpuFleetAgeYears = closingFleetCost > 0 ? money(closingFleet.reduce((sum, cohort) =>
           sum + cohort.cost * (parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired)) / 4, 0) / closingFleetCost) : null;
-        const capex = money((p.capex ?? 0) + refresh.replacementCapex);
+        const capex = money(baseCapex + refresh.replacementCapex);
         const legacyLease = ov?.incrementalLease;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
           : useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []);
@@ -1382,15 +1383,23 @@
           ocf = Number((preTax - taxes).toFixed(4));
         }
 
+        const marginOverride = Number.isFinite(p.ocfMarginBeforeFinancing) ? p.ocfMarginBeforeFinancing : null;
+        if (marginOverride !== null) ocf = projRev * marginOverride - incrementalCompute - interestPaid;
         ocf = money(ocf - leaseOperatingCash - leaseInterestAdjustment);
         const fcf = Number((ocf - capex).toFixed(4));
         const ocfBeforeLeaseTarget = capex + leaseOperatingCash + leaseInterestAdjustment;
         const preTaxTarget = ocfBeforeLeaseTarget <= taxThreshold ? ocfBeforeLeaseTarget
           : (ocfBeforeLeaseTarget - marginalTaxRate * taxThreshold) / (1 - marginalTaxRate);
-        const fcfBreakEvenRevenue = money(Math.max(0, (preTaxTarget + operatingCashCosts) / (grossMargin * cashConv)));
-        const minimumRequiredRevenueGrowth = prevRev > 0 ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
+        const fcfBreakEvenRevenue = marginOverride === null
+          ? money(Math.max(0, (preTaxTarget + operatingCashCosts) / (grossMargin * cashConv)))
+          : marginOverride > 0 ? money(Math.max(0, (ocfBeforeLeaseTarget + incrementalCompute + interestPaid) / marginOverride)) : null;
+        const minimumRequiredRevenueGrowth = prevRev > 0 && fcfBreakEvenRevenue !== null
+          ? money(fcfBreakEvenRevenue / prevRev - 1) : null;
         const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leaseOperatingCash + leasePrincipal + leaseInterestAdjustment;
-        const requiredRev = Math.max(0, (totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5) / Math.max(0.1, grossMargin * cashConv));
+        const revenueCashNeed = totalCashOblig + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5;
+        const marginCashNeed = revenueCashNeed - (p.opex ?? 0) + incrementalCompute - contractualTermDraw;
+        const requiredRev = marginOverride === null ? Math.max(0, revenueCashNeed / Math.max(0.1, grossMargin * cashConv))
+          : marginOverride > 0 ? Math.max(0, marginCashNeed / marginOverride) : null;
 
         // Exact Accounting Conservation + Auto-RCF Drawdown
         const preDrawCash = Number((begCash + ocf - capex + allowedDebt + contractualTermDraw + equityInflow - principalRepay - leasePrincipal - gpuMarginCall + refresh.disposalProceeds + investmentSale).toFixed(4));
@@ -1408,7 +1417,7 @@
           quarter: q,
           mode: p.mode || "B",
           revenue: projRev,
-          requiredRevenue: Number(requiredRev.toFixed(2)),
+          requiredRevenue: requiredRev === null ? null : Number(requiredRev.toFixed(2)),
           fcfBreakEvenRevenue,
           minimumRequiredRevenueGrowth,
           priorQuarterRevenue: prevRev,

@@ -780,3 +780,11 @@ assert.equal(nextPeerSecondary.secondaryRefinancingMultiplier, 0.95);
 const firstPeerEvents = peerScope.timeline["2026Q4"].contagionLog.filter(row => row.layer === "L4_SECONDARY" && row.from === "CRWV");
 assert.ok(firstPeerEvents.some(row => row.to === "ORCL"));
 assert.ok(firstPeerEvents.every(row => row.to !== "DELL"));
+const operatingControls = engine.runSimulation([refreshFixture], [], {
+  overrides: { REFRESH_FIXTURE: { capex: 1, capexGrowth: 0.1, ocfMarginBeforeFinancing: 0.5, revDecel: 0 } }
+});
+const controlled = operatingControls.timeline["2027Q1"].entities.REFRESH_FIXTURE;
+assert.equal(controlled.capex, 1.1);
+assert.equal(controlled.ocf, 2);
+assert.equal(controlled.fcf, 0.9);
+assert.equal(controlled.minimumRequiredRevenueGrowth, -0.45);
