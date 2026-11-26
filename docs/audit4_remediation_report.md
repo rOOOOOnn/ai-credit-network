@@ -177,3 +177,19 @@ Opening cash and equivalents are $4.122B. Marketable securities are $0.062B and 
 At 2028Q4, using the same financing comparison inputs, CoreWeave manual and curve paths both end at $3.4627B cash, zero funding gap and 1.7117 months of modeled runway. Neither crosses model default or FCF break-even in the comparison window. The freeze path ends at -$23.5326B cash with a $25.5326B gap and zero runway; first model default shifts from 2027Q1 to 2027Q2 and FCF break-even remains absent. OpenAI and Anthropic outputs match the preceding post-classification comparison. These are conditional forecasts. The brighter CoreWeave paths follow from the higher reported Q3 OCF used for cash calibration, while the stress case still exhausts liquidity.
 
 Primary sources: [September 2026 10-Q](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm) and [June 2026 10-Q](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000366/crwv-20260630.htm).
+
+### Oracle fiscal-quarter prepayment bridge
+
+Oracle's quarter ended August 31, 2026 (FY2027 Q1) covers June through August and is mapped to the research engine's 2026Q3 calendar bucket. The filing reports $19.345B revenue, $23.103B operating cash flow, and $28.499B cash CapEx. Reported free cash flow is -$5.396B. Reported OCF includes $11.363B from customer prepayments with a significant financing component. The audit scenario excludes that specific receipt from the forward recurring cash calibration, leaving an $11.740B OCF anchor and an illustrative -$16.759B historical FCF bridge excluding the receipt. This is a model adjustment to the reported measure. The payment is already reflected in the observed closing cash of $36.369B and is not posted again as forward financing.
+
+The bridge separately preserves reported current and non-current borrowings of $7.625B and $117.712B, operating and finance lease liabilities of $34.621B and $9.185B, and $288B in additional uncommenced commitments. The existing lease liabilities are not added to incremental uncommenced payments. Forward CapEx and incremental rent remain separate assumptions.
+
+| Oracle audit profile | 2028Q4 cash | Funding gap | Quarterly FCF | First model default |
+| --- | ---: | ---: | ---: | --- |
+| Previous calibration | -28.4196 | 38.4196 | -8.8906 | 2028Q1 |
+| Filing bridge and default lease schedule | 15.0985 | 0 | -2.9310 | — |
+| Filing bridge and four-quarter lease delay | 26.3925 | 0 | -1.5193 | — |
+
+The revised cash profile is conditional on the unchanged financing and forward CapEx assumptions. The CapEx and commencement schedule are not validated by this bridge. In the standard nine-path replay Anthropic and CoreWeave are unchanged. OpenAI's manual, curve and freeze 2028Q4 cash is -$14.7058B, -$12.9399B and -$48.0550B, respectively, with gaps of $24.7058B, $22.9399B and $58.0550B. Runway and first model default quarters remain unchanged from the preceding comparison.
+
+Primary source: [Oracle August 2026 10-Q, cash-flow statement, Note 1, Note 6 and MD&A](https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm).

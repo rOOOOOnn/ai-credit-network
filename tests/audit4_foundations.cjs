@@ -269,3 +269,17 @@ assert.equal(usd(coreweaveBridge.nineMonths.capex - coreweaveBridge.sixMonths.ca
 assert.equal(liquid.timeline["2026Q4"].entities.CRWV.begCash, 4.122);
 assert.equal(liquid.timeline["2026Q4"].entities.CRWV.openingLiquidityDisclosure.restrictedCashSeparate, 2.282);
 console.log("Audit 4 CoreWeave quarterly cash-flow bridge checks passed");
+
+const oracleOpening = liquid.timeline["2026Q4"].entities.ORCL;
+const oracleFiling = oracleOpening.openingFiscalCashFlowDisclosure;
+assert.equal(oracleOpening.begCash, 36.369);
+assert.equal(oracleFiling.periodStart, "2026-06-01");
+assert.equal(oracleFiling.periodEnd, "2026-08-31");
+assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments), 11.74);
+assert.equal(usd(oracleFiling.ocf - oracleFiling.capex), -5.396);
+assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments - oracleFiling.capex), -16.759);
+assert.equal(usd(oracleFiling.currentBorrowings + oracleFiling.nonCurrentBorrowings), 125.337);
+assert.equal(oracleOpening.priorQuarterRevenue, 19.345);
+assert.equal(oracleOpening.incrementalLeasePayment, 0);
+assert.equal(liquid.timeline["2027Q1"].entities.ORCL.incrementalLeasePayment, 1.4118);
+console.log("Audit 4 Oracle customer prepayment and fiscal-period checks passed");

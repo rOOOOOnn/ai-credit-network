@@ -794,7 +794,11 @@
     const ocfCalibById = {};
     const hasCoreFinancials = {};
     entities.forEach(e => {
-      const existingQ3 = e.financials?.["2026Q3"];
+      const fiscal = useAudit4Contracts ? e.audit4FiscalCashFlow : null;
+      const originalQ3 = e.financials?.["2026Q3"];
+      const existingQ3 = originalQ3 && fiscal?.calendarBucket === "2026Q3"
+        ? { ...originalQ3, revenue: fiscal.revenue, ocf: money(fiscal.ocf - fiscal.financingComponentPrepayments) }
+        : originalQ3;
       const bridge = useAudit4Contracts ? e.audit4CashFlowBridge : null;
       const q3 = existingQ3 && bridge?.quarter === "2026Q3"
         ? { ...existingQ3, ocf: money(bridge.nineMonths.ocf - bridge.sixMonths.ocf) }
@@ -985,8 +989,10 @@
           liquidityOpening.currentInvestments - liquidityOpening.knownRestrictedWithinCurrentInvestments) : 0;
         const investmentSale = money(eligibleInvestments * Math.min(1, nonnegative(ov?.openingInvestmentSaleFraction)));
         const begCash = liquidityOpening ? liquidityOpening.cashAndEquivalents : disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
-        const begDebt = disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
-        const prevRev = prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
+        const fiscalOpening = useAudit4Contracts && q === QUARTER_PARTIAL ? e.audit4FiscalCashFlow : null;
+        const begDebt = fiscalOpening ? money(fiscalOpening.currentBorrowings + fiscalOpening.nonCurrentBorrowings)
+          : disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
+        const prevRev = fiscalOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const facilities = facilityByBorrower[e.id];
         const revolvers = facilities?.filter(row => row.isRevolver);
         const hasNamedFacility = revolving.some(tx => tx.receiver === e.id && compareQuarter(q, tx.startQ) >= 0);
@@ -1214,6 +1220,7 @@
           disposalProceeds: refresh.disposalProceeds,
           openingInvestmentSale: investmentSale,
           openingLiquidityDisclosure: liquidityOpening || null,
+          openingFiscalCashFlowDisclosure: fiscalOpening || null,
           incrementalLeasePayment: leasePayment,
           leaseSchedule,
           gpuPurchases,
