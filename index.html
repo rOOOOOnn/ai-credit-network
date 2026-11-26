@@ -2182,7 +2182,10 @@
               if (secondaryHitPeersThisQ.has(peer.id)) return;
               const pst = states[peer.id];
               if (!pst || pst.insufficientData || pst.debt <= 1.0) return;
-              const sameTier = peer.type === defEnt.type || (peer.isCloudOrNeocloud && defEnt.isCloudOrNeocloud);
+              const comparableType = useAudit4Contracts
+                ? Boolean(defEnt.type && peer.type === defEnt.type) : peer.type === defEnt.type;
+              const commonSector = useAudit4Contracts && defEnt.sector && peer.sector === defEnt.sector;
+              const sameTier = comparableType || commonSector || (peer.isCloudOrNeocloud && defEnt.isCloudOrNeocloud);
               const peerLiq = Math.max(0.5, (pst.cash || 0) + (pst.undrawnCredit || 0));
               const highLeverage = (pst.debt / peerLiq) >= 1.5;
               if (sameTier && highLeverage) {

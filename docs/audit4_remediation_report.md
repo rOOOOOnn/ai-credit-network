@@ -295,11 +295,11 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |
 | --- | --- | --- | ---: | ---: | ---: | --- | --- |
 | Continuation | OPENAI | Manual | -15.5228 | 25.5228 | 0 | 2028Q2 | — |
-| Remediated | OPENAI | Manual | -12.9955 | 22.9955 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Manual | -12.9594 | 22.9594 | 0 | 2028Q2 | — |
 | Continuation | OPENAI | Curve | -15.5178 | 25.5178 | 0 | 2028Q3 | — |
-| Remediated | OPENAI | Curve | -12.9501 | 22.9501 | 0 | 2028Q3 | — |
+| Remediated | OPENAI | Curve | -12.9267 | 22.9267 | 0 | 2028Q3 | — |
 | Continuation | OPENAI | Freeze | -46.1816 | 56.1816 | 0 | 2027Q4 | — |
-| Remediated | OPENAI | Freeze | -47.4214 | 57.4214 | 0 | 2027Q4 | — |
+| Remediated | OPENAI | Freeze | -47.4052 | 57.4052 | 0 | 2027Q4 | — |
 | Continuation | ANTHROPIC | Manual | 201.8728 | 0 | — | — | 2026Q4 |
 | Remediated | ANTHROPIC | Manual | 271.5204 | 0 | — | — | 2026Q4 |
 | Continuation | ANTHROPIC | Curve | 201.8728 | 0 | — | — | 2026Q4 |
@@ -307,11 +307,11 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Continuation | ANTHROPIC | Freeze | 171.8728 | 0 | — | — | 2026Q4 |
 | Remediated | ANTHROPIC | Freeze | 241.5204 | 0 | — | — | 2026Q4 |
 | Continuation | CRWV | Manual | -1.2404 | 3.2404 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Manual | 3.266 | 0 | 1.4459 | — | — |
+| Remediated | CRWV | Manual | 3.9958 | 0 | 2.32 | — | — |
 | Continuation | CRWV | Curve | -1.1763 | 3.1763 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Curve | 3.266 | 0 | 1.4459 | — | — |
+| Remediated | CRWV | Curve | 3.9958 | 0 | 2.32 | — | — |
 | Continuation | CRWV | Freeze | -31.6668 | 33.6668 | 0 | 2027Q1 | — |
-| Remediated | CRWV | Freeze | -26.3118 | 28.3118 | 0 | 2027Q1 | — |
+| Remediated | CRWV | Freeze | -25.8925 | 27.8925 | 0 | 2027Q1 | — |
 
 OpenAI's manual and curve cash improve while their first default quarters stay in 2028Q2 and 2028Q3. In scenario freeze, cash worsens by $1.235B and first default stays in 2027Q4. These are whole-profile differences that include changes to counterparties and contagion. Anthropic's higher opening cash and the revised estimated financing proceeds increase its liquidity in all three paths. Scenario freeze still lets the separately modeled closing proceeds enter. CoreWeave's manual and curve no longer trigger default through 2028, while freeze still triggers in 2027Q1. Its opening cash-flow and facility corrections change financial capacity and network outcomes. None of the CoreWeave or OpenAI paths reaches modeled FCF break-even. These comparisons do not isolate individual changes or establish underlying private-company forecast inputs.
 
@@ -428,11 +428,11 @@ The original A–G tests retained the legacy profile as a regression. The same i
 | --- | --- | ---: | ---: | ---: | --- |
 | A | OpenAI | -64.0448 | -13.2799 | 74.0448 | 2027Q4 |
 | B | Anthropic | 104.8591 | -0.8568 | 0 | — |
-| C | CoreWeave | -35.5392 | -3.2401 | 37.5392 | 2027Q1 |
-| D | Oracle | -79.9571 | -20.1235 | 89.9571 | 2027Q4 |
-| E | CoreWeave | -34.0347 | -3.3120 | 36.0347 | 2027Q1 |
-| F | CoreWeave | -43.5490 | -4.8271 | 45.5490 | 2027Q1 |
-| G | CoreWeave | -59.7036 | -5.6342 | 61.7036 | 2026Q4 |
+| C | CoreWeave | -35.5456 | -3.2985 | 37.5456 | 2027Q1 |
+| D | Oracle | -74.4788 | -20.0705 | 84.4788 | 2027Q4 |
+| E | CoreWeave | -34.1842 | -3.3845 | 36.1842 | 2027Q1 |
+| F | CoreWeave | -43.9584 | -4.9001 | 45.9584 | 2027Q1 |
+| G | CoreWeave | -60.1254 | -5.7019 | 62.1254 | 2026Q4 |
 
 Values are scenario results in USD billions. The cash identity includes loan and lease principal, collateral-related margin, equipment sale proceeds, investment sales and explicit unallocated guarantee payments.
 
@@ -443,3 +443,7 @@ The quarterly audit export now includes an operational revenue subledger by cont
 ### L4 cash interest and refinancing bridge
 
 The audit profile now charges the new intra-quarter spread against the modeled opening floating principal and only for the incremental spread within the cap. The charge flows once through OCF and is included in interest expense. The next quarter uses the decayed opening spread for its cash interest and refinancing multiplier. The exportable engine state exposes opening and closing spread, exposed principal, and the multiplier. In the CoreWeave regression, a 100bp closing shock becomes 50bp at the next opening, giving a 0.95 refinancing multiplier. The nine-path financing table has been refreshed. Default dates are unchanged in those paths.
+
+### L4 peer classification
+
+The audited peer rule now requires a shared populated entity type or sector, or membership in the cloud/neocloud category for both sides. The legacy profile remains available for the inherited regression. The audit regression reproduces the original issue of a CoreWeave default widening Dell's spread solely because both type fields were missing. The corrected path still widens Oracle's spread as a cloud peer and preserves contractual contagion paths. The refreshed A–G and nine-path comparisons above show the effect of using the narrower, data-backed peer condition. Actual market cross-sector correlations remain unavailable in this calibration.

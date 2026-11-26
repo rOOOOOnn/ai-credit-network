@@ -767,12 +767,16 @@ for (const [quarter, result] of Object.entries(interrupted.timeline)) {
 }
 assert.ok(recoveryRows.every(row => row.dueQuarter === "2027Q2"));
 assert.equal(usd(recoveryRows.reduce((sum, row) => sum + row.cashRecovered, 0)), crwv("2027Q2").operationalRecoveryCash);
-const secondaryQuarter = contracts.timeline["2026Q4"];
-const peerSecondary = secondaryQuarter.entities.CRWV;
-const peerShock = secondaryQuarter.contagionLog.find(row => row.layer === "L4_SECONDARY" && row.to === "CRWV");
+const peerScope = engine.runSimulation(entities, transactions, { audit4Contracts: true, forcedDefaults: ["CRWV"] });
+const secondaryQuarter = peerScope.timeline["2026Q4"];
+const peerSecondary = secondaryQuarter.entities.ORCL;
+const peerShock = secondaryQuarter.contagionLog.find(row => row.layer === "L4_SECONDARY" && row.to === "ORCL");
 assert.equal(peerSecondary.secondaryOpeningSpreadBps, 0);
 assert.equal(peerSecondary.secondaryClosingSpreadBps, 100);
 assert.equal(peerShock.impactB, usd(peerSecondary.secondaryFloatingPrincipal * 0.01 / 4));
-const nextPeerSecondary = contracts.timeline["2027Q1"].entities.CRWV;
+const nextPeerSecondary = peerScope.timeline["2027Q1"].entities.ORCL;
 assert.equal(nextPeerSecondary.secondaryOpeningSpreadBps, 50);
 assert.equal(nextPeerSecondary.secondaryRefinancingMultiplier, 0.95);
+const firstPeerEvents = peerScope.timeline["2026Q4"].contagionLog.filter(row => row.layer === "L4_SECONDARY" && row.from === "CRWV");
+assert.ok(firstPeerEvents.some(row => row.to === "ORCL"));
+assert.ok(firstPeerEvents.every(row => row.to !== "DELL"));
