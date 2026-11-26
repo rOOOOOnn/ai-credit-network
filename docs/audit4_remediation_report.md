@@ -2,7 +2,7 @@
 
 ## Executive summary
 
-This branch is a partial Audit 4 delivery. It adds opt-in company financing forecasts, cohort-based GPU refresh cash costs, incremental lease payment scenarios, and liquidity diagnostics. The historical v3 path remains available for comparison. The dynamic transaction ledger, guarantee refactor and operational recovery are open items.
+This branch implements company financing forecasts, cohort-based GPU refresh cash costs, lease cash scenarios, a quarterly financing ledger, phased guarantees, operational revenue recovery and liquidity diagnostics. The original v3 path remains available for regression. Audit acceptance remains open where key inputs and model behavior still require verification, including the field-level source review and contract-specific exposures identified below.
 
 ## Reproduction
 
@@ -287,3 +287,30 @@ The August 31 filing reports $48.050B operating and $15.195B finance lease payme
 ### Standalone page data parity
 
 Data validation originally compared CSV row counts without checking the data embedded in the three standalone pages. A direct comparison reproduced stale records for CoreWeave, Nebius, and Vistra and four revolving-credit transactions. All three pages now carry the repository datasets. The validator compares every embedded entity, transaction, and schema value and checks that the repository engine is embedded in each page. The CSV export also now includes the reconciled Nebius and Vistra opening snapshots.
+
+## Reproducible comparison on the current data
+
+Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the continuation commit. The script loads the engine and both datasets directly from `a515599901f062c138f3a86fadf360817f96c4b7` and applies the same requested annual paths on the current audited profile. The original `b727da2` baseline predates these input modes. Cash and gap are 2028Q4 USD billions. A dash in runway means there is no positive burn denominator. A dash in either event field means the event did not occur during the forecast.
+
+| Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |
+| --- | --- | --- | ---: | ---: | ---: | --- | --- |
+| Continuation | OPENAI | Manual | -15.5228 | 25.5228 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Manual | -12.9842 | 22.9842 | 0 | 2028Q2 | — |
+| Continuation | OPENAI | Curve | -15.5178 | 25.5178 | 0 | 2028Q3 | — |
+| Remediated | OPENAI | Curve | -12.9399 | 22.9399 | 0 | 2028Q3 | — |
+| Continuation | OPENAI | Freeze | -46.1816 | 56.1816 | 0 | 2027Q4 | — |
+| Remediated | OPENAI | Freeze | -47.4166 | 57.4166 | 0 | 2027Q4 | — |
+| Continuation | ANTHROPIC | Manual | 201.8728 | 0 | — | — | 2026Q4 |
+| Remediated | ANTHROPIC | Manual | 271.5204 | 0 | — | — | 2026Q4 |
+| Continuation | ANTHROPIC | Curve | 201.8728 | 0 | — | — | 2026Q4 |
+| Remediated | ANTHROPIC | Curve | 271.5204 | 0 | — | — | 2026Q4 |
+| Continuation | ANTHROPIC | Freeze | 171.8728 | 0 | — | — | 2026Q4 |
+| Remediated | ANTHROPIC | Freeze | 241.5204 | 0 | — | — | 2026Q4 |
+| Continuation | CRWV | Manual | -1.2404 | 3.2404 | 0 | 2028Q4 | — |
+| Remediated | CRWV | Manual | 3.6115 | 0 | 1.8883 | — | — |
+| Continuation | CRWV | Curve | -1.1763 | 3.1763 | 0 | 2028Q4 | — |
+| Remediated | CRWV | Curve | 3.6115 | 0 | 1.8883 | — | — |
+| Continuation | CRWV | Freeze | -31.6668 | 33.6668 | 0 | 2027Q1 | — |
+| Remediated | CRWV | Freeze | -25.8861 | 27.8861 | 0 | 2027Q1 | — |
+
+OpenAI's manual and curve cash improve while their first default quarters stay in 2028Q2 and 2028Q3. In scenario freeze, cash worsens by $1.235B and first default stays in 2027Q4. These are whole-profile differences that include changes to counterparties and contagion. Anthropic's higher opening cash and the revised estimated financing proceeds increase its liquidity in all three paths. Scenario freeze still lets the separately modeled closing proceeds enter. CoreWeave's manual and curve no longer trigger default through 2028, while freeze still triggers in 2027Q1. Its opening cash-flow and facility corrections change financial capacity and network outcomes. None of the CoreWeave or OpenAI paths reaches modeled FCF break-even. These comparisons do not isolate individual changes or establish underlying private-company forecast inputs.
