@@ -676,7 +676,8 @@ assert.equal(trackedReplacement.timeline["2027Q3"].entities.OPENAI.newDebt, 3);
 assert.equal(trackedReplacement.timeline["2027Q3"].debtReconciliation.OPENAI.namedTermPrincipal, 3);
 assert.equal(trackedReplacement.timeline["2028Q1"].debtReconciliation.OPENAI.namedTermPrincipal, 2);
 assert.equal(liquid.timeline["2026Q4"].financingLedger.TX26.lender, null);
-const tx26Stress = engine.runSimulation(entities, transactions, { audit4Contracts: true, forcedDefaults: ["SPV_CRWV8"] });
+const tx26Stress = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  forcedDefaults: ["SPV_CRWV8"], overrides: { SPV_CRWV8: { debtRepay: 0 } } });
 const tx26Credit = tx26Stress.creditEvents.find(event => event.txId === "TX26");
 assert.equal(tx26Credit.fundedEAD, 4.583);
 assert.equal(tx26Credit.lender, null);
@@ -687,3 +688,18 @@ const mixedRateInterest = usd(4.583 * (mixedFloatingShare * 0.075 + (1 - mixedFl
 assert.equal(mixedRateFacility.modeledFloatingPrincipal, usd(4.583 * mixedFloatingShare));
 assert.equal(mixedRateFacility.accruedInterest, mixedRateInterest);
 assert.equal(mixedRateQuarter.entities.SPV_CRWV8.interestExp, mixedRateInterest);
+const fullLedgerAudit = engine.runSimulation(entities, transactions, { audit4Contracts: true, forecastThrough: 2033 });
+for (const quarter of Object.values(fullLedgerAudit.timeline)) {
+  for (const row of Object.values(quarter.financingLedger ?? {})) {
+    if (row.endingOutstanding == null) continue;
+    assert.equal(row.endingOutstanding, usd(row.beginningOutstanding + row.newDrawdown -
+      row.principalRepayment - row.nonCashConversion), `${quarter.quarter} ${row.txId}`);
+  }
+  for (const [id, row] of Object.entries(quarter.debtReconciliation ?? {})) {
+    assert.ok(row.unattributedDebt >= 0, `${quarter.quarter} ${id}: ${row.unattributedDebt}`);
+  }
+}
+const appliedTx26 = fullLedgerAudit.timeline["2026Q4"].financingLedger.TX26;
+assert.equal(appliedTx26.inferredPrincipalRepayment, 0.35);
+assert.equal(appliedTx26.endingOutstanding, 4.233);
+assert.equal(fullLedgerAudit.timeline["2026Q4"].debtReconciliation.SPV_CRWV8.unattributedDebt, 0.3485);

@@ -1189,6 +1189,23 @@
           }
         }
 
+        if (useAudit4Contracts && repaymentRoom > 0 && facilities?.length) {
+          const namedOpening = facilities.reduce((sum, row) => sum + row.beginningOutstanding, 0);
+          const unidentifiedOpening = Math.max(0, begDebt - namedOpening);
+          const namedBudget = money(Math.max(0, repaymentRoom - unidentifiedOpening));
+          const eligible = facilities.filter(row => !row.defaulted && row.endingOutstanding > 0);
+          const inferredRepayments = allocateFunding(Object.fromEntries(eligible.map(row =>
+            [row.txId, row.endingOutstanding])), namedBudget);
+          for (const row of eligible) {
+            const repayment = inferredRepayments[row.txId];
+            if (repayment <= 0) continue;
+            row.inferredPrincipalRepayment = repayment;
+            row.principalRepayment = money(row.principalRepayment + repayment);
+            row.endingOutstanding = money(row.endingOutstanding - repayment);
+            if (row.isRevolver && row.canDraw) row.undrawnCommitment = money(row.undrawnCommitment + repayment);
+          }
+        }
+
         if (hasNamedFacility) undrawn = money((revolvers ?? []).reduce((sum, row) => sum + row.undrawnCommitment, 0));
         let contractualTermDraw = 0;
         for (const row of facilities ?? []) {
