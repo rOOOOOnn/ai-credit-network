@@ -1070,3 +1070,20 @@ assert.equal(usd(septemberMicrosoft.funded - juneMicrosoft.funded), 0.1);
 assert.equal(usd(septemberMicrosoft.counterpartyReceivable - juneMicrosoft.counterpartyReceivable), 1.2);
 assert.equal(microsoftOpenAi.amountDrawn, septemberMicrosoft.funded);
 assert.equal(microsoftOpenAi.remainingCommitment, septemberMicrosoft.commitment - septemberMicrosoft.funded);
+
+const contractedCashFixture = { id: "DRAW_TEST", financials: refreshFixture.financials,
+  defaults: { ...refreshFixture.defaults, minCash: 150 } };
+const contractedCashLoan = { ...instrument, id: "DRAW-TX", receiver: "DRAW_TEST", payer: null,
+  announcedDate: "2026-11-01", endQ: "2028Q4" };
+for (const margin of [undefined, 0.5]) {
+  for (const [draw, cash, requiredRevenue] of [[0, 102, 100], [3, 105, 94]]) {
+    const quarter = engine.runSimulation([contractedCashFixture], [contractedCashLoan], {
+      audit4Contracts: true, overrides: { DRAW_TEST: { ocfMarginBeforeFinancing: margin } },
+      facilityDrawdowns: { "DRAW-TX": { "2026Q4": draw } }
+    }).timeline["2026Q4"];
+    const state = quarter.entities.DRAW_TEST;
+    assert.deepEqual([state.contractualTermDraw, state.cash, state.ocf, state.fcf, state.requiredRevenue],
+      [draw, cash, 2, 2, requiredRevenue]);
+    assert.equal(quarter.financingLedger["DRAW-TX"].endingOutstanding, draw);
+  }
+}

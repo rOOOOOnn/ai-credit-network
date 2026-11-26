@@ -1432,8 +1432,8 @@
         const minimumRequiredRevenueGrowth = priorQuarterRevenue > 0 && fcfBreakEvenRevenue !== null
           ? money(fcfBreakEvenRevenue / priorQuarterRevenue - 1) : null;
         const totalCashOblig = (p.opex ?? 0) + capex + interestPaid + principalRepay + gpuMarginCall + leaseOperatingCash + leasePrincipal + leaseInterestAdjustment;
-        const revenueCashNeed = totalCashOblig + researchCashCost + workingCapitalCashUse + gpuUsageMaintenanceCash + minCash - begCash - allowedDebt - equityInflow - undrawn * 0.5;
-        const marginCashNeed = revenueCashNeed - (p.opex ?? 0) + incrementalCompute - contractualTermDraw;
+        const revenueCashNeed = totalCashOblig + researchCashCost + workingCapitalCashUse + gpuUsageMaintenanceCash + minCash - begCash - allowedDebt - contractualTermDraw - equityInflow - undrawn * 0.5;
+        const marginCashNeed = revenueCashNeed - (p.opex ?? 0) + incrementalCompute;
         const requiredRev = marginOverride === null ? Math.max(0, revenueCashNeed / Math.max(0.1, grossMargin * cashConv))
           : marginOverride > 0 ? Math.max(0, marginCashNeed / marginOverride) : null;
 

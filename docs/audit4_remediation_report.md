@@ -690,3 +690,8 @@ Amazon's September 10-Q confirms $15B in 2026Q1, $13.7B in Q2, and $21.3B in Q3 
 
 
 Microsoft's funding under its separate $13B OpenAI investment commitment increased from $11.9B at June 30 to $12B at September 30. This $0.1B funding change belongs to Microsoft's existing investment and stays separate from the Amazon and SoftBank round totals. Microsoft's receivable from OpenAI increased from $6B to $7.2B while it recognized $10B of quarterly commercial revenue, including revenue-sharing payments. The receivables are reported by Microsoft. They cannot establish OpenAI's consolidated accounts payable or Microsoft cash collections given the lack of a contractual settlement and adjustments bridge. TX01 and TX02 now cite the September filing. The observations do not generate a new loan, cash receipt or incremental cloud expense in the model. [Microsoft June 10-K](https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm), [Microsoft September 10-Q](https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm).
+
+
+### Contracted term draws and required revenue
+
+The standard margin calculation previously omitted contracted term-loan proceeds from the cash target even after they increased borrower cash and lender principal. Both operating methods now subtract the realized draw once. In the independent fixture, a $150B closing cash target, $100B opening cash and a 50% cash margin imply $100B required revenue without a term draw. Funding $3B reduces required revenue to $94B and increases closing cash from $102B to $105B. OCF and FCF remain $2B, and the financing ledger increases principal by exactly $3B. The test reproduces the same bridge with the explicit 50% cash operating margin.
