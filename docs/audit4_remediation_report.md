@@ -698,3 +698,6 @@ The standard margin calculation previously omitted contracted term-loan proceeds
 
 
 The same cash target check uncovered a second omission in the standard margin path: incremental compute cash was already charged to OCF and FCF but omitted from required revenue. Both paths now include it once. Adding $5B of external compute cost to the $3B term-draw case lowers closing cash from $105B to $100B and lowers OCF and FCF from $2B to negative $3B. At a 50% margin it adds $10B to required revenue, from $94B to $104B. The regression reproduced the former $94B error before applying the fix.
+
+
+The cash-target metric now recognizes modeled GPU disposal and opening investment liquidation receipts once, on the same basis as closing cash. A test with a $20B GPU refresh and $5B of disposal proceeds reproduces the previous $140B required revenue, then verifies $130B after the correction at a 50% cash margin. Closing cash is $87B, OCF is $2B, and FCF is negative $18B under the existing gross CapEx convention. Thus the cash target reflects the disposal without treating it as operating cash or subtracting it from reported replacement CapEx.

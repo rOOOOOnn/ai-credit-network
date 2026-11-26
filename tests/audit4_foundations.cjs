@@ -1096,3 +1096,24 @@ for (const margin of [undefined, 0.5]) {
   assert.deepEqual([state.operatingCashBridge.incrementalComputeCashCost, state.cash, state.ocf,
     state.fcf, state.requiredRevenue], [5, 100, -3, -3, 104]);
 }
+
+for (const margin of [undefined, 0.5]) {
+  const state = engine.runSimulation([contractedCashFixture], [], { audit4Contracts: true, overrides: {
+    DRAW_TEST: { ocfMarginBeforeFinancing: margin, gpuRefresh: {
+      cohorts: [{ acquired: "2023Q4", cost: 20 }], economicLife: 3, replacementRatio: 1, residualValue: 0.25
+    } }
+  } }).timeline["2026Q4"].entities.DRAW_TEST;
+  assert.deepEqual([state.replacementCapex, state.disposalProceeds, state.cash, state.ocf,
+    state.fcf, state.requiredRevenue], [20, 5, 87, 2, -18, 130]);
+}
+
+const investmentSaleFixture = { ...contractedCashFixture, audit4Liquidity: {
+  cashAndEquivalents: 100, currentInvestments: 12, knownRestrictedWithinCurrentInvestments: 2
+} };
+const investmentSaleRun = engine.runSimulation([investmentSaleFixture], [], {
+  audit4Contracts: true, overrides: { DRAW_TEST: { openingInvestmentSaleFraction: 0.5 } }
+}).timeline;
+const investmentSaleOpening = investmentSaleRun["2026Q4"].entities.DRAW_TEST;
+assert.deepEqual([investmentSaleOpening.openingInvestmentSale, investmentSaleOpening.cash,
+  investmentSaleOpening.fcf, investmentSaleOpening.requiredRevenue], [5, 107, 2, 90]);
+assert.equal(investmentSaleRun["2027Q1"].entities.DRAW_TEST.openingInvestmentSale, 0);
