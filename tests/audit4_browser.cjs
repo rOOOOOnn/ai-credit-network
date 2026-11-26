@@ -60,6 +60,17 @@ async function checkPage(browser, url) {
 
     await panel.locator("select").nth(1).selectOption("historical");
     assert.match(await panel.locator("[data-financing-trend]").innerText(), /Insufficient Historical Data|历史融资数据不足/);
+    const historicalSettings = JSON.parse(await scenario.inputValue());
+    historicalSettings.financing.history = {
+      2025: { dataType: "Actual", fullYear: true, amounts: { equity: 4 } },
+      2026: { dataType: "Actual", fullYear: true, amounts: { equity: 6 } }
+    };
+    await scenario.fill(JSON.stringify(historicalSettings));
+    await panel.locator("button").click();
+    const trend = await panel.locator("[data-financing-trend]").innerText();
+    assert.match(trend, /equity: 2025 = \$4B \/ 2026 = \$6B/);
+    assert.match(trend, /(?:Insufficient Historical Data|历史融资数据不足): debt/);
+    assert.equal(await row.locator("td").nth(7).innerText(), "9.00");
     await panel.locator("select").first().selectOption("manual");
     assert.equal(await row.locator("input").first().inputValue(), "8");
     await page.locator("#stepFwdBtn").click();

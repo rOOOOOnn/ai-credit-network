@@ -367,3 +367,7 @@ A scenario cohort can explicitly pledge its modeled value to a single GPU-backed
 ### Financing horizon and browser checks
 
 Manual amounts entered in 2033 previously appeared editable while the engine discarded them at the default six-year curve cutoff. Manual amounts now follow their explicit years and the same remaining and quarterly caps. The full-engine regression independently verifies four $1B payments in 2033 and a $4B cash increase with no remaining capacity. The browser test enters the late-year amount on each page, then switches to a curve and verifies that editing its equity base changes modeled funding. Curve horizons can extend the browser timeline within the engine's 2040 ceiling.
+
+### Source-specific historical financing trends
+
+Historical mode now uses each source's last two complete, consecutive annual Actual observations. Latest equity observations no longer displace an older, independently complete debt pair. The page shows the years and actual amounts used for each source and explicitly lists sources that lack usable records. Gaps within the latest pair, a zero starting denominator, partial years and estimates remain unavailable. Any gap after the last observation is part of the extrapolation, and projected amounts remain assumptions subject to funding caps. The browser fixture supplies synthetic historical records and checks disclosure and modeled cash funding. Company-level source coverage remains governed by the source register.

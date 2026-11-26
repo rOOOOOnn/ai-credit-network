@@ -578,3 +578,13 @@ assert.equal(manualLate.timeline["2033Q1"].entities.REFRESH_FIXTURE.equityInflow
 assert.equal(manualLate.timeline["2033Q4"].entities.REFRESH_FIXTURE.financingForecast.remainingCapacity, 0);
 assert.equal(usd(manualLate.timeline["2033Q4"].entities.REFRESH_FIXTURE.cash -
   withoutRefresh.timeline["2033Q4"].entities.REFRESH_FIXTURE.cash), 4);
+const independentHistory = engine.financingForecast({ mode: "curve", curve: "historical", history: {
+  2023: { dataType: "Actual", fullYear: true, amounts: { debt: 1 } },
+  2024: { dataType: "Actual", fullYear: true, amounts: { debt: 2 } },
+  2025: { dataType: "Actual", fullYear: true, amounts: { equity: 20 } },
+  2026: { dataType: "Actual", fullYear: true, amounts: { equity: 30, strategic: 4 } }
+} }, 2027);
+assert.deepEqual(independentHistory.amounts, { equity: 45, debt: 16 });
+assert.deepEqual(independentHistory.historyBySource.debt, { years: ["2023", "2024"], amounts: [1, 2] });
+assert.deepEqual(independentHistory.historyBySource.equity, { years: ["2025", "2026"], amounts: [20, 30] });
+assert.ok(independentHistory.missingHistorySources.includes("strategic"));

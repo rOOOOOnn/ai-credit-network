@@ -593,14 +593,28 @@
     }
     if (config.mode === "manual") return { amounts: config.annual?.[year] ?? {}, status: "Assumption" };
     const curve = config.curve ?? "linear";
-    const historical = config.history ?? {};
-    const entries = Object.entries(historical).filter(([y, record]) =>
-      Number(y) < (config.startYear ?? 2027) && record.dataType === "Actual" && record.fullYear === true)
-      .sort(([a], [b]) => Number(a) - Number(b));
-    const [prior, latest] = entries.slice(-2);
-    if (curve === "historical" && (!prior || Number(latest[0]) - Number(prior[0]) !== 1 ||
-        !FINANCING_SOURCES.some(source => prior[1].amounts?.[source] > 0 && Number.isFinite(latest[1].amounts?.[source])))) {
-      return { amounts: {}, status: "Insufficient Historical Data" };
+    if (curve === "historical") {
+      const entries = Object.entries(config.history ?? {}).filter(([y, record]) =>
+        Number(y) < (config.startYear ?? 2027) && record?.dataType === "Actual" && record.fullYear === true)
+        .sort(([a], [b]) => Number(a) - Number(b));
+      const amounts = {};
+      const historyBySource = {};
+      for (const source of FINANCING_SOURCES) {
+        const records = entries.filter(([, record]) =>
+          Number.isFinite(record.amounts?.[source]) && record.amounts[source] >= 0);
+        if (records.length < 2) continue;
+        const [prior, latest] = records.slice(-2);
+        if (Number(latest[0]) !== Number(prior[0]) + 1 || prior[1].amounts[source] <= 0) continue;
+        const first = prior[1].amounts[source];
+        const last = latest[1].amounts[source];
+        const forecast = last * (last / first) ** (year - Number(latest[0]));
+        if (!Number.isFinite(forecast)) continue;
+        amounts[source] = forecast;
+        historyBySource[source] = { years: [prior[0], latest[0]], amounts: [first, last] };
+      }
+      const missingHistorySources = FINANCING_SOURCES.filter(source => !historyBySource[source]);
+      return { amounts, historyBySource, missingHistorySources,
+        status: missingHistorySources.length === FINANCING_SOURCES.length ? "Insufficient Historical Data" : "Assumption" };
     }
     const amounts = {};
     for (const source of FINANCING_SOURCES) {
@@ -608,13 +622,6 @@
       const initial = config.initialGrowth ?? 0;
       const decline = nonnegative(config.annualDecline ?? 0.2);
       let amount = nonnegative(config.base?.[source]);
-      if (curve === "historical") {
-        const first = prior[1].amounts?.[source];
-        const last = latest[1].amounts?.[source];
-        if (!(first > 0) || !Number.isFinite(last) || last < 0) continue;
-        amounts[source] = last * (last / first) ** (year - Number(latest[0]));
-        continue;
-      }
       for (let offset = 0; offset <= elapsed; offset++) {
         let growth = initial - decline * offset;
         if (curve === "exponential") growth = floor + (initial - floor) * Math.exp(-decline * offset);
@@ -627,7 +634,7 @@
       }
       amounts[source] = amount;
     }
-    return { amounts, status: "Assumption", historyYears: curve === "historical" ? [prior[0], latest[0]] : null };
+    return { amounts, status: "Assumption" };
   }
 
   function scenarioFunding(config, quarter, remaining, availability, debtFactor) {
