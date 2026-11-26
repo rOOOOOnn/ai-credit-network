@@ -9741,6 +9741,18 @@ const I18N = {
         trend.append(link, " · ");
       }
     }
+    if (entity.reportedFinancingTranches?.length) {
+      trend.append(document.createElement("br"), t(
+        "Partial investor-reported financing history ",
+        "\u6295\u8d44\u65b9\u62ab\u9732\u7684\u90e8\u5206\u878d\u8d44\u8bb0\u5f55 "));
+      for (const event of entity.reportedFinancingTranches) {
+        const link = document.createElement("a");
+        link.dataset.financingTranche = event.date;
+        link.textContent = event.date + " $" + event.amount + "B (" + event.investor + ")";
+        if (event.sourceUrl?.startsWith("https://")) link.href = event.sourceUrl;
+        trend.append(" ", link);
+      }
+    }
   }
 
   function bindFinancingScenario() {

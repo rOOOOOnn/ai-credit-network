@@ -152,6 +152,14 @@ async function checkPage(browser, url) {
       assert.match(await disclosure.innerText(), life);
       assert.match(await disclosure.locator("a").getAttribute("href"), filing);
     }
+    await page.locator('[data-network-entity="OPENAI"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    const tranches = panel.locator("[data-financing-tranche]");
+    assert.equal(await tranches.count(), 3);
+    const octoberTranche = panel.locator('[data-financing-tranche="2026-10-01"]');
+    assert.match(await octoberTranche.innerText(), /2026-10-01 \$10B \(SoftBank Vision Fund 2\)/);
+    assert.match(await octoberTranche.getAttribute("href"), /financial-report_q2fy2026_01_en\.pdf$/);
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {
