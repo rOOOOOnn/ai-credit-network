@@ -17,7 +17,7 @@ SMCI,Super Micro Computer,,2,,,19.95,6.9,8.65,Actual
 HPE,Hewlett Packard Enterprise,,2,,,12.2,6.2,17.3,Actual
 DLR,Digital Realty Trust,,2,,,1.9,0.8,19.49,Actual
 EQIX,"Equinix, Inc.",,2,,,2.57,2.36,25.22,Actual
-NBIS,Nebius Group,,2,,,0.98,7.4,2.5,Actual
+NBIS,Nebius Group,,2,,,0.9808,7.4256,14.1908,Actual
 APLD,Applied Digital Corp.,,3,,,0.22,0.65,1.4,Estimated
 IREN,IREN Limited,,3,,,0.18,0.55,0.85,Estimated
 CRUSOE,Crusoe Energy Systems,,3,,,,,,Unavailable
@@ -47,5 +47,5 @@ EXTERNAL_EQUITY_POOL,External Institutional Equity Pool,,4,,,,,,Unavailable
 SPV_SOPAIPILLA,Sopaipilla Investor LLC (Meta El Paso SPV),,3,META,,0.38,1.2,12.55,Estimated
 VERTIV,Vertiv Holdings Co.,,3,,,4.313,3.513,2.929,Actual
 CEG,Constellation Energy Corp.,,3,,,9.55,0.603,23.387,Actual
-VST,Vistra Corp.,,3,,,,,,Unavailable
+VST,Vistra Corp.,,3,,,6.347,2.743,21.146,Actual
 CORZ,Core Scientific (CRWV Hosting),,3,,,0.233,0.804,4.302,Actual

@@ -61,3 +61,15 @@ if (errors.length > 0) {
   process.exit(1);
 }
 console.log(`[PASS] Schema & Data Validation: ${entities.length} entities, ${transactions.length} transactions, CSV sync & referential integrity 100% valid.`);
+const normalizeLines = value => value.replace(/\r\n/g, "\n");
+const engineText = normalizeLines(fs.readFileSync(path.join(rootDir, 'engine/contagion_engine.js'), 'utf8')).trim();
+for (const page of ['index.html', 'index_en.html', 'index_zh.html']) {
+  const html = normalizeLines(fs.readFileSync(path.join(rootDir, page), 'utf8'));
+  assert.ok(html.includes(engineText), page + ' must embed the repository engine');
+  for (const [name, expected] of Object.entries({ ENTITIES: entities, TRANSACTIONS: transactions, SCHEMA: schema })) {
+    const embedding = html.match(new RegExp('const INITIAL_' + name + ' = ([\\s\\S]*?);(?=\\n)'));
+    assert.ok(embedding, page + ' is missing embedded ' + name);
+    assert.deepStrictEqual(JSON.parse(embedding[1]), expected, page + ' has stale ' + name);
+  }
+}
+console.log('[PASS] All three standalone pages embed the repository engine and datasets.');
