@@ -1468,6 +1468,10 @@
           operationalCostHit: 0,
           operationalRevDelay: 0,
           secondaryFinancingHit: secondaryIntAdd,
+          secondaryOpeningSpreadBps: secondarySpreadBpsById[e.id] ?? 0,
+          secondaryClosingSpreadBps: secondarySpreadBpsById[e.id] ?? 0,
+          secondaryFloatingPrincipal: money(begDebt * floatShare),
+          secondaryRefinancingMultiplier: secRefiPenalty,
           inducedCapexCut: 0
         };
       });
@@ -1863,11 +1867,15 @@
               const highLeverage = (pst.debt / peerLiq) >= 1.5;
               if (sameTier && highLeverage) {
                 secondaryHitPeersThisQ.add(peer.id);
-                const spreadWideningBps = 100; // +100 bps secondary market spread shock
-                secondarySpreadBpsById[peer.id] = Math.min(250, (secondarySpreadBpsById[peer.id] || 0) + spreadWideningBps);
-                const quarterlySpreadCost = Number(((pst.debt * 0.35 * (spreadWideningBps / 10000)) / 4).toFixed(4));
+                const priorBps = secondarySpreadBpsById[peer.id] ?? 0;
+                const spreadWideningBps = useAudit4Contracts ? Math.min(100, 250 - priorBps) : 100;
+                secondarySpreadBpsById[peer.id] = Math.min(250, priorBps + spreadWideningBps);
+                pst.secondaryClosingSpreadBps = secondarySpreadBpsById[peer.id];
+                const exposedPrincipal = useAudit4Contracts ? pst.secondaryFloatingPrincipal : pst.debt * 0.35;
+                const quarterlySpreadCost = money(exposedPrincipal * spreadWideningBps / 40000);
                 if (quarterlySpreadCost > 0) {
                   pst.secondaryFinancingHit = Number((pst.secondaryFinancingHit + quarterlySpreadCost).toFixed(4));
+                  if (useAudit4Contracts) pst.interestExp = money(pst.interestExp + quarterlySpreadCost);
                   applyCashDelta(peer.id, -quarterlySpreadCost, 0);
                   evaluateDistress(peer.id);
                   contagionLog.push({

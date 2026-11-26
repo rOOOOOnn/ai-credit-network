@@ -295,11 +295,11 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |
 | --- | --- | --- | ---: | ---: | ---: | --- | --- |
 | Continuation | OPENAI | Manual | -15.5228 | 25.5228 | 0 | 2028Q2 | — |
-| Remediated | OPENAI | Manual | -12.9842 | 22.9842 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Manual | -12.9955 | 22.9955 | 0 | 2028Q2 | — |
 | Continuation | OPENAI | Curve | -15.5178 | 25.5178 | 0 | 2028Q3 | — |
-| Remediated | OPENAI | Curve | -12.9399 | 22.9399 | 0 | 2028Q3 | — |
+| Remediated | OPENAI | Curve | -12.9501 | 22.9501 | 0 | 2028Q3 | — |
 | Continuation | OPENAI | Freeze | -46.1816 | 56.1816 | 0 | 2027Q4 | — |
-| Remediated | OPENAI | Freeze | -47.4166 | 57.4166 | 0 | 2027Q4 | — |
+| Remediated | OPENAI | Freeze | -47.4214 | 57.4214 | 0 | 2027Q4 | — |
 | Continuation | ANTHROPIC | Manual | 201.8728 | 0 | — | — | 2026Q4 |
 | Remediated | ANTHROPIC | Manual | 271.5204 | 0 | — | — | 2026Q4 |
 | Continuation | ANTHROPIC | Curve | 201.8728 | 0 | — | — | 2026Q4 |
@@ -307,11 +307,11 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Continuation | ANTHROPIC | Freeze | 171.8728 | 0 | — | — | 2026Q4 |
 | Remediated | ANTHROPIC | Freeze | 241.5204 | 0 | — | — | 2026Q4 |
 | Continuation | CRWV | Manual | -1.2404 | 3.2404 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Manual | 3.6115 | 0 | 1.8883 | — | — |
+| Remediated | CRWV | Manual | 3.266 | 0 | 1.4459 | — | — |
 | Continuation | CRWV | Curve | -1.1763 | 3.1763 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Curve | 3.6115 | 0 | 1.8883 | — | — |
+| Remediated | CRWV | Curve | 3.266 | 0 | 1.4459 | — | — |
 | Continuation | CRWV | Freeze | -31.6668 | 33.6668 | 0 | 2027Q1 | — |
-| Remediated | CRWV | Freeze | -25.8861 | 27.8861 | 0 | 2027Q1 | — |
+| Remediated | CRWV | Freeze | -26.3118 | 28.3118 | 0 | 2027Q1 | — |
 
 OpenAI's manual and curve cash improve while their first default quarters stay in 2028Q2 and 2028Q3. In scenario freeze, cash worsens by $1.235B and first default stays in 2027Q4. These are whole-profile differences that include changes to counterparties and contagion. Anthropic's higher opening cash and the revised estimated financing proceeds increase its liquidity in all three paths. Scenario freeze still lets the separately modeled closing proceeds enter. CoreWeave's manual and curve no longer trigger default through 2028, while freeze still triggers in 2027Q1. Its opening cash-flow and facility corrections change financial capacity and network outcomes. None of the CoreWeave or OpenAI paths reaches modeled FCF break-even. These comparisons do not isolate individual changes or establish underlying private-company forecast inputs.
 
@@ -439,3 +439,7 @@ Values are scenario results in USD billions. The cash identity includes loan and
 ### Operational deferred-revenue roll-forward
 
 The quarterly audit export now includes an operational revenue subledger by contract, customer and disruption quarter. It records scheduled recovery quarter, beginning amount, new deferral, recovered revenue, associated cash and ending pending amount. Each amount is removed after recovery. If customer forecast data are unavailable at the scheduled date, an item stays pending. The Core Scientific-to-CoreWeave fixture independently reconciles both initial deferrals to 2027Q2 recovery and associated cash, then confirms that recovered items do not reappear in 2027Q3. Permanent losses and migration costs remain outside the deferred balance.
+
+### L4 cash interest and refinancing bridge
+
+The audit profile now charges the new intra-quarter spread against the modeled opening floating principal and only for the incremental spread within the cap. The charge flows once through OCF and is included in interest expense. The next quarter uses the decayed opening spread for its cash interest and refinancing multiplier. The exportable engine state exposes opening and closing spread, exposed principal, and the multiplier. In the CoreWeave regression, a 100bp closing shock becomes 50bp at the next opening, giving a 0.95 refinancing multiplier. The nine-path financing table has been refreshed. Default dates are unchanged in those paths.
