@@ -3667,6 +3667,11 @@
       "debtAssumed": 1.7,
       "assumedDebtRepaid": 1.7,
       "newReceivablesAndRepurchaseBorrowings": null,
+      "receivablesPurchaseLimit": 1.25,
+      "uncommittedRepurchaseLimit": 0.125,
+      "estimatedCombinedDrawAtFullLimits": 1.375,
+      "estimatedCombinedDrawDataType": "Estimated",
+      "openingReportedLiquidity": 8.923,
       "proFormaLiquidity": 5.4,
       "sourceUrl": "https://investor.vistracorp.com/2026-11-06-Vistra-Reports-Third-Quarter-2026-Results"
     },

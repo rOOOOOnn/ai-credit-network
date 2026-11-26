@@ -459,3 +459,10 @@ assert.equal(usd(vstEvents.preferredRedemption + vstEvents.cashAcquisitionConsid
 assert.equal(usd(vstEvents.debtAssumed - vstEvents.assumedDebtRepaid), 0);
 assert.equal(vstEvents.newReceivablesAndRepurchaseBorrowings, null);
 console.log("Audit 4 Vistra historical cutoff and subsequent event checks passed");
+assert.equal(vstEvents.openingReportedLiquidity, usd(vstHistory.cash + vstHistory.undrawnCredit + vstEntity.audit4Liquidity.commodityFacilityAvailability));
+const vstFullLimitDraw = usd(vstEvents.receivablesPurchaseLimit + vstEvents.uncommittedRepurchaseLimit);
+assert.equal(vstFullLimitDraw, vstEvents.estimatedCombinedDrawAtFullLimits);
+assert.equal(vstEvents.estimatedCombinedDrawDataType, "Estimated");
+const vstProForma = usd(vstEvents.openingReportedLiquidity - 4.9 + vstFullLimitDraw);
+assert.equal(vstProForma, 5.398);
+assert.equal(Number(vstProForma.toFixed(1)), vstEvents.proFormaLiquidity);
