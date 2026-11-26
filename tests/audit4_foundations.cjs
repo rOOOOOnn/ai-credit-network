@@ -332,3 +332,33 @@ assert.equal(withoutMsftLease.debt, msftOpening.debt);
 console.log("Audit 4 Microsoft lease cash, amortization and FY bucket checks passed");
 assert.equal(usd(["2027Q3", "2027Q4", "2028Q1", "2028Q2"].reduce(
   (sum, q) => sum + liquid.timeline[q].entities.MSFT.recognizedFinanceLease.payment, 0)), 8.163);
+
+const nvdaOpening = liquid.timeline["2026Q4"].entities.NVDA;
+assert.equal(nvdaOpening.begCash, 22.443);
+assert.equal(nvdaOpening.priorQuarterRevenue, 96.221);
+assert.equal(nvdaOpening.openingFiscalCashFlowDisclosure.periodEnd, "2026-07-26");
+assert.equal(nvdaOpening.laterFiscalDisclosure.periodEnd, "2026-10-25");
+assert.equal(usd(nvdaOpening.laterFiscalDisclosure.ocf - nvdaOpening.laterFiscalDisclosure.cashPurchases -
+  nvdaOpening.laterFiscalDisclosure.assetPrincipal), 43.777);
+const neocloud = "NVDA_NEOCLOUD_UNALLOCATED";
+const systems = "NVDA_POWER_SYSTEMS_UNALLOCATED";
+const firstGuarantees = liquid.timeline["2026Q4"].guaranteeLedger;
+assert.equal(usd(firstGuarantees.TX11.disclosedMaximum + firstGuarantees[neocloud].disclosedMaximum +
+  firstGuarantees[systems].disclosedMaximum), 118);
+assert.equal(firstGuarantees[neocloud].effectiveExposure, null);
+assert.equal(firstGuarantees[systems].counterparty, null);
+const guaranteeStress = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { NVDA: { unallocatedGuaranteeCalls: {
+    [neocloud]: { "2027Q1": 3, "2027Q2": 3 },
+    [systems]: { "2027Q1": 20 }
+  } } } });
+const calls = guaranteeStress.timeline["2027Q1"];
+assert.equal(calls.guaranteeLedger[neocloud].calledThisQuarter, 3);
+assert.equal(calls.guaranteeLedger[systems].calledThisQuarter, 9.5);
+assert.equal(calls.entities.NVDA.unallocatedGuaranteeCashPaid, 12.5);
+assert.equal(usd(liquid.timeline["2027Q1"].entities.NVDA.cash - calls.entities.NVDA.cash), 12.5);
+assert.equal(calls.entities.NVDA.ocf, liquid.timeline["2027Q1"].entities.NVDA.ocf);
+assert.equal(guaranteeStress.timeline["2027Q2"].guaranteeLedger[neocloud].calledThisQuarter, 0.5);
+assert.equal(guaranteeStress.timeline["2027Q2"].guaranteeLedger[systems].remainingDisclosedCap, 0);
+assert.equal(calls.guaranteeLedger.TX11.calledGuarantee, 0);
+console.log("Audit 4 NVIDIA reporting cutoff and unallocated guarantee cap checks passed");

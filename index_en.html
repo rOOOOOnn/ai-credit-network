@@ -1214,6 +1214,7 @@
       let oceanUsedThisQ = 0;
       const financingLedger = {};
       const guaranteeLedger = {};
+      const contagionLog = [];
       if (useAudit4Contracts) {
         const tx = transactions.find(item => item.id === "TX11");
         if (tx && getTransactionLifecycle(tx, q).isVisible) {
@@ -1576,6 +1577,7 @@
           openingInvestmentSale: investmentSale,
           openingLiquidityDisclosure: liquidityOpening || null,
           openingFiscalCashFlowDisclosure: fiscalOpening || null,
+          laterFiscalDisclosure: useAudit4Contracts && e.audit4LaterFiscalDisclosure?.disclosedDate <= quarterEndDate(q) ? e.audit4LaterFiscalDisclosure : null,
           openingQuarterCashFlow: useAudit4Contracts && q === QUARTER_PARTIAL ? auditCashFlowObservation(e.audit4CashFlowBridge) : null,
           incrementalLeasePayment: leasePayment,
           leaseSchedule,
@@ -1673,10 +1675,37 @@
         }
       }
 
+      if (useAudit4Contracts) {
+        for (const entity of entities) {
+          const disclosure = entity.audit4GuaranteeDisclosure;
+          const state = states[entity.id];
+          if (!disclosure || !state || state.insufficientData || disclosure.disclosedDate > quarterEndDate(q)) continue;
+          for (const category of disclosure.categories) {
+            if (transactions.some(tx => tx.id === category.id)) continue;
+            const previouslyCalled = cumCreditLossByTx[category.id] ?? 0;
+            const remaining = money(category.maximum - previouslyCalled);
+            const requested = nonnegative(overrides[entity.id]?.unallocatedGuaranteeCalls?.[category.id]?.[q]);
+            const calledThisQuarter = money(Math.min(remaining, requested));
+            const calledGuarantee = money(previouslyCalled + calledThisQuarter);
+            cumCreditLossByTx[category.id] = calledGuarantee;
+            guaranteeLedger[category.id] = {
+              guarantor: entity.id, label: category.label, counterparty: null,
+              disclosedMaximum: category.maximum, effectiveExposure: null, contingentExposure: null,
+              calledThisQuarter, calledGuarantee, remainingDisclosedCap: money(category.maximum - calledGuarantee),
+              sourceUrl: disclosure.sourceUrl, asOf: disclosure.asOf, dataType: "Disclosed cap; assumed calls"
+            };
+            if (calledThisQuarter <= 0) continue;
+            state.cash = money(state.cash - calledThisQuarter);
+            state.creditLoss = money(state.creditLoss + calledThisQuarter);
+            state.unallocatedGuaranteeCashPaid = money((state.unallocatedGuaranteeCashPaid ?? 0) + calledThisQuarter);
+            contagionLog.push({ hop: 0, layer: "L1_FINANCIAL", from: null, to: entity.id, txId: category.id,
+              channel: "Assumed cash call on unallocated guarantee", impactB: calledThisQuarter });
+          }
+        }
+      }
       entities.forEach(e => evaluateDistress(e.id));
 
       // Step 2B: Dynamic Multi-Hop 4-Layer Contagion (strictly on activeTxs!)
-      const contagionLog = [];
       const propagatedDefaults = new Set();
       const propagatedCrisisCuts = new Set();
       const secondaryHitPeersThisQ = new Set();
@@ -2054,7 +2083,7 @@
           const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0) + (state.leasePrincipal ?? 0) + leaseInterest;
           const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0) + leaseInterest;
           state.debtServiceCoverage = obligations > 0 ? money(cashBeforeDebtService / obligations) : null;
-          const cashUses = burn + (state.principalRepay ?? 0) + (state.leasePrincipal ?? 0) + (state.gpuMarginCall ?? 0);
+          const cashUses = burn + (state.principalRepay ?? 0) + (state.leasePrincipal ?? 0) + (state.gpuMarginCall ?? 0) + (state.unallocatedGuaranteeCashPaid ?? 0);
           state.financingDependency = cashUses > 0 ? money(newFinancing / cashUses) : null;
           state.revenueGrowth = state.priorQuarterRevenue > 0 ? money(state.revenue / state.priorQuarterRevenue - 1) : null;
           state.cashRunwayMonths = burn > 0 ? money(3 * Math.max(0, state.cash - minimumCash) / burn) : null;
@@ -2125,6 +2154,10 @@
 const INITIAL_ENTITIES = [
   {
     "id": "NVDA",
+    "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q2","periodStart":"2026-04-27","periodEnd":"2026-07-26","calendarBucket":"2026Q3","revenue":96.221,"ocf":24.077,"capex":2.677,"currentBorrowings":1,"nonCurrentBorrowings":32.366,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm","cashFlowSourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000073/q2fy27pr.htm"},
+    "audit4Liquidity": {"asOf":"2026-07-26","cashAndEquivalents":22.443,"currentInvestments":34.143,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"},
+    "audit4LaterFiscalDisclosure": {"fiscalPeriod":"FY2027Q3","periodEnd":"2026-10-25","disclosedDate":"2026-11-17","revenue":115.844,"cashAndEquivalents":29.089,"ocf":48.253,"cashPurchases":4.422,"assetPrincipal":0.054,"reportedFcf":43.777,"borrowings":32.371,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/q3fy27pr.htm"},
+    "audit4GuaranteeDisclosure": {"asOf":"2026-10-25","disclosedDate":"2026-11-17","total":118,"paidToDate":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/q3fy27cfocommentary.htm","categories":[{"id":"NVDA_NEOCLOUD_UNALLOCATED","label":"Neocloud land, power and shell","maximum":3.5},{"id":"TX11","label":"SB Energy credit support","maximum":105},{"id":"NVDA_POWER_SYSTEMS_UNALLOCATED","label":"Power and systems credit support","maximum":9.5}]},
     "name": "NVIDIA Corp.",
     "ticker": "NVDA",
     "cik": "0001045810",
@@ -9028,7 +9061,7 @@ const I18N = {
       feed.innerHTML = logs.map(l => `
         <div data-focus="${l.to}" class="contagion-item cursor-pointer bg-[#151A23] hover:bg-[#1B2230] border border-[#2A2025] rounded px-2.5 py-1.5">
           <div class="flex justify-between text-[10px]">
-            <span class="mono text-slate-400">${t.hopPrefix}${l.hop}${t.hopSuffix} · ${l.from} → ${l.to === 'PRIVATE_CREDIT_OCEAN' ? t.oceanName : l.to}</span>
+            <span class="mono text-slate-400">${t.hopPrefix}${l.hop}${t.hopSuffix} · ${l.from ?? t.unknown} → ${l.to === 'PRIVATE_CREDIT_OCEAN' ? t.oceanName : l.to}</span>
             <span class="mono text-[#D9535F]">-${fmtB(l.impactB)}</span>
           </div>
           <div class="text-[10px] text-slate-500 truncate mt-0.5">${l.channel}</div>
@@ -9054,7 +9087,7 @@ const I18N = {
     text.value = JSON.stringify({financing:config ?? example,
       gpuRefresh:state.overrides[entity.id]?.gpuRefresh ?? {economicLife:5,replacementRatio:0.25,residualValue:0.2,cohorts:[]},
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
-      includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75, openingInvestmentSaleFraction:state.overrides[entity.id]?.openingInvestmentSaleFraction ?? 0, includeExistingFinanceLease:state.overrides[entity.id]?.includeExistingFinanceLease ?? true}, null, 2);
+      includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75, openingInvestmentSaleFraction:state.overrides[entity.id]?.openingInvestmentSaleFraction ?? 0, includeExistingFinanceLease:state.overrides[entity.id]?.includeExistingFinanceLease ?? true, unallocatedGuaranteeCalls:state.overrides[entity.id]?.unallocatedGuaranteeCalls ?? {}}, null, 2);
     panel.querySelector("button").textContent = t("Apply assumptions", "\u5e94\u7528\u5047\u8bbe");
     panel.querySelector("p").textContent = t(
       "Edit annual amounts by source in USD billions. Set mode to manual or curve. Example values are assumptions. A scenario freeze excludes only scenario financing. Scheduled equity, rollover and credit draws are separate.",
@@ -9221,6 +9254,7 @@ const I18N = {
         settings.operationalRecoveryRate = data.operationalRecoveryRate;
         settings.openingInvestmentSaleFraction = data.openingInvestmentSaleFraction;
         settings.includeExistingFinanceLease = data.includeExistingFinanceLease;
+        settings.unallocatedGuaranteeCalls = data.unallocatedGuaranteeCalls;
         settings.incrementalLease = data.incrementalLease;
         recompute();
       } catch (error) {

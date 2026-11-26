@@ -898,6 +898,7 @@
       let oceanUsedThisQ = 0;
       const financingLedger = {};
       const guaranteeLedger = {};
+      const contagionLog = [];
       if (useAudit4Contracts) {
         const tx = transactions.find(item => item.id === "TX11");
         if (tx && getTransactionLifecycle(tx, q).isVisible) {
@@ -1260,6 +1261,7 @@
           openingInvestmentSale: investmentSale,
           openingLiquidityDisclosure: liquidityOpening || null,
           openingFiscalCashFlowDisclosure: fiscalOpening || null,
+          laterFiscalDisclosure: useAudit4Contracts && e.audit4LaterFiscalDisclosure?.disclosedDate <= quarterEndDate(q) ? e.audit4LaterFiscalDisclosure : null,
           openingQuarterCashFlow: useAudit4Contracts && q === QUARTER_PARTIAL ? auditCashFlowObservation(e.audit4CashFlowBridge) : null,
           incrementalLeasePayment: leasePayment,
           leaseSchedule,
@@ -1357,10 +1359,37 @@
         }
       }
 
+      if (useAudit4Contracts) {
+        for (const entity of entities) {
+          const disclosure = entity.audit4GuaranteeDisclosure;
+          const state = states[entity.id];
+          if (!disclosure || !state || state.insufficientData || disclosure.disclosedDate > quarterEndDate(q)) continue;
+          for (const category of disclosure.categories) {
+            if (transactions.some(tx => tx.id === category.id)) continue;
+            const previouslyCalled = cumCreditLossByTx[category.id] ?? 0;
+            const remaining = money(category.maximum - previouslyCalled);
+            const requested = nonnegative(overrides[entity.id]?.unallocatedGuaranteeCalls?.[category.id]?.[q]);
+            const calledThisQuarter = money(Math.min(remaining, requested));
+            const calledGuarantee = money(previouslyCalled + calledThisQuarter);
+            cumCreditLossByTx[category.id] = calledGuarantee;
+            guaranteeLedger[category.id] = {
+              guarantor: entity.id, label: category.label, counterparty: null,
+              disclosedMaximum: category.maximum, effectiveExposure: null, contingentExposure: null,
+              calledThisQuarter, calledGuarantee, remainingDisclosedCap: money(category.maximum - calledGuarantee),
+              sourceUrl: disclosure.sourceUrl, asOf: disclosure.asOf, dataType: "Disclosed cap; assumed calls"
+            };
+            if (calledThisQuarter <= 0) continue;
+            state.cash = money(state.cash - calledThisQuarter);
+            state.creditLoss = money(state.creditLoss + calledThisQuarter);
+            state.unallocatedGuaranteeCashPaid = money((state.unallocatedGuaranteeCashPaid ?? 0) + calledThisQuarter);
+            contagionLog.push({ hop: 0, layer: "L1_FINANCIAL", from: null, to: entity.id, txId: category.id,
+              channel: "Assumed cash call on unallocated guarantee", impactB: calledThisQuarter });
+          }
+        }
+      }
       entities.forEach(e => evaluateDistress(e.id));
 
       // Step 2B: Dynamic Multi-Hop 4-Layer Contagion (strictly on activeTxs!)
-      const contagionLog = [];
       const propagatedDefaults = new Set();
       const propagatedCrisisCuts = new Set();
       const secondaryHitPeersThisQ = new Set();
@@ -1738,7 +1767,7 @@
           const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0) + (state.leasePrincipal ?? 0) + leaseInterest;
           const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0) + leaseInterest;
           state.debtServiceCoverage = obligations > 0 ? money(cashBeforeDebtService / obligations) : null;
-          const cashUses = burn + (state.principalRepay ?? 0) + (state.leasePrincipal ?? 0) + (state.gpuMarginCall ?? 0);
+          const cashUses = burn + (state.principalRepay ?? 0) + (state.leasePrincipal ?? 0) + (state.gpuMarginCall ?? 0) + (state.unallocatedGuaranteeCashPaid ?? 0);
           state.financingDependency = cashUses > 0 ? money(newFinancing / cashUses) : null;
           state.revenueGrowth = state.priorQuarterRevenue > 0 ? money(state.revenue / state.priorQuarterRevenue - 1) : null;
           state.cashRunwayMonths = burn > 0 ? money(3 * Math.max(0, state.cash - minimumCash) / burn) : null;
