@@ -1231,6 +1231,8 @@
   },
   {
     "id": "CRWV",
+    "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":4.122,"currentInvestments":0.062,"knownRestrictedWithinCurrentInvestments":0,"restrictedCashSeparate":2.282,"facilityAvailabilityAggregate":5.653,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm"},
+    "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":5.638,"capex":23.558,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm"},"sixMonths":{"ocf":3.663,"capex":14.117,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000366/crwv-20260630.htm"}},
     "name": "CoreWeave, Inc.",
     "ticker": "CRWV",
     "cik": "0001769628",

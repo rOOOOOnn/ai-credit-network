@@ -794,7 +794,11 @@
     const ocfCalibById = {};
     const hasCoreFinancials = {};
     entities.forEach(e => {
-      const q3 = e.financials && e.financials["2026Q3"];
+      const existingQ3 = e.financials?.["2026Q3"];
+      const bridge = useAudit4Contracts ? e.audit4CashFlowBridge : null;
+      const q3 = existingQ3 && bridge?.quarter === "2026Q3"
+        ? { ...existingQ3, ocf: money(bridge.nineMonths.ocf - bridge.sixMonths.ocf) }
+        : existingQ3;
       const p = e.defaults || {};
       const hasCashAndRev = Boolean(q3 && q3.cash !== null && q3.cash !== undefined && q3.revenue !== null && q3.revenue !== undefined);
       hasCoreFinancials[e.id] = hasCashAndRev;
