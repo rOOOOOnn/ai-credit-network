@@ -153,6 +153,12 @@ const purchased = purchaseCase.timeline["2027Q1"].entities.CRWV;
 const replaced = purchaseCase.timeline["2030Q1"].entities.CRWV;
 assert.equal(purchased.gpuPurchases, 2);
 assert.equal(purchased.capex, 4);
+assert.deepEqual(purchased.gpuGrossCostBridge, {
+  opening: 0, basePurchases: 2, replacements: 0, disposals: 0, closing: 2
+});
+assert.deepEqual(replaced.gpuGrossCostBridge, {
+  opening: 2, basePurchases: 0, replacements: 1, disposals: 1, closing: 2
+});
 assert.equal(replaced.replacementCapex, 1);
 assert.equal(replaced.disposalProceeds, 0.25);
 assert.equal(replaced.gpuNetBookValueDisposed, 0.5);

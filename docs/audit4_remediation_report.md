@@ -1263,3 +1263,7 @@ The prospectus underwriting table gives $78.840438875B to Anthropic for the base
 ### Historical financing gaps at the forecast boundary
 
 The historical curve panel identifies sources whose last complete actual year predates the year immediately before the forecast. For each such source it flags that the forecast extrapolates across the gap, while preserving the actual years and amounts displayed. The browser fixture includes a complete equity series through 2026, an other-financing series ending in 2025, and unavailable debt history. All three pages distinguish the three cases.
+
+### GPU cohort acquisition-cost roll-forward
+
+The quarterly JSON ledger now exports opening and closing gross acquisition cost with separately identified base GPU purchases, replacements and the original acquisition cost of disposed equipment. Retained or repurposed equipment remains in closing gross cost. Gross disposal cost is separate from the net carrying value removed and the sale cash received. The browser fixture begins with $0.100B, replaces $0.025B, removes $0.025B in acquisition cost, receives $0.005B in cash, and ends with $0.100B. All three pages export the same bridge. This addition gives an independent roll-forward alongside the book-value bridge and does not introduce an additional cash charge.

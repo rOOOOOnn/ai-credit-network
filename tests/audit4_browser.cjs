@@ -192,6 +192,9 @@ async function checkPage(browser, url) {
     const gpuRefresh = ledger.quarters.find(row => row.quarter === "2034Q1").gpuCashSchedules[weightedEntity];
     assert.equal(gpuRefresh.replacementCapex, 0.025);
     assert.equal(gpuRefresh.disposalProceeds, 0.005);
+    assert.deepEqual(gpuRefresh.grossCostBridge, {
+      opening: 0.1, basePurchases: 0, replacements: 0.025, disposals: 0.025, closing: 0.1
+    });
     assert.deepEqual(gpuRefresh.bookValueBridge, {
       opening: 0.0156, additions: 0.025, depreciation: 0.0031, disposedNetBookValue: 0.0031, closing: 0.0344
     });

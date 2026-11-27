@@ -797,6 +797,7 @@
       cohorts: next,
       replacementCapex: money(replacementCapex),
       disposalProceeds: money(disposalProceeds),
+      grossCostDisposed: money(disposedCost),
       netBookValueDisposed: disposedCost > 0 && !(config.accountingLife > 0) ? null : money(disposedBookValue),
       disposalGainLoss: disposedCost > 0 && !(config.accountingLife > 0) ? null : money(disposalProceeds - disposedBookValue)
     };
@@ -1653,7 +1654,12 @@
             depreciation: money(opening - depreciated), disposedNetBookValue: refresh.netBookValueDisposed,
             closing: money(closing) };
         }
-        const closingFleetCost = closingFleet.reduce((sum, cohort) => sum + cohort.cost, 0);
+        const closingFleetCost = closingFleet.reduce((sum, cohort) => sum + gpuCohortCost(cohort), 0);
+        const gpuGrossCostBridge = fleetConfig ? {
+          opening: money(fleetOriginalCost), basePurchases: money(gpuPurchases),
+          replacements: refresh.replacementCapex, disposals: refresh.grossCostDisposed,
+          closing: money(closingFleetCost)
+        } : null;
         const gpuFleetAgeYears = closingFleetCost > 0 ? money(closingFleet.reduce((sum, cohort) =>
           sum + cohort.cost * (parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired)) / 4, 0) / closingFleetCost) : null;
         const gpuMaintenanceCapex = money(nonnegative(fleetConfig?.quarterlyMaintenanceCapex));
@@ -1853,6 +1859,7 @@
           disposalProceeds: refresh.disposalProceeds,
           gpuNetBookValueDisposed: refresh.netBookValueDisposed ?? null,
           gpuBookValueBridge,
+          gpuGrossCostBridge,
           gpuDisposalGainLoss: refresh.disposalGainLoss ?? null,
           netGpuReplacementCashOutflow: money(refresh.replacementCapex - refresh.disposalProceeds),
           gpuFleetAgeYears,
