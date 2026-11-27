@@ -307,13 +307,13 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Continuation | ANTHROPIC | Freeze | 171.8728 | 0 | — | — | 2026Q4 |
 | Remediated | ANTHROPIC | Freeze | 241.5204 | 0 | — | — | 2026Q4 |
 | Continuation | CRWV | Manual | -1.2404 | 3.2404 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Manual | 3.9958 | 0 | 2.32 | — | — |
+| Remediated | CRWV | Manual | 4.1607 | 0 | 2.6831 | — | — |
 | Continuation | CRWV | Curve | -1.1763 | 3.1763 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Curve | 3.9958 | 0 | 2.32 | — | — |
+| Remediated | CRWV | Curve | 4.1607 | 0 | 2.6831 | — | — |
 | Continuation | CRWV | Freeze | -31.6668 | 33.6668 | 0 | 2027Q1 | — |
-| Remediated | CRWV | Freeze | -25.8925 | 27.8925 | 0 | 2027Q1 | — |
+| Remediated | CRWV | Freeze | -25.1892 | 27.1892 | 0 | 2027Q1 | — |
 
-OpenAI's manual and curve cash improve while their first default quarters stay in 2028Q2 and 2028Q3. In scenario freeze, cash worsens by $1.235B and first default stays in 2027Q4. These are whole-profile differences that include changes to counterparties and contagion. Anthropic's higher opening cash and the revised estimated financing proceeds increase its liquidity in all three paths. Scenario freeze still lets the separately modeled closing proceeds enter. CoreWeave's manual and curve no longer trigger default through 2028, while freeze still triggers in 2027Q1. Its opening cash-flow and facility corrections change financial capacity and network outcomes. None of the CoreWeave or OpenAI paths reaches modeled FCF break-even. These comparisons do not isolate individual changes or establish underlying private-company forecast inputs.
+OpenAI's manual and curve cash improve while their first default quarters stay in 2028Q2 and 2028Q3. In scenario freeze, cash worsens by $1.2236B and first default stays in 2027Q4. These are whole-profile differences that include changes to counterparties and contagion. Anthropic's higher opening cash and the revised estimated financing proceeds increase its liquidity in all three paths. Scenario freeze still lets the separately modeled closing proceeds enter. CoreWeave's manual and curve no longer trigger default through 2028, while freeze still triggers in 2027Q1. Its opening cash-flow and facility corrections change financial capacity and network outcomes. None of the CoreWeave or OpenAI paths reaches modeled FCF break-even. These comparisons do not isolate individual changes or establish underlying private-company forecast inputs.
 
 ### GPU scenario horizon
 
