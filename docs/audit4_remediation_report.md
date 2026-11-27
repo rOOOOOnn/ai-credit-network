@@ -704,3 +704,5 @@ The cash-target metric now recognizes modeled GPU disposal and opening investmen
 
 
 The downloadable quarterly audit ledger now itemizes financing cash by source, including scenario equity, strategic investment, customer prepayment, debt, asset-backed financing, rollover, contractual draws and the final RCF draw. Legacy assumptions remain explicitly named. These categories reconcile to total funded cash, including any RCF draw made during contagion. A mixed-source fixture independently checks six funded amounts of $1B through $6B and $21B total, with only $1B eligible for equity dilution. Each A–G borrower-quarter also verifies the source sum.
+
+All three company forecast panels now expose four quarterly financing weights for both forecast modes. A zero weight suppresses scenario funding in that quarter. The browser test changes Q2 to zero and verifies that the saved settings and exported 2027Q2 cash sources reflect it. The engine independently verifies the 1/0/1/2 allocation on an $8B annual financing plan.

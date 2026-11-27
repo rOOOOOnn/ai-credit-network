@@ -9774,6 +9774,15 @@ const I18N = {
       ["capacity", t("Total financing limit ($B)", "\u7d2f\u8ba1\u878d\u8d44\u4e0a\u9650（\u5341\u4ebf\u7f8e\u5143）"), 0],
       ["quarterlyLimit", t("Quarterly financing limit ($B)", "\u5b63\u5ea6\u878d\u8d44\u4e0a\u9650（\u5341\u4ebf\u7f8e\u5143）"), 0]
     ]) setting(label, selectedConfig[key] ?? fallback, value => assignFunding(key, Math.max(0, value)));
+    for (let quarter = 0; quarter < 4; quarter++) {
+      const label = t("Financing weight for Q", "\u878d\u8d44\u5206\u914d\u6743\u91cd Q") + (quarter + 1);
+      const control = setting(label, selectedConfig.quarterWeights?.[quarter] ?? 1, value => {
+        const weights = Array.from({ length: 4 }, (_, index) => selectedConfig.quarterWeights?.[index] ?? 1);
+        weights[quarter] = Math.max(0, value);
+        assignFunding("quarterWeights", weights);
+      });
+      control.dataset.financingQuarterWeight = String(quarter + 1);
+    }
     if (selectedConfig.mode === "curve") {
       setting(t("Curve", "\u66f2\u7ebf"), selectedConfig.curve ?? "linear", value => assignFunding("curve", value),
         [["linear", t("Linear", "\u7ebf\u6027")], ["exponential", t("Exponential", "\u6307\u6570")],

@@ -100,6 +100,10 @@ async function checkPage(browser, url) {
     const equityValuation = panel.getByLabel(/Scenario equity pre-money valuation|情景股权投前估值/);
     await equityValuation.fill("18");
     await equityValuation.press("Tab");
+    const secondQuarterWeight = panel.locator('[data-financing-quarter-weight="2"]');
+    await secondQuarterWeight.fill("0");
+    await secondQuarterWeight.press("Tab");
+    assert.deepEqual(JSON.parse(await scenario.inputValue()).financing.quarterWeights, [1, 0, 1, 1]);
     await page.locator("#openDataModalBtn").click();
     const downloadPromise = page.waitForEvent("download");
     await page.locator("#dlAuditLedgerJson").click();
@@ -107,6 +111,11 @@ async function checkPage(browser, url) {
     assert.equal(download.suggestedFilename(), "audit4_quarterly_credit_ledger.json");
     const ledger = JSON.parse(await fs.readFile(await download.path(), "utf8"));
     assert.equal(ledger.currency, "USD billions");
+    const weightedEntity = Object.keys(ledger.simulationOptions.overrides)
+      .find(id => ledger.simulationOptions.overrides[id].financing?.quarterWeights?.[1] === 0);
+    assert.ok(weightedEntity);
+    const zeroWeightQuarter = ledger.quarters.find(row => row.quarter === "2027Q2");
+    assert.equal(zeroWeightQuarter.financingCashSources[weightedEntity].scenarioEquity, 0);
     assert.ok(Object.values(ledger.simulationOptions.overrides).some(row => row.capexGrowth === 0.1));
     assert.ok(Object.values(ledger.simulationOptions.overrides).some(row => row.gpuRefresh?.utilizationRate === 0.5));
     assert.ok(Object.values(ledger.simulationOptions.overrides).some(row => row.gpuRefresh?.utilizationRevenueShare === 0.5));
