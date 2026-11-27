@@ -346,6 +346,24 @@ assert.equal(nebiusTerm.newDrawdown, 0);
 assert.equal(nebiusTerm.principalRepayment, usd(0.7518 * 3 / 49));
 assert.equal(nebiusTerm.endingOutstanding, usd(0.7518 - nebiusTerm.principalRepayment));
 assert.equal(nebiusTerm.principalSchedule.scenarioDataType, "Assumption");
+const nebiusBridgeId = "NBIS_CITI_BRIDGE";
+const nebiusBridgeRun = facilityDrawdowns => engine.runSimulation([nebius], [], {
+  audit4Contracts: true, facilityDrawdowns,
+  overrides: { NBIS: { ocfMarginBeforeFinancing: 0.9, capex: 0, refiSuccess: 0 } }
+}).timeline;
+const nebiusBridgeBaseline = nebiusBridgeRun({});
+const nebiusBridgeStress = nebiusBridgeRun({ [nebiusBridgeId]: { "2026Q4": 4, "2027Q4": 1 } });
+const bridgeOpening = nebiusBridgeStress["2026Q4"].financingLedger[nebiusBridgeId];
+assert.equal(bridgeOpening?.newDrawdown, 3.5);
+assert.equal(bridgeOpening.endingOutstanding, 3.5);
+assert.equal(bridgeOpening.undrawnCommitment, 0);
+assert.equal(nebiusBridgeBaseline["2026Q4"].financingLedger[nebiusBridgeId].newDrawdown, 0);
+assert.equal(usd(nebiusBridgeStress["2026Q4"].entities.NBIS.cash - nebiusBridgeBaseline["2026Q4"].entities.NBIS.cash), 3.5);
+assert.equal(usd(nebiusBridgeStress["2026Q4"].entities.NBIS.debt - nebiusBridgeBaseline["2026Q4"].entities.NBIS.debt), 3.5);
+const bridgeMaturity = nebiusBridgeStress["2027Q4"].financingLedger[nebiusBridgeId];
+assert.equal(bridgeMaturity.newDrawdown, 0);
+assert.equal(bridgeMaturity.principalRepayment, 3.5);
+assert.equal(bridgeMaturity.endingOutstanding, 0);
 const nebiusNoAmortization = engine.runSimulation([nebius], [], {
   audit4Contracts: true, facilityRepayments: { NBIS_TERM: { "2026Q4": 0 } }
 }).timeline["2026Q4"];
