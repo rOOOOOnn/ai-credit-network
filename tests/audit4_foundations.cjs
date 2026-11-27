@@ -1560,3 +1560,10 @@ const operatingCloud = engine.runSimulation(entities, transactions, { audit4Cont
 const mixedCloud = mixedCloudStress.timeline["2027Q2"].entities.GOOGL;
 assert.equal(usd(mixedCloud.ocf - operatingCloud.ocf), 0.3263);
 assert.equal(mixedCloud.cash, operatingCloud.cash);
+assert.deepEqual(mixedCloudFirst.financeLiabilityBridge, {
+  opening: 0, newlyRecognized: 13.05, principalPaid: 0.3263, rounding: 0.0001, closing: 12.7238
+});
+const finalLeaseLiability = engine.incrementalLeaseSchedule(mixedLeases, "2027Q4").financeLiabilityBridge;
+assert.deepEqual(finalLeaseLiability, {
+  opening: 0.9091, newlyRecognized: 0, principalPaid: 0.9091, rounding: 0, closing: 0
+});

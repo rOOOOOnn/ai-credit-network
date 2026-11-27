@@ -1137,6 +1137,8 @@
     let financePrincipal = 0;
     let financeDepreciation = 0;
     let classifiedFinanceLiability = 0;
+    let openingFinanceLiability = 0;
+    let newlyRecognizedFinanceLiability = 0;
     let unclassifiedPayment = 0;
     for (const tranche of tranches) {
       const age = parseQuarterNumber(quarter) - parseQuarterNumber(tranche.startQuarter) - Math.max(0, Math.trunc(delay));
@@ -1154,7 +1156,10 @@
           const pv = periods => effectiveRate > 1e-10
             ? installment * -Math.expm1(-periods * Math.log1p(effectiveRate)) / effectiveRate
             : installment * periods;
-          const interest = pv(remainingAfter + 1) * effectiveRate;
+          const prePaymentLiability = pv(remainingAfter + 1);
+          if (age === 0) newlyRecognizedFinanceLiability += prePaymentLiability;
+          else openingFinanceLiability += prePaymentLiability;
+          const interest = prePaymentLiability * effectiveRate;
           financeInterest += interest;
           financePrincipal += installment - interest;
           financeDepreciation += pv(term) / term;
@@ -1166,9 +1171,16 @@
     }
     const postedPayment = money(payment);
     const postedPrincipal = money(financePrincipal);
+    const postedOpening = money(openingFinanceLiability);
+    const postedNewLiability = money(newlyRecognizedFinanceLiability);
+    const postedClosing = money(classifiedFinanceLiability);
+    const financeLiabilityBridge = {
+      opening: postedOpening, newlyRecognized: postedNewLiability, principalPaid: postedPrincipal,
+      rounding: money(postedClosing - postedOpening - postedNewLiability + postedPrincipal), closing: postedClosing
+    };
     return { payment: postedPayment, ocfCashPayment: money(postedPayment - postedPrincipal),
       financePrincipal: postedPrincipal, financeInterest: money(financeInterest),
-      financeDepreciation: money(financeDepreciation), classifiedFinanceLiability: money(classifiedFinanceLiability),
+      financeDepreciation: money(financeDepreciation), classifiedFinanceLiability: postedClosing, financeLiabilityBridge,
       unclassifiedPayment: money(unclassifiedPayment), uncommencedCommitment: money(uncommencedCommitment),
       commencedRemainingPayments: money(commencedRemainingPayments), dataType: "Assumption" };
   }

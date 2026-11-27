@@ -333,6 +333,9 @@ async function checkPage(browser, url) {
     assert.equal(equipmentQuarter.leaseCashSchedules.GOOGL.incremental.payment, 0.6525);
     assert.equal(equipmentQuarter.leaseCashSchedules.GOOGL.incremental.financePrincipal, 0.3263);
     assert.equal(equipmentQuarter.leaseCashSchedules.GOOGL.incremental.ocfCashPayment, 0.3262);
+    assert.deepEqual(equipmentQuarter.leaseCashSchedules.GOOGL.incremental.financeLiabilityBridge, {
+      opening: 0, newlyRecognized: 13.05, principalPaid: 0.3263, rounding: 0.0001, closing: 12.7238
+    });
     assert.equal(equipmentQuarter.leaseCashSchedules.META.incremental.payment, 0.8893);
     assert.equal(equipmentQuarter.financingCashSources.AMZN.contractualTermDraw, 2);
     assert.deepEqual(equipmentFacility.trancheBalances, [
