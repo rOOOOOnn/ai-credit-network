@@ -266,6 +266,11 @@
         eadBasis = "Unverified Drawn (amountDrawn=null, Conservative CCF)";
       }
 
+      if (tx.drawEligibilityRequired && undrawnCommitment !== 0) {
+        undrawnCommitment = null;
+        undrawnEAD = 0;
+        eadBasis = "Funded principal; eligible undrawn amount unavailable";
+      }
       if (tx.commitmentTerminationDate && quarterEndDate(quarter) > tx.commitmentTerminationDate) {
         undrawnCommitment = 0;
         undrawnEAD = 0;
@@ -1108,6 +1113,7 @@
         };
         if (tx.drawTenorQuarters) {
           row.drawTenorQuarters = tx.drawTenorQuarters;
+          row.drawEligibilityRequired = tx.drawEligibilityRequired === true;
           row.trancheBalances = (previous?.trancheBalances ?? []).map(tranche => ({ ...tranche }));
         }
         financingLedger[tx.id] = row;

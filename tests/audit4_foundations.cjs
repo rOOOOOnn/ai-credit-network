@@ -1402,3 +1402,10 @@ assert.equal(withEquipment["2032Q1"].financingLedger[equipmentId].principalRepay
 assert.equal(withEquipment["2032Q1"].financingLedger[equipmentId].endingOutstanding, 60);
 assert.equal(withEquipment["2033Q3"].financingLedger[equipmentId].principalRepayment, 60);
 assert.equal(withEquipment["2033Q3"].financingLedger[equipmentId].endingOutstanding, 0);
+const equipmentTerms = amazonEquipment.audit4Facilities.find(tx => tx.id === equipmentId);
+const equipmentEad = engine.computeTransactionEAD({ ...equipmentTerms, principalOutstanding: 20,
+  principalAsOfQuarter: "2027Q1", remainingCommitment: 60 }, "2027Q1");
+assert.deepEqual([equipmentEad.fundedEAD, equipmentEad.undrawnCommitment, equipmentEad.totalEAD, equipmentEad.exposureCoverage],
+  [20, null, 20, "FundedOnly"]);
+const expiredEquipmentEad = engine.computeTransactionEAD(equipmentTerms, "2028Q4");
+assert.equal(expiredEquipmentEad.undrawnCommitment, 0);
