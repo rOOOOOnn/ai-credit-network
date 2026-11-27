@@ -2112,12 +2112,25 @@
                   cust.operationalBaselineRevenue = money((cust.operationalBaselineRevenue ?? cust.revenue) - (lostCapacityRevenue - deferred));
                   cust.revenue = money(cust.revenue - lostCapacityRevenue);
                   applyCashDelta(custId, -lostCapacityRevenue * cashFactor);
-                  if (deferred > 0) deferredRevenue.push({
-                    txId: tx.id, customer: custId, originated: stepIdx,
-                    due: operationalStartQByTx[tx.id] + switchQuarters +
-                      Math.trunc(nonnegative(operationalScenario.operationalRecoveryDelayQuarters)),
-                    amount: deferred, cashFactor
-                  });
+                  if (deferred > 0) {
+                    const firstDue = operationalStartQByTx[tx.id] + switchQuarters +
+                      Math.trunc(nonnegative(operationalScenario.operationalRecoveryDelayQuarters));
+                    const installments = Math.min(12, Math.max(1,
+                      Math.trunc(nonnegative(operationalScenario.operationalRecoveryInstallments))));
+                    if (installments === 1) {
+                      deferredRevenue.push({ txId: tx.id, customer: custId, originated: stepIdx,
+                        due: firstDue, amount: deferred, cashFactor });
+                    } else {
+                      const weights = Object.fromEntries(Array.from({ length: installments }, (_, index) => [index, deferred]));
+                      const amounts = allocateFunding(weights, deferred);
+                      const cashAmounts = allocateFunding(weights, money(deferred * cashFactor));
+                      for (const [index, amount] of Object.entries(amounts)) {
+                        if (amount <= 0) continue;
+                        deferredRevenue.push({ txId: tx.id, customer: custId, originated: stepIdx,
+                          due: firstDue + Number(index), amount, cashFactor, cashAmount: cashAmounts[index] });
+                      }
+                    }
+                  }
                   contagionLog.push({
                     hop, layer: "L3_OPERATIONAL", operationalCategory: opCat,
                     from: defId, to: custId, txId: tx.id,
@@ -2374,13 +2387,13 @@
         const customer = states[entry.customer];
         const canRecover = entry.due <= stepIdx && customer && !customer.insufficientData;
         const recovered = canRecover ? entry.amount : 0;
-        const cashRecovered = money(recovered * entry.cashFactor);
+        const cashRecovered = canRecover ? entry.cashAmount ?? money(recovered * entry.cashFactor) : 0;
         if (canRecover) {
           customer.operationalRecoveryRevenue = money((customer.operationalRecoveryRevenue ?? 0) + recovered);
           customer.operationalRecoveryCash = money((customer.operationalRecoveryCash ?? 0) + cashRecovered);
           customer.operationalBaselineRevenue ??= customer.revenue;
           customer.revenue = money(customer.revenue + recovered);
-          applyCashDelta(entry.customer, recovered * entry.cashFactor);
+          applyCashDelta(entry.customer, entry.cashAmount ?? recovered * entry.cashFactor);
           evaluateDistress(entry.customer);
           entry.settled = true;
         }
@@ -2390,7 +2403,7 @@
           const byQuarter = operationalRecoverySchedule[entry.customer] ??= {};
           const pending = byQuarter[dueQuarter] ??= { revenue: 0, cash: 0 };
           pending.revenue = money(pending.revenue + entry.amount);
-          pending.cash = money(pending.cash + money(entry.amount * entry.cashFactor));
+          pending.cash = money(pending.cash + (entry.cashAmount ?? money(entry.amount * entry.cashFactor)));
         }
         return { txId: entry.txId, customer: entry.customer, originQuarter: forwardQs[entry.originated],
           dueQuarter,

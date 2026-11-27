@@ -152,6 +152,10 @@ async function checkPage(browser, url) {
     await substitutionRatio.fill("0.6");
     await substitutionRatio.press("Tab");
     assert.equal(JSON.parse(await scenario.inputValue()).operationalSubstitutionAvailability, 0.6);
+    const recoveryInstallments = panel.locator("[data-operational-recovery-installments]");
+    await recoveryInstallments.fill("2");
+    await recoveryInstallments.press("Tab");
+    assert.equal(JSON.parse(await scenario.inputValue()).operationalRecoveryInstallments, 2);
     const shownAllFinancing = await panel.locator('[data-all-financing="2027"]').innerText();
     await page.locator("#openDataModalBtn").click();
     const downloadPromise = page.waitForEvent("download");

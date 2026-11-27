@@ -1570,3 +1570,10 @@ assert.deepEqual(finalLeaseLiability, {
 const deferredBeyondHorizon = withOperationalScenario({ operationalRecoveryRate: 0.5, operationalRecoveryDelayQuarters: 12 });
 const closingDeferral = deferredBeyondHorizon["2028Q4"].operationalRecoverySchedule.CRWV["2030Q2"];
 assert.deepEqual(closingDeferral, { revenue: 0.0558, cash: 0.0275 });
+const phasedRecovery = withOperationalScenario({ operationalRecoveryRate: 0.5, operationalRecoveryDelayQuarters: 1,
+  operationalRecoveryInstallments: 2 });
+const phaseThree = phasedRecovery["2027Q3"].entities.CRWV;
+const phaseFour = phasedRecovery["2027Q4"].entities.CRWV;
+assert.deepEqual([phaseThree.operationalRecoveryRevenue, phaseThree.operationalRecoveryCash], [0.0279, 0.0138]);
+assert.deepEqual([phaseFour.operationalRecoveryRevenue, phaseFour.operationalRecoveryCash], [0.0279, 0.0137]);
+assert.deepEqual(phasedRecovery["2027Q3"].operationalRecoverySchedule.CRWV["2027Q4"], { revenue: 0.0279, cash: 0.0137 });
