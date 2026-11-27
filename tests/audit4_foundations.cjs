@@ -1521,6 +1521,24 @@ assert.equal(dellRcf("2026Q4").lender, null);
 assert.equal(dellRcf("2031Q1").undrawnCommitment, 5.884);
 assert.equal(dellRcf("2031Q2").undrawnCommitment, 0);
 assert.equal(dellCredit["2031Q3"].entities.DELL.undrawnCredit, 0);
+const datacenterCredit = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline["2026Q4"];
+const dlrRcf = datacenterCredit.financingLedger.DLR_GLOBAL_RCF;
+assert.equal(dlrRcf?.beginningOutstanding, 1.65557);
+assert.equal(dlrRcf.lender, null);
+assert.equal(dlrRcf.lettersOfCredit, 0.1008);
+const eqixRcf = datacenterCredit.financingLedger.EQIX_RCF_2026;
+assert.equal(eqixRcf?.beginningOutstanding, 0);
+assert.equal(eqixRcf.undrawnCommitment, 5.494);
+assert.equal(eqixRcf.lender, null);
+for (const [id, live, expired, available] of [
+  ["DLR", "2028Q4", "2029Q1", 2.7136], ["EQIX", "2031Q2", "2031Q3", 5.494]
+]) {
+  const [facility] = entities.find(entity => entity.id === id).audit4Facilities;
+  assert.equal(engine.computeTransactionEAD(facility, live).undrawnCommitment, available);
+  assert.equal(engine.computeTransactionEAD(facility, expired).undrawnCommitment, 0);
+}
+assert.equal(dlrRcf.newDrawdown, 0);
+assert.equal(eqixRcf.newDrawdown, 0);
 const alphabetEvidence = issuerBalance("GOOGL");
 assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
   alphabetEvidence.hedgeFairValueReduction), 126.118);
