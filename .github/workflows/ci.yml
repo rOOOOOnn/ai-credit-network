@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -39,6 +41,9 @@ jobs:
 
       - name: Run Audit 4 financing and GPU foundations
         run: node tests/audit4_foundations.cjs
+
+      - name: Reproduce Audit 4 report tables
+        run: node tests/audit4_report.cjs
 
   browser:
     runs-on: ubuntu-latest
