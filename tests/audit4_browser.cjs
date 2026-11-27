@@ -339,6 +339,10 @@ async function checkPage(browser, url) {
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
     assert.match(await panel.locator("[data-gpu-disclosure]").innerText(), /150,000 \(2026-03-31\)/);
+    const irenGpu = panel.locator("[data-gpu-disclosure]");
+    assert.match(await irenGpu.innerText(), /50,000 NVIDIA B300/);
+    assert.match(await irenGpu.innerText(), /3[.]5/);
+    assert.match(await irenGpu.locator("a").last().getAttribute("href"), /iren-expands-ai-cloud-capacity-to-150000-gpus$/);
     await page.locator('[data-network-entity="AMZN"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
