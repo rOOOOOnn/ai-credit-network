@@ -296,7 +296,11 @@ async function checkPage(browser, url) {
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
     const tranches = panel.locator("[data-financing-tranche]");
-    assert.equal(await tranches.count(), 6);
+    assert.equal(await tranches.count(), 8);
+    const april2025 = panel.locator('[data-financing-tranche="2025Q2"]');
+    assert.match(await april2025.innerText(), /2025Q2 \$7\.5B \(SoftBank Vision Fund 2\)/);
+    const december2025 = panel.locator('[data-financing-tranche="2025-12-26"]');
+    assert.match(await december2025.innerText(), /2025-12-26 \$22\.5B \(SoftBank Vision Fund 2\)/);
     const octoberTranche = panel.locator('[data-financing-tranche="2026-10-01"]');
     assert.match(await octoberTranche.innerText(), /2026-10-01 \$10B \(SoftBank Vision Fund 2\)/);
     assert.match(await octoberTranche.getAttribute("href"), /financial-report_q2fy2026_01_en\.pdf$/);
