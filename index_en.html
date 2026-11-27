@@ -1662,6 +1662,7 @@
         const effectiveRate = blendedRate(floatShare);
         const disclosedCoupon = tx => useAudit4Contracts && Number.isFinite(tx?.reportedCashCoupon)
           ? tx.reportedCashCoupon : null;
+        const couponBasis = (tx, principal) => principal / (tx?.couponPrincipalRatio ?? 1);
         const modeledInstallments = new Map();
         for (const tx of myDebtTxs) {
           const monthsAtOpening = tx.amortizationRemainingMonthsAtOpening;
@@ -1686,7 +1687,7 @@
         const disclosedCouponAdjustment = myDebtTxs.reduce((sum, tx) => {
           const coupon = disclosedCoupon(tx);
           if (coupon === null) return sum;
-          const interest = modeledInstallments.get(tx.id)?.interest ?? loanPrincipal(tx) * coupon / 4;
+          const interest = modeledInstallments.get(tx.id)?.interest ?? couponBasis(tx, loanPrincipal(tx)) * coupon / 4;
           return sum + interest - loanPrincipal(tx) * blendedRate(floatingShare(tx)) / 4;
         }, 0);
         const interestPaid = money(begDebt * effectiveRate / 4 + disclosedCouponAdjustment);
@@ -1789,7 +1790,8 @@
           row.modeledFloatingPrincipal = money(row.beginningOutstanding * instrumentShare);
           const coupon = disclosedCoupon(tx);
           const installment = modeledInstallments.get(row.txId);
-          row.accruedInterest = money(installment?.interest ?? row.beginningOutstanding * (coupon ?? blendedRate(instrumentShare)) / 4);
+          row.accruedInterest = money(installment?.interest ?? (coupon == null ? row.beginningOutstanding * blendedRate(instrumentShare)
+            : couponBasis(tx, row.beginningOutstanding) * coupon) / 4);
           if (installment) row.amortization = { basis: "Modeled equal monthly payments",
             openingRemainingMonths: installment.remainingMonths, quarterlyScheduledPrincipal: installment.principal };
           if (coupon !== null) row.reportedCashCoupon = coupon;
@@ -5026,7 +5028,9 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "NBIS",
-    "audit4FinancingEvidence": {"asOf":"2026-09-30","noncurrentOperatingLeaseLiability":1.7688,"currentOperatingLeaseLiability":null,"accountsPayableAccrualsAndOther":0.779,"standaloneTradePayables":null,"convertibleIssuance":{"grossProceeds":5.75,"costs":0.0719,"series":[{"maturityYear":2030,"originalPrincipal":3.45,"coupon":0.005},{"maturityYear":2034,"originalPrincipal":2.3,"coupon":0.045}],"originalPrincipalExchangedForShares":0.8,"sourceUrl":"https://nebius.com/newsroom/nebius-group-announces-closing-of-private-offering-of-convertible-senior-notes-with-aggregate-gross-proceeds-of-approximately-5-75-billion"},"subsequentSecuredCredit":{"announcedDate":"2026-10-22","commitment":3.5,"tenorDays":364,"initialSofrSpread":0.0275,"maximumStatedSofrSpread":0.035,"drawn":null,"remainingCommitment":null,"arrangerAndAgent":"Citi","sourceUrl":"https://assets.nebius.com/assets/3ca794eb-4d10-4456-9bbb-9883f0ec319a/22102026%20Nebius%20secures%20%243.5%20billion%20financing%20facility%20with%20Citi.pdf"},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126008/tm2629571d1_ex99-1.htm"},
+    "audit4Facilities": [{"id":"NBIS_JUN29","type":"Convertible Debt","payer":null,"receiver":"NBIS","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2029Q2","principalAsOfQuarter":"2026Q3","principalOutstanding":0.105,"amountDrawn":null,"amountRepaid":null,"remainingCommitment":0,"principalRepaymentRequiresSchedule":true,"lenderAllocationVerified":false,"isFloatingRate":false,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm","exposureBasis":"Disclosed Note 12 principal; lender shares and future settlement unavailable"},{"id":"NBIS_JUN31","type":"Convertible Debt","payer":null,"receiver":"NBIS","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2031Q2","principalAsOfQuarter":"2026Q3","principalOutstanding":0.1094,"amountDrawn":null,"amountRepaid":null,"remainingCommitment":0,"principalRepaymentRequiresSchedule":true,"lenderAllocationVerified":false,"isFloatingRate":false,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm","exposureBasis":"Disclosed Note 12 principal; lender shares and future settlement unavailable"},{"id":"NBIS_SEP30","type":"Convertible Debt","payer":null,"receiver":"NBIS","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2030Q3","principalAsOfQuarter":"2026Q3","principalOutstanding":1.8184,"amountDrawn":null,"amountRepaid":null,"remainingCommitment":0,"principalRepaymentRequiresSchedule":true,"lenderAllocationVerified":false,"isFloatingRate":false,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm","exposureBasis":"Disclosed Note 12 principal; lender shares and future settlement unavailable"},{"id":"NBIS_SEP32","type":"Convertible Debt","payer":null,"receiver":"NBIS","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2032Q3","principalAsOfQuarter":"2026Q3","principalOutstanding":1.8184,"amountDrawn":null,"amountRepaid":null,"remainingCommitment":0,"principalRepaymentRequiresSchedule":true,"lenderAllocationVerified":false,"isFloatingRate":false,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm","exposureBasis":"Disclosed Note 12 principal; lender shares and future settlement unavailable"},{"id":"NBIS_MAR31","type":"Convertible Debt","payer":null,"receiver":"NBIS","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2031Q1","principalAsOfQuarter":"2026Q3","principalOutstanding":3.105,"amountDrawn":null,"amountRepaid":null,"remainingCommitment":0,"principalRepaymentRequiresSchedule":true,"lenderAllocationVerified":false,"isFloatingRate":false,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm","exposureBasis":"Disclosed Note 12 principal; lender shares and future settlement unavailable"},{"id":"NBIS_MAR33","type":"Convertible Debt","payer":null,"receiver":"NBIS","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2033Q1","principalAsOfQuarter":"2026Q3","principalOutstanding":2.1,"amountDrawn":null,"amountRepaid":null,"remainingCommitment":0,"principalRepaymentRequiresSchedule":true,"lenderAllocationVerified":false,"isFloatingRate":false,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm","exposureBasis":"Disclosed Note 12 principal; lender shares and future settlement unavailable"},{"id":"NBIS_FEB30","type":"Convertible Debt","payer":null,"receiver":"NBIS","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2030Q1","principalAsOfQuarter":"2026Q3","principalOutstanding":3.795,"amountDrawn":null,"amountRepaid":null,"remainingCommitment":0,"principalRepaymentRequiresSchedule":true,"lenderAllocationVerified":false,"isFloatingRate":false,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm","exposureBasis":"Disclosed Note 12 principal; lender shares and future settlement unavailable","maturityDate":"2030-02-15","reportedCashCoupon":0.005,"couponPrincipalRatio":1.1},{"id":"NBIS_FEB34","type":"Convertible Debt","payer":null,"receiver":"NBIS","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2034Q1","principalAsOfQuarter":"2026Q3","principalOutstanding":2.875,"amountDrawn":null,"amountRepaid":null,"remainingCommitment":0,"principalRepaymentRequiresSchedule":true,"lenderAllocationVerified":false,"isFloatingRate":false,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm","exposureBasis":"Disclosed Note 12 principal; lender shares and future settlement unavailable","maturityDate":"2034-02-15","reportedCashCoupon":0.045,"couponPrincipalRatio":1.25},{"id":"NBIS_TERM","type":"Direct Loan","payer":null,"receiver":"NBIS","announcedDate":"2026-11-12","startQ":"2026Q4","endQ":"2030Q4","principalAsOfQuarter":"2026Q3","principalOutstanding":0.7518,"amountDrawn":null,"amountRepaid":null,"remainingCommitment":0,"principalRepaymentRequiresSchedule":true,"lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm","exposureBasis":"Disclosed Note 12 principal; lender shares and future settlement unavailable","maturityDate":"2030-10-31"}],
+    "audit4BalanceSheetEvidence": {"asOf":"2026-09-30","borrowingsPrincipal":16.478,"unamortizedDebtDiscount":2.1437,"unamortizedIssuanceCosts":0.1715,"note12CarryingDebt":14.1628,"balanceSheetCarryingDebt":14.1908,"carryingScopeDifference":0.028,"carryingByInstrument":{"JUN29":0.0912,"JUN31":0.0898,"SEP30":1.6009,"SEP32":1.5837,"MAR31":2.6135,"MAR33":1.7561,"FEB30":3.4174,"FEB34":2.2771,"TERM":0.7331},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126238/nbis-ex99d2.htm"},
+    "audit4FinancingEvidence": {"asOf":"2026-09-30","noncurrentOperatingLeaseLiability":1.7688,"currentOperatingLeaseLiability":0.1127,"accountsPayableAccrualsAndOther":0.779,"standaloneTradePayables":0.5299,"uncommencedLeaseGrossPayments":13.8623,"uncommencedLeasePrepayments":0.6197,"uncommencedLeaseRemainingPayments":13.2426,"convertibleIssuance":{"grossProceeds":5.75,"costs":0.0719,"series":[{"maturityYear":2030,"originalPrincipal":3.45,"coupon":0.005},{"maturityYear":2034,"originalPrincipal":2.3,"coupon":0.045}],"originalPrincipalExchangedForShares":0.8,"sourceUrl":"https://nebius.com/newsroom/nebius-group-announces-closing-of-private-offering-of-convertible-senior-notes-with-aggregate-gross-proceeds-of-approximately-5-75-billion"},"subsequentSecuredCredit":{"announcedDate":"2026-10-22","commitment":3.5,"tenorDays":364,"initialSofrSpread":0.0275,"maximumStatedSofrSpread":0.035,"drawn":null,"remainingCommitment":null,"arrangerAndAgent":"Citi","sourceUrl":"https://assets.nebius.com/assets/3ca794eb-4d10-4456-9bbb-9883f0ec319a/22102026%20Nebius%20secures%20%243.5%20billion%20financing%20facility%20with%20Citi.pdf"},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926126008/tm2629571d1_ex99-1.htm"},
     "audit4HardwareDisclosure": {"assetClass":"Servers and network equipment","accountingUsefulLifeYears":5,"priorAccountingUsefulLifeYears":4,"accountingChangeEffective":"2026-01-01","estimatedAnnualDepreciationReduction":0.1676,"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1513845/000110465926052948/nbis-20251231x20f.htm"},
     "name": "Nebius Group",
     "ticker": "NBIS",
@@ -5052,7 +5056,7 @@ const INITIAL_ENTITIES = [
         "fcf": -7.5734,
         "ar": 4.0399,
         "rpo": 38.7,
-        "leaseLiab": null,
+        "leaseLiab": 1.8815,
         "interestExp": 0.1125,
         "undrawnCredit": null,
         "dataType": "Actual",
@@ -5066,9 +5070,10 @@ const INITIAL_ENTITIES = [
         "shortTermDebt": 0.1875,
         "longTermDebt": 14.0033,
         "debtMaturity": null,
-        "accountsPayable": null,
+        "accountsPayable": 0.5299,
         "offBalanceGuarantees": 0,
-        "revenueGrowth": null
+        "revenueGrowth": null,
+        "offBalanceLeases": 13.2426
       }
     },
     "defaults": {

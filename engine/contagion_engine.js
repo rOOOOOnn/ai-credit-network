@@ -1345,6 +1345,7 @@
         const effectiveRate = blendedRate(floatShare);
         const disclosedCoupon = tx => useAudit4Contracts && Number.isFinite(tx?.reportedCashCoupon)
           ? tx.reportedCashCoupon : null;
+        const couponBasis = (tx, principal) => principal / (tx?.couponPrincipalRatio ?? 1);
         const modeledInstallments = new Map();
         for (const tx of myDebtTxs) {
           const monthsAtOpening = tx.amortizationRemainingMonthsAtOpening;
@@ -1369,7 +1370,7 @@
         const disclosedCouponAdjustment = myDebtTxs.reduce((sum, tx) => {
           const coupon = disclosedCoupon(tx);
           if (coupon === null) return sum;
-          const interest = modeledInstallments.get(tx.id)?.interest ?? loanPrincipal(tx) * coupon / 4;
+          const interest = modeledInstallments.get(tx.id)?.interest ?? couponBasis(tx, loanPrincipal(tx)) * coupon / 4;
           return sum + interest - loanPrincipal(tx) * blendedRate(floatingShare(tx)) / 4;
         }, 0);
         const interestPaid = money(begDebt * effectiveRate / 4 + disclosedCouponAdjustment);
@@ -1472,7 +1473,8 @@
           row.modeledFloatingPrincipal = money(row.beginningOutstanding * instrumentShare);
           const coupon = disclosedCoupon(tx);
           const installment = modeledInstallments.get(row.txId);
-          row.accruedInterest = money(installment?.interest ?? row.beginningOutstanding * (coupon ?? blendedRate(instrumentShare)) / 4);
+          row.accruedInterest = money(installment?.interest ?? (coupon == null ? row.beginningOutstanding * blendedRate(instrumentShare)
+            : couponBasis(tx, row.beginningOutstanding) * coupon) / 4);
           if (installment) row.amortization = { basis: "Modeled equal monthly payments",
             openingRemainingMonths: installment.remainingMonths, quarterlyScheduledPrincipal: installment.principal };
           if (coupon !== null) row.reportedCashCoupon = coupon;
