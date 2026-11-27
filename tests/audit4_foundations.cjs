@@ -1511,3 +1511,13 @@ assert.equal(upgradeCash.ocf, quantityReference.ocf);
 assert.equal(usd(quantityReference.fcf - upgradeCash.fcf), 0.2);
 assert.equal(usd(quantityReference.cash - upgradeCash.cash), 0.2);
 assert.deepEqual(upgradeCash.gpuClosingCohorts, []);
+const sharedGuaranteeCap = engine.phasedGuarantee([
+  { readyQuarter: "2027Q1", leaseStartQuarter: "2027Q1", termQuarters: 8, cap: 8 },
+  { readyQuarter: "2028Q1", leaseStartQuarter: "2028Q1", termQuarters: 8, cap: 4 },
+  { readyQuarter: "2028Q2", leaseStartQuarter: "2028Q2", termQuarters: 8, cap: 4 }
+], "2027Q1", 10);
+assert.equal(sharedGuaranteeCap.contingentExposure, 2);
+assert.deepEqual(sharedGuaranteeCap.projects.map(project => project.contingentExposure), [0, 1, 1]);
+assert.equal(delayedCallFirst.guaranteeLedger.TX11.cashSettlementPending, 3);
+assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettlementPending, 0);
+assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettledCumulative, 3);

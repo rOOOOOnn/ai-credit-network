@@ -912,14 +912,19 @@
     const active = rows.reduce((sum, row) => sum + row.effectiveExposure, 0);
     const effective = Math.min(maximum, active);
     const exposure = allocateFunding(Object.fromEntries(rows.map(row => [row.projectIndex, row.effectiveExposure])), effective);
+    const contingentByProject = Object.fromEntries(rows.map(row => [row.projectIndex, row.contingentExposure]));
+    const contingentTotal = Math.min(Math.max(0, maximum - effective),
+      Object.values(contingentByProject).reduce((sum, value) => sum + value, 0));
+    const contingent = allocateFunding(contingentByProject, contingentTotal);
     for (const row of rows) {
       row.effectiveExposure = exposure[row.projectIndex];
+      row.contingentExposure = contingent[row.projectIndex];
       row.remainingGuaranteeLiability = money(Math.max(0, row.effectiveExposure - row.calledGuarantee));
     }
     const totalCalled = previouslyCalled ? rows.reduce((sum, row) => sum + row.calledGuarantee, 0) : called;
     const remaining = previouslyCalled ? rows.reduce((sum, row) => sum + row.remainingGuaranteeLiability, 0) : Math.max(0, effective - called);
     return { disclosedMaximum: maximum, effectiveExposure: money(effective),
-      contingentExposure: money(Math.min(Math.max(0, maximum - effective), rows.reduce((sum, row) => sum + row.contingentExposure, 0))),
+      contingentExposure: money(Object.values(contingent).reduce((sum, value) => sum + value, 0)),
       calledGuarantee: money(totalCalled), remainingGuaranteeLiability: money(remaining), projects: rows,
       dataType: "Assumption" };
   }
@@ -2328,6 +2333,11 @@
       for (const [id, guarantee] of Object.entries(guaranteeLedger)) {
         guarantee.calledGuarantee = cumCreditLossByTx[id] ?? 0;
         if (!guarantee.projects) guarantee.remainingGuaranteeLiability = money(Math.max(0, guarantee.effectiveExposure - guarantee.calledGuarantee));
+        if (id === "TX11" && guarantee.projects) {
+          guarantee.cashSettlementPending = money([...sbEnergySettlementQueue.values()]
+            .reduce((sum, settlement) => sum + settlement.amount, 0));
+          guarantee.cashSettledCumulative = money(guarantee.calledGuarantee - guarantee.cashSettlementPending);
+        }
       }
 
       entities.forEach(e => {
