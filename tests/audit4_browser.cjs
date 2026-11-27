@@ -265,6 +265,9 @@ async function checkPage(browser, url) {
     await page.locator('[data-network-entity="NBIS"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    assert.equal(await panel.locator('[data-historical-financing="equity-2024"] meter').getAttribute("value"), "0.6675");
+    assert.equal(await panel.locator('[data-historical-financing="equity-2025"] meter').getAttribute("value"), "1.1262");
+    assert.equal(await panel.locator('[data-historical-financing="equity-2026"]').count(), 0);
     const nebiusLease = panel.locator("[data-lease-disclosure]");
     assert.match(await nebiusLease.innerText(), /13[.]24/);
     await panel.locator("[data-disclosed-lease-stress]").selectOption("12");

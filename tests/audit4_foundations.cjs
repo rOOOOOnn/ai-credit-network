@@ -298,6 +298,13 @@ assert.equal(oracleSnapshot.leaseLiab, usd(4.027 + 30.594 + 0.749 + 8.436));
 assert.equal(oracleSnapshot.offBalanceLeases, 288);
 const nebius = entities.find(entity => entity.id === "NBIS");
 const nebiusSnapshot = nebius.financials["2026Q3"];
+const nebiusFinancingTrend = engine.financingForecast({
+  mode: "curve", curve: "historical", startYear: 2027, history: nebius.verifiedFinancingHistory
+}, 2027);
+assert.deepEqual(nebiusFinancingTrend.historyBySource.equity?.years, ["2024", "2025"]);
+assert.deepEqual(nebiusFinancingTrend.historyBySource.equity.amounts, [0.6675, 1.1262]);
+assert.equal(usd(nebiusFinancingTrend.amounts.equity), usd(1.1262 * (1.1262 / 0.6675) ** 2));
+assert.ok(nebiusFinancingTrend.missingHistorySources.includes("debt"));
 const nebiusFinancing = nebius.audit4FinancingEvidence;
 assert.equal(usd(nebiusSnapshot.cash + nebiusSnapshot.restrictedCash), 8.6411);
 assert.equal(nebiusSnapshot.leaseLiab, usd(0.1127 + 1.7688));
