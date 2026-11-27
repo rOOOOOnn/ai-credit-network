@@ -563,6 +563,14 @@ assert.equal(nvdaOpening.laterFiscalDisclosure.periodEnd, "2026-10-25");
 assert.equal(usd(nvdaOpening.laterFiscalDisclosure.ocf - nvdaOpening.laterFiscalDisclosure.cashPurchases -
   nvdaOpening.laterFiscalDisclosure.assetPrincipal), 43.777);
 const neocloud = "NVDA_NEOCLOUD_UNALLOCATED";
+const guaranteeDisclosure = entities.find(entity => entity.id === "NVDA").audit4GuaranteeDisclosure;
+const neocloudDisclosure = guaranteeDisclosure.categories.find(category => category.id === neocloud);
+assert.equal(guaranteeDisclosure.paidToDate, 0);
+assert.equal(neocloudDisclosure.maximum, 3.5);
+assert.deepEqual(neocloudDisclosure.priorNotionalEvidence, {
+  asOf: "2026-07-26", grossNotional: 3.529, partnerEscrow: 0.712, leaseTermYears: [5, 7],
+  sourceUrl: "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"
+});
 const systems = "NVDA_POWER_SYSTEMS_UNALLOCATED";
 const firstGuarantees = liquid.timeline["2026Q4"].guaranteeLedger;
 assert.equal(usd(firstGuarantees.TX11.disclosedMaximum + firstGuarantees[neocloud].disclosedMaximum +
