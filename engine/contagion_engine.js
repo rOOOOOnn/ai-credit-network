@@ -737,6 +737,11 @@
     return hasGpuUnitBasis(cohort) ? cohort.quantity * cohort.unitCostUsd / 1e9 : nonnegative(cohort.cost);
   }
 
+  function gpuPerformanceUnits(cohort) {
+    return Number.isFinite(cohort.performanceUnitsPerGpu) && cohort.performanceUnitsPerGpu > 0
+      ? cohort.performanceUnitsPerGpu : 1;
+  }
+
   function fleetRefresh(cohorts, quarter, config) {
     let replacementCapex = 0;
     let disposalProceeds = 0;
@@ -777,7 +782,9 @@
         if (repurposedUnits > 0) next.push({ ...cohort, quantity: repurposedUnits, cost: repurposed, lowTier: true });
         if (!cohort.lowTier && replacedUnits > 0) next.push({
           acquired: quarter, cost: newCost, quantity: newUnits, unitCostUsd: newUnitCost,
-          generation: config.replacementGeneration ?? cohort.generation
+          generation: config.replacementGeneration ?? cohort.generation,
+          ...(performanceRatio !== 1 || cohort.performanceUnitsPerGpu != null
+            ? { performanceUnitsPerGpu: gpuPerformanceUnits(cohort) * performanceRatio } : {})
         });
       } else {
         if (cost > replaced) next.push({ ...cohort, cost: cost - replaced });
@@ -1531,7 +1538,8 @@
           fleets[e.id] = [...refresh.cohorts];
           if (gpuPurchases > 0) fleets[e.id].push(countedPurchase
             ? { acquired: q, cost: gpuPurchases, quantity: purchaseUnits, unitCostUsd: purchase.unitCostUsd,
-                generation: purchase.generation }
+                generation: purchase.generation,
+                ...(purchase.performanceUnitsPerGpu != null ? { performanceUnitsPerGpu: gpuPerformanceUnits(purchase) } : {}) }
             : { acquired: q, cost: gpuPurchases });
         }
         const closingFleet = fleets[e.id] ?? [];
@@ -1543,6 +1551,13 @@
           pledgedGpuValues[cohort.pledgedTo] = (pledgedGpuValues[cohort.pledgedTo] ?? 0) +
             valueGpuCohort(cohort) * (1 - Math.min(1, nonnegative(gpuCollateralHaircut)));
         }
+        const countedFleet = closingFleet.filter(hasGpuUnitBasis);
+        const gpuFleetQuantities = countedFleet.length === 0 ? null : {
+          countedDevices: countedFleet.reduce((sum, cohort) => sum + cohort.quantity, 0),
+          primaryCapacityUnits: money(countedFleet.filter(cohort => !cohort.lowTier)
+            .reduce((sum, cohort) => sum + cohort.quantity * gpuPerformanceUnits(cohort), 0)),
+          includesEveryModeledCohort: countedFleet.length === closingFleet.length
+        };
         const closingFleetCost = closingFleet.reduce((sum, cohort) => sum + cohort.cost, 0);
         const gpuFleetAgeYears = closingFleetCost > 0 ? money(closingFleet.reduce((sum, cohort) =>
           sum + cohort.cost * (parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired)) / 4, 0) / closingFleetCost) : null;
@@ -1703,6 +1718,7 @@
           gpuDisposalGainLoss: refresh.disposalGainLoss ?? null,
           netGpuReplacementCashOutflow: money(refresh.replacementCapex - refresh.disposalProceeds),
           gpuFleetAgeYears,
+          gpuFleetQuantities,
           gpuUtilizationRevenueAdjustment,
           gpuUtilizationRate: closingFleetCost > 0 ? gpuUtilization : null,
           openingInvestmentSale: investmentSale,

@@ -1493,3 +1493,10 @@ const sameGen = engine.fleetRefresh([
   { acquired: "2023Q1", quantity: 10000, unitCostUsd: 40000, generation: "Hopper" }
 ], "2027Q1", { economicLife: 4, replacementRatio: 0.5, replacementGeneration: "Hopper", replacementPerformanceRatio: 2 });
 assert.equal(sameGen.cohorts.at(-1).quantity, 5000);
+assert.equal(fasterGpu.cohorts.at(-1).performanceUnitsPerGpu, 2);
+assert.equal(fasterGpu.cohorts.reduce((sum, cohort) => sum + cohort.quantity * (cohort.performanceUnitsPerGpu ?? 1), 0), 10000);
+const laterSameGeneration = engine.fleetRefresh([fasterGpu.cohorts.at(-1)], "2031Q1", {
+  economicLife: 4, replacementRatio: 1, replacementPerformanceRatio: 2, replacementGeneration: "Blackwell"
+});
+assert.equal(laterSameGeneration.cohorts[0].quantity, 2500);
+assert.equal(laterSameGeneration.cohorts[0].performanceUnitsPerGpu, 2);

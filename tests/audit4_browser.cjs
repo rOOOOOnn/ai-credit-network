@@ -165,10 +165,13 @@ async function checkPage(browser, url) {
     const gpuRefresh = ledger.quarters.find(row => row.quarter === "2034Q1").gpuCashSchedules[weightedEntity];
     assert.equal(gpuRefresh.replacementCapex, 0.025);
     assert.equal(gpuRefresh.disposalProceeds, 0.005);
+    assert.deepEqual(gpuRefresh.fleetQuantities, {
+      countedDevices: 1000, primaryCapacityUnits: 1000, includesEveryModeledCohort: true
+    });
     assert.deepEqual(gpuRefresh.closingCohorts, [
       { acquired: "2027Q1", cost: 0.05, quantity: 500, unitCostUsd: 100000, generation: "Fixture" },
       { acquired: "2027Q1", cost: 0.025, quantity: 250, unitCostUsd: 100000, generation: "Fixture", lowTier: true },
-      { acquired: "2034Q1", cost: 0.025, quantity: 250, unitCostUsd: 100000, generation: "Fixture" }
+      { acquired: "2034Q1", cost: 0.025, quantity: 250, unitCostUsd: 100000, generation: "Fixture", performanceUnitsPerGpu: 2 }
     ]);
     assert.equal(Number((gpuRefresh.replacementCapex - gpuRefresh.disposalProceeds).toFixed(4)), gpuRefresh.netReplacementCash);
     const totalCashFinancing = ledger.quarters.filter(row => row.quarter.startsWith("2027"))
