@@ -184,6 +184,11 @@ async function checkPage(browser, url) {
     const amazonTranche = panel.locator('[data-financing-tranche="2026Q3"]');
     assert.match(await amazonTranche.innerText(), /2026Q3 \$21\.3B \(Amazon\)/);
     assert.match(await amazonTranche.getAttribute("href"), /amzn-20260930\.htm$/);
+    await page.locator('[data-network-entity="NVDA"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    await panel.locator("[data-nvidia-lease-preset]").selectOption("annual");
+    assert.equal(JSON.parse(await scenario.inputValue()).includeNvidiaLeaseBuckets, true);
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {

@@ -1670,8 +1670,12 @@
           sum + cohort.cost * (parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired)) / 4, 0) / closingFleetCost) : null;
         const capex = money(baseCapex + refresh.replacementCapex);
         const legacyLease = ov?.incrementalLease;
+        const disclosedLeaseBuckets = useAudit4Contracts && e.id === "NVDA" && ov?.includeNvidiaLeaseBuckets
+          ? e.audit4LeaseDisclosure?.uncommencedLeasePayments.slice(1, 5).map((commitment, index) => ({
+              commitment, termQuarters: 4, startQuarter: (2027 + index) + "Q2", type: "operating"
+            })) : null;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
-          : useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []);
+          : disclosedLeaseBuckets ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));
         const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);
         const leasePayment = leaseSchedule.payment;
         const leaseOperatingCash = leaseSchedule.ocfCashPayment;
@@ -9665,6 +9669,7 @@ const I18N = {
       gpuRefresh:state.overrides[entity.id]?.gpuRefresh ?? {economicLife:5,replacementRatio:0.25,residualValue:0.2,cohorts:[]},
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
       incrementalLeaseTranches:state.overrides[entity.id]?.incrementalLeaseTranches ?? null,
+      includeNvidiaLeaseBuckets:state.overrides[entity.id]?.includeNvidiaLeaseBuckets ?? false,
       includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75, openingInvestmentSaleFraction:state.overrides[entity.id]?.openingInvestmentSaleFraction ?? 0, includeExistingFinanceLease:state.overrides[entity.id]?.includeExistingFinanceLease ?? true, unallocatedGuaranteeCalls:state.overrides[entity.id]?.unallocatedGuaranteeCalls ?? {}}, null, 2);
     panel.querySelector("button").textContent = t("Apply assumptions", "\u5e94\u7528\u5047\u8bbe");
     panel.querySelector("p").textContent = t(
@@ -9837,7 +9842,15 @@ const I18N = {
         value => { (settings().gpuRefresh ??= {})[key] = Math.min(max, Math.max(min, value)); });
       control.dataset.gpuSetting = key;
     }
-    if (entity.id === "ORCL") setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
+    if (entity.id === "NVDA") {
+      const leasePreset = setting(t("NVIDIA lease scenario", "NVIDIA \u79df\u8d41\u60c5\u666f"),
+        operating.includeNvidiaLeaseBuckets ? "annual" : "off",
+        value => { settings().includeNvidiaLeaseBuckets = value === "annual"; },
+        [["off", t("Off", "\u5173\u95ed")],
+          ["annual", t("FY2028–31 payments, evenly allocated", "FY2028–31 \u4ed8\u6b3e\u5b63\u5ea6\u5747\u5206")]]);
+      leasePreset.dataset.nvidiaLeasePreset = "";
+    }
+    if (["ORCL", "NVDA"].includes(entity.id)) setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
       state.overrides[entity.id]?.leaseDelayQuarters ?? 0, value => { settings().leaseDelayQuarters = Math.max(0, Math.trunc(value)); });
     const lastYear = Number(state.simResult.allQuarters.at(-1).slice(0, 4));
     for (let year = 2027; year <= lastYear; year++) {
@@ -10002,6 +10015,7 @@ const I18N = {
         settings.unallocatedGuaranteeCalls = data.unallocatedGuaranteeCalls;
         settings.incrementalLease = data.incrementalLease;
         settings.incrementalLeaseTranches = data.incrementalLeaseTranches;
+        settings.includeNvidiaLeaseBuckets = data.includeNvidiaLeaseBuckets === true;
         recompute();
       } catch (error) {
         output.textContent = error.message;

@@ -1350,8 +1350,12 @@
           sum + cohort.cost * (parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired)) / 4, 0) / closingFleetCost) : null;
         const capex = money(baseCapex + refresh.replacementCapex);
         const legacyLease = ov?.incrementalLease;
+        const disclosedLeaseBuckets = useAudit4Contracts && e.id === "NVDA" && ov?.includeNvidiaLeaseBuckets
+          ? e.audit4LeaseDisclosure?.uncommencedLeasePayments.slice(1, 5).map((commitment, index) => ({
+              commitment, termQuarters: 4, startQuarter: (2027 + index) + "Q2", type: "operating"
+            })) : null;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
-          : useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []);
+          : disclosedLeaseBuckets ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));
         const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);
         const leasePayment = leaseSchedule.payment;
         const leaseOperatingCash = leaseSchedule.ocfCashPayment;

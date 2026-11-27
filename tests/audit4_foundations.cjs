@@ -1137,3 +1137,18 @@ const nvidiaLeases = entities.find(row => row.id === "NVDA").audit4LeaseDisclosu
 assert.equal(nvidiaLeases.uncommencedLeasePayments.reduce((sum, payment) => sum + payment, 0), 74);
 assert.equal(nvidiaLeases.separateCloudServicePayments.reduce((sum, payment) => sum + payment, 0), 28);
 assert.equal(nvidiaLeases.uncommencedLeasePayments.at(-1), 63);
+
+const nvidiaLeaseStress = engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, forecastThrough: 2031, overrides: { NVDA: { includeNvidiaLeaseBuckets: true } }
+}).timeline;
+for (const [quarter, payment, ocf, fcf, cash] of [
+  ["2027Q1", 0, 32.0665, 27.2665, 72.0817],
+  ["2027Q2", 0.25, 35.3886, 30.5886, 102.1703],
+  ["2031Q1", 1, 16.537, 11.737, 575.2559],
+  ["2031Q2", 0, 12.1469, 7.3469, 582.1028]
+]) {
+  const state = nvidiaLeaseStress[quarter].entities.NVDA;
+  assert.deepEqual([state.incrementalLeasePayment, state.ocf, state.fcf, state.cash], [payment, ocf, fcf, cash]);
+}
+assert.equal(usd(Object.values(nvidiaLeaseStress).reduce((sum, quarter) =>
+  sum + (quarter.entities.NVDA.incrementalLeasePayment ?? 0), 0)), 11);
