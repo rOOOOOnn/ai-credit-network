@@ -148,6 +148,11 @@ async function checkPage(browser, url) {
     assert.equal(firstQuarter.quarter, "2026Q4");
     assert.ok(Array.isArray(firstQuarter.operationalRevenueLedger));
     assert.equal(typeof firstQuarter.operatingCashBridges.CRWV.endingOCF, "number");
+    assert.ok(Array.isArray(firstQuarter.contagionEvents));
+    const oracleCredit = firstQuarter.secondaryCreditSchedules.ORCL;
+    assert.equal(oracleCredit.openingSpreadBps, 0);
+    assert.equal(oracleCredit.refinancingMultiplier, 1);
+    assert.ok(Number.isFinite(oracleCredit.floatingPrincipal));
     const coreWeaveFinancing = firstQuarter.financingCashSources.CRWV;
     assert.equal(Number(Object.entries(coreWeaveFinancing).filter(([key]) => key !== "total")
       .reduce((sum, [, amount]) => sum + amount, 0).toFixed(4)), coreWeaveFinancing.total);

@@ -10274,8 +10274,18 @@ const I18N = {
             collateralValue: company.gpuCollateralValue,
             pledgedCollateralByFacility: company.pledgedGpuValues
           }]));
+        const secondaryCreditSchedules = Object.fromEntries(Object.entries(row.entities)
+          .filter(([, company]) => Number.isFinite(company.secondaryOpeningSpreadBps))
+          .map(([id, company]) => [id, {
+            openingSpreadBps: company.secondaryOpeningSpreadBps,
+            closingSpreadBps: company.secondaryClosingSpreadBps,
+            floatingPrincipal: company.secondaryFloatingPrincipal,
+            refinancingMultiplier: company.secondaryRefinancingMultiplier,
+            incrementalInterest: company.secondaryFinancingHit
+          }]));
         return [{ quarter, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation,
-          operationalRevenueLedger, operatingCashBridges, financingCashSources, leaseCashSchedules, gpuCashSchedules }];
+          operationalRevenueLedger, operatingCashBridges, financingCashSources, leaseCashSchedules, gpuCashSchedules,
+          contagionEvents: row.contagionLog, secondaryCreditSchedules }];
       });
       triggerDownload("audit4_quarterly_credit_ledger.json", JSON.stringify({
         version: state.version,
