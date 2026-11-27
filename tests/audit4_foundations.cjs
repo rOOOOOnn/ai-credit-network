@@ -1213,3 +1213,11 @@ const belowFloor = engine.computeFragilityScore(contractedCashFixture, {
 assert.equal(farFromFloor.score, 4);
 assert.deepEqual(nearFloor, { score: 6, drivers: ["Low Operating Cash Buffer"] });
 assert.deepEqual(belowFloor, { score: 8, drivers: ["Low Operating Cash Buffer"] });
+
+const coreWeaveConsolidation = liquid.parentSpvReconciliation.find(row => row.spvId === "SPV_CRWV8");
+assert.equal(coreWeaveConsolidation.parentConsolidatedDebt, 46.873);
+assert.equal(coreWeaveConsolidation.parentConsolidatedPrincipal, 47.505);
+assert.equal(usd(coreWeaveConsolidation.parentRecoursePrincipal + coreWeaveConsolidation.parentNonRecoursePrincipal), 47.505);
+assert.equal(usd(coreWeaveConsolidation.parentConsolidatedPrincipal - coreWeaveConsolidation.parentConsolidatedDebt), 0.632);
+assert.equal(coreWeaveConsolidation.netSystemWidePrincipal, 47.505);
+assert.equal(coreWeaveConsolidation.spvFundedDebt, 4.583);

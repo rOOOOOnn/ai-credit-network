@@ -165,6 +165,9 @@ async function checkPage(browser, url) {
     assert.equal(Number(Object.entries(coreWeaveFinancing).filter(([key]) => key !== "total")
       .reduce((sum, [, amount]) => sum + amount, 0).toFixed(4)), coreWeaveFinancing.total);
     assert.equal(firstQuarter.financingLedger.TX26.beginningOutstanding, 4.583);
+    const coreWeaveDebt = ledger.parentSpvReconciliation.find(row => row.spvId === "SPV_CRWV8");
+    assert.equal(coreWeaveDebt.parentConsolidatedDebt, 46.873);
+    assert.equal(coreWeaveDebt.netSystemWidePrincipal, 47.505);
     assert.equal(firstQuarter.financingLedger.TX26.lender, null);
     assert.equal(firstQuarter.financingLedger.TX26.undrawnCommitment, null);
     const oracleInitialLease = firstQuarter.leaseCashSchedules.ORCL;

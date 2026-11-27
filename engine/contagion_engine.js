@@ -384,6 +384,11 @@
         parentConsolidatedDebt,
         parentRecourseDebt,
         parentNonRecourseDebt,
+        parentConsolidatedPrincipal: pFin.borrowingPrincipal ?? null,
+        parentRecoursePrincipal: pFin.recoursePrincipal ?? null,
+        parentNonRecoursePrincipal: pFin.nonRecoursePrincipal ?? null,
+        netSystemWidePrincipal: isConsolidated ? pFin.borrowingPrincipal ?? null
+          : pFin.borrowingPrincipal == null ? null : money(pFin.borrowingPrincipal + fundedDebt),
         spvFacilityCommitment: facilityCommitment,
         spvFundedDebt: fundedDebt,
         spvUndrawnCommitment: undrawnCommitment,
