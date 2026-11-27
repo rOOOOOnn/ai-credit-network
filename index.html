@@ -10081,8 +10081,14 @@ const I18N = {
       tr.insertCell().textContent = Number.isFinite(end?.cash) ? end.cash.toFixed(2) : "—";
     }
     const metadata = Engine.financingForecast(projectionConfig, selectedConfig.startYear ?? 2027);
-    const historicalRows = Object.entries(metadata.historyBySource ?? {}).flatMap(([source, history]) =>
-      history.years.map((year, index) => ({ source, year, amount: history.amounts[index] })));
+    const history = selectedConfig.history ?? entity.verifiedFinancingHistory ?? {};
+    const historicalRows = Object.entries(history)
+      .filter(([year, record]) => Number(year) < (selectedConfig.startYear ?? 2027) &&
+        record?.dataType === "Actual" && record.fullYear === true)
+      .sort(([left], [right]) => Number(left) - Number(right))
+      .flatMap(([year, record]) => sources
+        .filter(source => Number.isFinite(record.amounts?.[source]) && record.amounts[source] >= 0)
+        .map(source => ({ source, year, amount: record.amounts[source] })));
     const scale = Math.max(1, ...historicalRows.map(row => row.amount),
       ...rows.flatMap(row => [row.total, row.received, row.allFinancing ?? 0, row.end?.fundingGap ?? 0,
         row.end?.financingForecast?.remainingCapacity ?? 0, Math.abs(row.end?.cash ?? 0)]));
@@ -10093,7 +10099,10 @@ const I18N = {
     for (const { source, year, amount } of historicalRows) {
       const item = document.createElement("li");
       item.dataset.historicalFinancing = source + "-" + year;
-      item.textContent = year + " " + t("Actual financing", "\u5b9e\u9645\u878d\u8d44") + " " + source + " " + amount.toFixed(2) + " ";
+      const historyLabel = selectedConfig.history
+        ? t("User-supplied financing history", "\u7528\u6237\u63d0\u4f9b\u7684\u878d\u8d44\u5386\u53f2")
+        : t("Reported financing", "\u5df2\u62ab\u9732\u878d\u8d44");
+      item.textContent = year + " " + historyLabel + " " + source + " " + amount.toFixed(2) + " ";
       const bar = document.createElement("meter");
       bar.max = scale;
       bar.value = amount;

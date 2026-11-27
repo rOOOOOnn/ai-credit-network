@@ -95,6 +95,11 @@ async function checkPage(browser, url) {
     assert.equal(await row.locator("td").nth(7).innerText(), "9.00");
     await panel.locator("select").first().selectOption("manual");
     assert.equal(await row.locator("input").first().inputValue(), "8");
+    assert.equal(await panel.locator('[data-historical-financing="equity-2025"] meter').getAttribute("value"), "4");
+    await panel.locator("select").first().selectOption("curve");
+    assert.equal(await panel.locator("[data-financing-curve]").inputValue(), "historical");
+    assert.equal(await row.locator("td").nth(7).innerText(), "9.00");
+    await panel.locator("select").first().selectOption("manual");
     await page.locator("#stepFwdBtn").click();
     assert.notEqual(await panel.locator("output").innerText(), "");
     const leaseSettings = JSON.parse(await scenario.inputValue());
@@ -223,6 +228,8 @@ async function checkPage(browser, url) {
     await page.locator('[data-network-entity="ANTHROPIC"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    assert.equal(await panel.locator('[data-historical-financing="equity-2023"] meter').getAttribute("value"), "0.448");
+    assert.equal(await panel.locator('[data-historical-financing="equity-2025"] meter').getAttribute("value"), "16.659");
     const anthropicLease = panel.locator("[data-lease-disclosure]");
     assert.match(await anthropicLease.innerText(), /451\.20 \(2026-09-30\)/);
     assert.match(await anthropicLease.innerText(), /2\.810 \/ 1\.674/);
