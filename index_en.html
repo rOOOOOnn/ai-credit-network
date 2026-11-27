@@ -1190,6 +1190,34 @@
       dataType: "Assumption: equal quarterly installments within the disclosed fiscal-year bucket" };
   }
 
+  function oracleCommencedFinanceLeaseQuarter(filing, quarter) {
+    const payments = filing?.commencedLeaseMaturities?.financePayments;
+    if (!payments || !Number.isFinite(filing.financeLeaseRateProxy)) return null;
+    const paymentMonths = payments.slice(0, -1).flatMap((bucket, index) =>
+      Array(index === 0 ? 9 : 12).fill(bucket / (index === 0 ? 9 : 12)));
+    const start = 1 + (parseQuarterNumber(quarter) - parseQuarterNumber(QUARTER_PARTIAL)) * 3;
+    const monthlyRate = (1 + filing.financeLeaseRateProxy) ** (1 / 12) - 1;
+    let balance = filing.financeLeaseLiability;
+    let opening = balance;
+    let interest = 0;
+    let payment = 0;
+    for (let month = 0; month < Math.min(start + 3, paymentMonths.length); month++) {
+      if (month === start) opening = balance;
+      const monthInterest = balance * monthlyRate;
+      const monthPayment = Math.min(paymentMonths[month], balance + monthInterest);
+      if (month >= start) {
+        interest += monthInterest;
+        payment += monthPayment;
+      }
+      balance = balance + monthInterest - monthPayment;
+    }
+    if (start >= paymentMonths.length) return { opening: money(balance), ending: money(balance),
+      payment: null, principal: null, interest: null, dataType: "Unavailable beyond disclosed dated buckets" };
+    return { opening: money(opening), ending: money(balance), payment: money(payment), principal: money(payment - interest),
+      interest: money(interest), historicalInterestEmbedded: true,
+      dataType: "Assumption: equal monthly payments with the prior fiscal-year rate proxy" };
+  }
+
   function phasedGuarantee(projects, quarter, maximum, called = 0) {
     const previouslyCalled = typeof called === "number" ? null : called;
     const rows = projects.map((project, index) => {
@@ -1924,11 +1952,17 @@
         const leasePayment = leaseSchedule.payment;
         const leaseOperatingCash = leaseSchedule.ocfCashPayment;
         const recognizedFinanceLease = useAudit4Contracts && ov?.includeExistingFinanceLease !== false
-          ? financeLeaseQuarter(e.audit4FiscalCashFlow, q, prev.recognizedFinanceLease?.ending) : null;
+          ? (e.id === "ORCL" && ov?.includeOracleCommencedFinanceLease
+            ? oracleCommencedFinanceLeaseQuarter(e.audit4FiscalCashFlow, q)
+            : financeLeaseQuarter(e.audit4FiscalCashFlow, q, prev.recognizedFinanceLease?.ending))
+          : null;
         const leasePrincipal = money((recognizedFinanceLease?.principal ?? 0) + leaseSchedule.financePrincipal);
+        const hasEmbeddedLeaseInterest = ocfCalibById[e.id]?.hasCalib && ov?.opex === undefined &&
+          !Number.isFinite(ov?.ocfMarginBeforeFinancing);
         const leaseInterestAdjustment = recognizedFinanceLease?.interest == null ? 0 :
-          recognizedFinanceLease.interest - (ocfCalibById[e.id]?.hasCalib && ov?.opex === undefined
-            ? e.audit4FiscalCashFlow.financeLeaseInterestPaid : 0);
+          recognizedFinanceLease.interest - (hasEmbeddedLeaseInterest
+            ? (recognizedFinanceLease.historicalInterestEmbedded ? recognizedFinanceLease.interest :
+              e.audit4FiscalCashFlow.financeLeaseInterestPaid) : 0);
         const grossMargin = Math.max(0.05, Math.min(0.98, p.grossMargin ?? 0.55));
         const cashConv = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
         const minCash = p.minCash ?? 1.0;
@@ -3470,7 +3504,7 @@ const INITIAL_ENTITIES = [
   {
     "id": "ORCL",
     "audit4HardwareDisclosure": {"assetClass":"Computer, network, machinery and equipment, primarily servers and networking equipment","accountingUsefulLifeYears":6,"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
-    "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q1","periodStart":"2026-06-01","periodEnd":"2026-08-31","calendarBucket":"2026Q3","revenue":19.345,"ocf":23.103,"financingComponentPrepayments":11.363,"capex":28.499,"currentBorrowings":7.625,"nonCurrentBorrowings":117.712,"operatingLeaseLiability":34.621,"financeLeaseLiability":9.185,"commencedLeaseMaturities":{"fiscalYears":["FY2027 remaining","FY2028","FY2029","FY2030","FY2031","FY2032","Thereafter"],"operatingPayments":[3.219,4.135,4.097,4.109,4.089,4.030,24.371],"financePayments":[0.620,0.852,0.923,0.947,0.971,0.996,9.886],"operatingImputedInterest":13.429,"financeImputedInterest":6.010},"reportedLeaseCashPaid":{"operating":0.950,"finance":0.186},"noncashFinanceLeaseAcquisitions":1.539,"uncommencedLeaseCommitment":288,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
+    "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q1","periodStart":"2026-06-01","periodEnd":"2026-08-31","calendarBucket":"2026Q3","revenue":19.345,"ocf":23.103,"financingComponentPrepayments":11.363,"capex":28.499,"currentBorrowings":7.625,"nonCurrentBorrowings":117.712,"operatingLeaseLiability":34.621,"financeLeaseLiability":9.185,"financeLeaseRateProxy":0.057,"financeLeaseRateSourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526277521/orcl-20260531.htm","commencedLeaseMaturities":{"fiscalYears":["FY2027 remaining","FY2028","FY2029","FY2030","FY2031","FY2032","Thereafter"],"operatingPayments":[3.219,4.135,4.097,4.109,4.089,4.030,24.371],"financePayments":[0.620,0.852,0.923,0.947,0.971,0.996,9.886],"operatingImputedInterest":13.429,"financeImputedInterest":6.010},"reportedLeaseCashPaid":{"operating":0.950,"finance":0.186},"noncashFinanceLeaseAcquisitions":1.539,"uncommencedLeaseCommitment":288,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
     "audit4Liquidity": {"asOf":"2026-08-31","cashAndEquivalents":36.369,"currentInvestments":0.708,"knownRestrictedWithinCurrentInvestments":0,"restrictedCashSeparate":2.565,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
     "name": "Oracle Corp.",
     "ticker": "ORCL",
@@ -9824,6 +9858,7 @@ const I18N = {
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
       incrementalLeaseTranches:state.overrides[entity.id]?.incrementalLeaseTranches ?? null,
       includeNvidiaLeaseBuckets:state.overrides[entity.id]?.includeNvidiaLeaseBuckets ?? false,
+      includeOracleCommencedFinanceLease:state.overrides[entity.id]?.includeOracleCommencedFinanceLease ?? false,
       operationalSubstitutionAvailability:state.overrides[entity.id]?.operationalSubstitutionAvailability ?? null,
       operationalRecoveryDelayQuarters:state.overrides[entity.id]?.operationalRecoveryDelayQuarters ?? 0,
       disclosedLeaseStressYears:state.overrides[entity.id]?.disclosedLeaseStressYears ?? 0,
@@ -10076,6 +10111,13 @@ const I18N = {
         ])]);
       control.dataset.disclosedLeaseStress = "";
     }
+    if (entity.id === "ORCL") {
+      const oracleFinance = setting(t("Oracle commenced finance lease cash scenario", "Oracle \u5df2\u8d77\u79df\u878d\u8d44\u79df\u8d41\u73b0\u91d1\u6d41\u60c5\u666f"),
+        operating.includeOracleCommencedFinanceLease ? "enabled" : "off",
+        value => { settings().includeOracleCommencedFinanceLease = value === "enabled"; },
+        [["off", t("Off", "\u5173\u95ed")], ["enabled", t("Use disclosed payment buckets", "\u4f7f\u7528\u62ab\u9732\u7684\u4ed8\u6b3e\u671f\u9650")]]);
+      oracleFinance.dataset.oracleCommencedFinance = "";
+    }
     if (["ORCL", "NVDA", "ANTHROPIC", "CRWV"].includes(entity.id)) setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
       state.overrides[entity.id]?.leaseDelayQuarters ?? 0, value => { settings().leaseDelayQuarters = Math.max(0, Math.trunc(value)); });
     const lastYear = Number(state.simResult.allQuarters.at(-1).slice(0, 4));
@@ -10270,6 +10312,7 @@ const I18N = {
         settings.incrementalLease = data.incrementalLease;
         settings.incrementalLeaseTranches = data.incrementalLeaseTranches;
         settings.includeNvidiaLeaseBuckets = data.includeNvidiaLeaseBuckets === true;
+        settings.includeOracleCommencedFinanceLease = data.includeOracleCommencedFinanceLease === true;
         settings.disclosedLeaseStressYears = data.disclosedLeaseStressYears;
         recompute();
       } catch (error) {

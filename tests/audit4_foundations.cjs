@@ -1523,3 +1523,13 @@ assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettlementP
 assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettledCumulative, 3);
 assert.equal(cappedProjectQ2.remainingGuaranteeLiability, 0);
 assert.equal(cappedProjectQ2.projects[1].remainingGuaranteeLiability, 0);
+const oracleCommenced = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { ORCL: { includeOracleCommencedFinanceLease: true } } }).timeline["2026Q4"].entities.ORCL;
+assert.deepEqual([oracleCommenced.recognizedFinanceLease?.opening, oracleCommenced.recognizedFinanceLease?.payment,
+  oracleCommenced.recognizedFinanceLease?.interest, oracleCommenced.leasePrincipal,
+  oracleCommenced.recognizedFinanceLease?.ending], [9.1586, 0.2067, 0.1269, 0.0798, 9.0788]);
+assert.equal(oracleCommenced.leaseSchedule.uncommencedCommitment, 288);
+const oracleLeaseBaseline = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline["2026Q4"].entities.ORCL;
+assert.equal(oracleCommenced.ocf, oracleLeaseBaseline.ocf);
+assert.equal(oracleCommenced.fcf, oracleLeaseBaseline.fcf);
+assert.equal(usd(oracleLeaseBaseline.cash - oracleCommenced.cash), 0.0798);

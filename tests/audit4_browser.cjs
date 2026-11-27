@@ -271,6 +271,10 @@ async function checkPage(browser, url) {
       const disclosure = panel.locator("[data-gpu-disclosure]");
       assert.match(await disclosure.innerText(), life);
       assert.match(await disclosure.locator("a").getAttribute("href"), filing);
+      if (id === "ORCL") {
+        await panel.locator("[data-oracle-commenced-finance]").selectOption("enabled");
+        assert.equal(JSON.parse(await scenario.inputValue()).includeOracleCommencedFinanceLease, true);
+      }
     }
     await page.locator('[data-network-entity="OPENAI"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
@@ -306,6 +310,10 @@ async function checkPage(browser, url) {
     const equipmentDownload = page.waitForEvent("download");
     await page.locator("#dlAuditLedgerJson").click();
     const equipmentExport = JSON.parse(await fs.readFile(await (await equipmentDownload).path(), "utf8"));
+    const oracleCommenced = equipmentExport.quarters[0].leaseCashSchedules.ORCL;
+    assert.equal(oracleCommenced.recognizedFinance.payment, 0.2067);
+    assert.equal(oracleCommenced.principalCashPaid, 0.0798);
+    assert.equal(oracleCommenced.incremental.uncommencedCommitment, 288);
     const equipmentQuarter = equipmentExport.quarters.find(entry => entry.quarter === "2027Q1");
     const equipmentFacility = equipmentQuarter.financingLedger.AMZN_EQUIPMENT_DDTL;
     assert.equal(equipmentFacility.newDrawdown, 2);

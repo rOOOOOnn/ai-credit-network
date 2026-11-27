@@ -873,6 +873,34 @@
       dataType: "Assumption: equal quarterly installments within the disclosed fiscal-year bucket" };
   }
 
+  function oracleCommencedFinanceLeaseQuarter(filing, quarter) {
+    const payments = filing?.commencedLeaseMaturities?.financePayments;
+    if (!payments || !Number.isFinite(filing.financeLeaseRateProxy)) return null;
+    const paymentMonths = payments.slice(0, -1).flatMap((bucket, index) =>
+      Array(index === 0 ? 9 : 12).fill(bucket / (index === 0 ? 9 : 12)));
+    const start = 1 + (parseQuarterNumber(quarter) - parseQuarterNumber(QUARTER_PARTIAL)) * 3;
+    const monthlyRate = (1 + filing.financeLeaseRateProxy) ** (1 / 12) - 1;
+    let balance = filing.financeLeaseLiability;
+    let opening = balance;
+    let interest = 0;
+    let payment = 0;
+    for (let month = 0; month < Math.min(start + 3, paymentMonths.length); month++) {
+      if (month === start) opening = balance;
+      const monthInterest = balance * monthlyRate;
+      const monthPayment = Math.min(paymentMonths[month], balance + monthInterest);
+      if (month >= start) {
+        interest += monthInterest;
+        payment += monthPayment;
+      }
+      balance = balance + monthInterest - monthPayment;
+    }
+    if (start >= paymentMonths.length) return { opening: money(balance), ending: money(balance),
+      payment: null, principal: null, interest: null, dataType: "Unavailable beyond disclosed dated buckets" };
+    return { opening: money(opening), ending: money(balance), payment: money(payment), principal: money(payment - interest),
+      interest: money(interest), historicalInterestEmbedded: true,
+      dataType: "Assumption: equal monthly payments with the prior fiscal-year rate proxy" };
+  }
+
   function phasedGuarantee(projects, quarter, maximum, called = 0) {
     const previouslyCalled = typeof called === "number" ? null : called;
     const rows = projects.map((project, index) => {
@@ -1607,11 +1635,17 @@
         const leasePayment = leaseSchedule.payment;
         const leaseOperatingCash = leaseSchedule.ocfCashPayment;
         const recognizedFinanceLease = useAudit4Contracts && ov?.includeExistingFinanceLease !== false
-          ? financeLeaseQuarter(e.audit4FiscalCashFlow, q, prev.recognizedFinanceLease?.ending) : null;
+          ? (e.id === "ORCL" && ov?.includeOracleCommencedFinanceLease
+            ? oracleCommencedFinanceLeaseQuarter(e.audit4FiscalCashFlow, q)
+            : financeLeaseQuarter(e.audit4FiscalCashFlow, q, prev.recognizedFinanceLease?.ending))
+          : null;
         const leasePrincipal = money((recognizedFinanceLease?.principal ?? 0) + leaseSchedule.financePrincipal);
+        const hasEmbeddedLeaseInterest = ocfCalibById[e.id]?.hasCalib && ov?.opex === undefined &&
+          !Number.isFinite(ov?.ocfMarginBeforeFinancing);
         const leaseInterestAdjustment = recognizedFinanceLease?.interest == null ? 0 :
-          recognizedFinanceLease.interest - (ocfCalibById[e.id]?.hasCalib && ov?.opex === undefined
-            ? e.audit4FiscalCashFlow.financeLeaseInterestPaid : 0);
+          recognizedFinanceLease.interest - (hasEmbeddedLeaseInterest
+            ? (recognizedFinanceLease.historicalInterestEmbedded ? recognizedFinanceLease.interest :
+              e.audit4FiscalCashFlow.financeLeaseInterestPaid) : 0);
         const grossMargin = Math.max(0.05, Math.min(0.98, p.grossMargin ?? 0.55));
         const cashConv = Math.max(0.3, Math.min(1.0, p.cashConv ?? 0.88));
         const minCash = p.minCash ?? 1.0;
