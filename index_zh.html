@@ -10505,6 +10505,16 @@ const I18N = {
         trend.append(link, " · ");
       }
     }
+    for (const facility of entity.audit4Facilities ?? []) {
+      if (!facility.supersedesFacilityIds?.length) continue;
+      const link = document.createElement("a");
+      link.dataset.financingFacility = facility.id;
+      link.textContent = t("Reported revolving credit availability", "\u62ab\u9732\u7684\u5faa\u73af\u6388\u4fe1\u53ef\u7528\u989d\u5ea6") +
+        " $" + facility.remainingCommitment + "B (" + facility.principalAsOfQuarter + "). " +
+        t("Scheduled maturity", "\u7ea6\u5b9a\u5230\u671f\u65e5") + " " + facility.maturityDate;
+      if (facility.sourceUrl?.startsWith("https://")) link.href = facility.sourceUrl;
+      trend.append(document.createElement("br"), link);
+    }
     if (entity.reportedFinancingTranches?.length) {
       trend.append(document.createElement("br"), t(
         "Partial investor-reported financing history ",
