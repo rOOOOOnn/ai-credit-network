@@ -955,3 +955,7 @@ The post-maturity draw gate also applies to term facilities. In a solvent fixtur
 ### Static credit exposure at and after maturity
 
 The static transaction exposure calculation previously continued converting an unused commitment into EAD after its scheduled maturity. In the independent fixture, $3B funded principal and $2B undrawn commitment with a 40% conversion factor give $3.8B EAD before maturity. At and after maturity static EAD retains the $3B funded balance only. A dated repayment must establish any reduction in that balance. The dynamic ledger continues to record scenario repayments and new balances separately. Explicit commitment cutoffs keep their existing treatment. Data validation, the 48 legacy cases, and 68 report rows reproduce.
+
+### Default exposure with zero modeled loss
+
+The audited credit-event export now retains a positive exposure even when the scenario loss rate is zero. A forced TX26 default with zero LGD produces one event with $4.583B funded exposure, $4.583B expected recovery and zero recognized loss. The facility ledger carries the same default exposure. The event produces no lender loss or L1 loss propagation. Previously the credit-event export silently omitted this default because its recognized loss was zero. The report replays continue to match all 68 existing rows.

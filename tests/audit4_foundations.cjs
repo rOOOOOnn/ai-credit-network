@@ -714,6 +714,15 @@ assert.equal(trackedReplacement.timeline["2028Q1"].debtReconciliation.OPENAI.nam
 assert.equal(liquid.timeline["2026Q4"].financingLedger.TX26.lender, null);
 const tx26Stress = engine.runSimulation(entities, transactions, { audit4Contracts: true,
   forcedDefaults: ["SPV_CRWV8"], overrides: { SPV_CRWV8: { debtRepay: 0 } } });
+const zeroLossTx26 = engine.runSimulation(entities, transactions, { audit4Contracts: true, lgd: 0,
+  forcedDefaults: ["SPV_CRWV8"], overrides: { SPV_CRWV8: { debtRepay: 0 } } });
+const zeroLossEvents = zeroLossTx26.creditEvents.filter(event => event.txId === "TX26");
+assert.equal(zeroLossEvents.length, 1);
+assert.equal(zeroLossEvents[0].totalEAD, 4.583);
+assert.equal(zeroLossEvents[0].recognizedLoss, 0);
+assert.equal(zeroLossEvents[0].expectedRecovery, 4.583);
+assert.equal(zeroLossTx26.timeline["2026Q4"].financingLedger.TX26.defaultExposure, 4.583);
+assert.equal(zeroLossTx26.timeline["2026Q4"].contagionLog.some(row => row.txId === "TX26" && row.layer === "L1_FINANCIAL"), false);
 const tx26Credit = tx26Stress.creditEvents.find(event => event.txId === "TX26");
 assert.equal(tx26Credit.fundedEAD, 4.583);
 assert.equal(tx26Credit.lender, null);

@@ -2174,7 +2174,7 @@
                 money(Math.min(eadInfo.fundedEAD, collateralValue));
               const cLoss = collateralRecovery == null ? eadInfo.creditLossAtDefault :
                 money((eadInfo.totalEAD - collateralRecovery) * eadInfo.lgd);
-              if (cLoss > 0 || collateralRecovery > 0) {
+              if (cLoss > 0 || collateralRecovery > 0 || (useAudit4Contracts && eadInfo.totalEAD > 0)) {
                 defaultedTxIds.add(tx.id);
                 cumCreditLossByTx[tx.id] = cLoss;
                 creditEvents.push({
@@ -2197,6 +2197,7 @@
                   remainingExposure: 0,
                   eadBasis: eadInfo.eadBasis
                 });
+                if (cLoss === 0 && !(collateralRecovery > 0)) return;
                 if (states[lenderId]) {
                   states[lenderId].creditLoss = money(states[lenderId].creditLoss + cLoss);
                   evaluateDistress(lenderId);
