@@ -999,3 +999,11 @@ The audited profile replaces the legacy TX17A/B lender-share assumptions with th
 ### Browser verification of the restated Anthropic facility
 
 All three financing panels now expose the reported $14.795B revolving availability, observation quarter, scheduled maturity and source. The browser test opens Anthropic and checks the displayed amount, date and prospectus link. It also downloads the audited ledger and checks zero funded debt, $0.205B of standby letters of credit, unknown lender shares and absence of both superseded balances. The legacy graph continues to show historical edges and the audited export gives the restated facility.
+
+### Broadcom fiscal-Q3 opening data and obligations
+
+The Broadcom record mapped to 2026Q3 is the fiscal quarter ending August 2, 2026. Its disclosed revenue was $29.591B and quarter-end cash was $23.975B. Quarterly operating cash of $14.197B less $0.532B in purchases of property and equipment gives $13.665B FCF. The cash-flow amounts come from the issuer's single-quarter release. No calendar September cash bridge is available. The filed balance sheet also gives $13.707B trade receivables and $4.000B accounts payable.
+
+Note 6 reconciles $61.079B principal less $1.660B of unamortized discount and issuance costs to $59.419B carrying debt, split into $2.252B current and $57.167B noncurrent. The disclosed fiscal-year scheduled principal buckets are $2.252B for the rest of FY2026, zero in FY2027, $5.127B in FY2028, $2.405B in FY2029, $6.406B in FY2030 and $44.889B thereafter. These total $61.079B. The revolver has $7.5B gross capacity through January 13, 2030 and no funded borrowing at the filing cutoff. Its $0.5B letter-of-credit sublimit is part of that capacity. The source does not equate that sublimit to outstanding letters of credit.
+
+The filing gives $179.2B of remaining performance obligations for specified multi-year contracts, replacing the prior $35B entry. That amount is not a quarterly revenue or cash estimate. All 68 report rows reproduce. [Broadcom 10-Q](https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm), [Broadcom quarterly release](https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial).

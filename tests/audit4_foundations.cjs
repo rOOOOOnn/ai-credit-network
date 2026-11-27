@@ -1424,6 +1424,13 @@ assert.equal(usd(metaScope.debt + metaScope.principalRepay + metaScope.nonCashDe
 const metaEvidence = issuerBalance("META");
 assert.equal(usd(metaEvidence.nonCurrentBorrowings + metaEvidence.currentPortionOfLongTermDebt + metaEvidence.unamortizedDiscountAndIssuanceCosts), 84);
 assert.equal(usd(Object.values(metaEvidence.annualNotePrincipalMaturities).reduce((sum, principal) => sum + principal, 0)), 84);
+const broadcom = entities.find(entity => entity.id === "AVGO").financials["2026Q3"];
+assert.equal(broadcom.periodEnd, "2026-08-02");
+assert.deepEqual([broadcom.revenue, broadcom.cash, broadcom.accountsPayable, broadcom.rpo], [29.591, 23.975, 4, 179.2]);
+assert.equal(usd(broadcom.ocf - broadcom.capex), 13.665);
+assert.equal(broadcom.fcf, 13.665);
+assert.equal(usd(broadcom.shortTermDebt + broadcom.longTermDebt), broadcom.debt);
+assert.equal(broadcom.debt, 59.419);
 const alphabetEvidence = issuerBalance("GOOGL");
 assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
   alphabetEvidence.hedgeFairValueReduction), 126.118);
