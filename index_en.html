@@ -1982,15 +1982,31 @@
           const [first, last] = stressStartYears ?? [2026, 2026];
           const phases = last - first + 1;
           const financeShare = Math.min(1, nonnegative(ov?.disclosedLeaseFinanceShare));
-          const phaseCommitment = e.audit4LeaseDisclosure.uncommencedUndiscountedPayments / phases;
+          const disclosure = e.audit4LeaseDisclosure;
+          const firstYearPayments = Math.min(disclosure.uncommencedUndiscountedPayments,
+            nonnegative(disclosure.remainingNextTwelveMonths));
+          const phaseCommitment = (disclosure.uncommencedUndiscountedPayments - firstYearPayments) / phases;
+          const startQuarter = disclosure.scenarioStartQuarterOfYear ?? (stressStartYears ? 1 : 4);
+          const phaseStart = (year, offset) => {
+            const index = parseQuarterNumber(year + "Q" + startQuarter) + offset;
+            return Math.floor(index / 4) + "Q" + (index % 4 + 1);
+          };
+          const initialCash = firstYearPayments > 0 ? Array.from({ length: 4 }, (_, index) => ({
+            startQuarter: phaseStart(first, index), termQuarters: 1,
+            commitment: money(money(firstYearPayments * (index + 1) / 4) - money(firstYearPayments * index / 4)),
+            type: "operating"
+          })) : [];
           const annualDiscountRate = nonnegative(ov?.disclosedLeaseFinanceRate ?? 0.05);
-          return Array.from({ length: phases }, (_, index) => {
-            const phase = { termQuarters: leaseStressYears * 4, startQuarter: (first + index) + ("Q" + (e.audit4LeaseDisclosure.scenarioStartQuarterOfYear ?? (stressStartYears ? 1 : 4))) };
+          const laterTranches = Array.from({ length: phases }, (_, index) => {
+            const offset = firstYearPayments > 0 && index === 0 ? 4 : 0;
+            const phase = { termQuarters: leaseStressYears * 4 - offset,
+              startQuarter: phaseStart(first + index, offset) };
             return [
               { ...phase, commitment: phaseCommitment * (1 - financeShare), type: "operating" },
               { ...phase, commitment: phaseCommitment * financeShare, type: "finance", annualDiscountRate }
             ].filter(tranche => tranche.commitment > 0);
           }).flat();
+          return [...initialCash, ...laterTranches];
         })() : null;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
           : disclosedLeaseBuckets ?? leaseStress ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));
@@ -10238,7 +10254,10 @@ const I18N = {
         ])]);
       control.dataset.disclosedLeaseStress = "";
       if (operating.disclosedLeaseStressYears > 0) {
-        const financeShare = setting(t("Assumed finance lease share (0–1)", "\u60c5\u666f\u878d\u8d44\u79df\u8d41\u5360\u6bd4\uff080\u20131\uff09"),
+        const firstYearRentAnchored = entity.audit4LeaseDisclosure.remainingNextTwelveMonths > 0;
+        const financeShare = setting(firstYearRentAnchored
+          ? t("Assumed finance lease share after year one (0–1)", "\u9996\u5e74\u540e\u878d\u8d44\u79df\u8d41\u5360\u6bd4\u5047\u8bbe (0-1)")
+          : t("Assumed finance lease share (0–1)", "\u60c5\u666f\u878d\u8d44\u79df\u8d41\u5360\u6bd4\uff080\u20131\uff09"),
           operating.disclosedLeaseFinanceShare ?? 0,
           value => { settings().disclosedLeaseFinanceShare = Math.min(1, Math.max(0, value)); });
         financeShare.dataset.disclosedLeaseFinanceShare = "";

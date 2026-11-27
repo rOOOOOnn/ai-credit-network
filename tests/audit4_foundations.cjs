@@ -315,7 +315,9 @@ const nebiusLeaseRun = (years, leaseDelayQuarters = 0) => engine.runSimulation([
 const nebiusLeaseBase = nebiusLeaseRun(0);
 const nebiusLeaseStress = nebiusLeaseRun(12);
 const nebiusLeaseDelayed = nebiusLeaseRun(12, 1);
-const firstNebiusRent = usd(13.2426 / 4 / 48);
+const firstNebiusRent = 0.1432;
+assert.equal(usd(["2026Q4", "2027Q1", "2027Q2", "2027Q3"].reduce((sum, quarter) =>
+  sum + nebiusLeaseStress[quarter].entities.NBIS.leaseSchedule.payment, 0)), 0.5727);
 const nebiusRentOpening = nebiusLeaseStress["2026Q4"].entities.NBIS;
 assert.equal(nebiusRentOpening.leaseSchedule.payment, firstNebiusRent);
 assert.equal(nebiusRentOpening.leaseSchedule.financePrincipal, 0);
@@ -324,10 +326,10 @@ assert.equal(usd(nebiusLeaseBase["2026Q4"].entities.NBIS.fcf - nebiusRentOpening
 assert.equal(nebiusLeaseDelayed["2026Q4"].entities.NBIS.leaseSchedule.payment, 0);
 assert.equal(nebiusLeaseDelayed["2027Q1"].entities.NBIS.leaseSchedule.payment, firstNebiusRent);
 const shorterNebiusLease = nebiusLeaseRun(8);
-assert.equal(shorterNebiusLease["2037Q3"].entities.NBIS.leaseSchedule.payment, usd(13.2426 / 4 / 32));
+assert.equal(shorterNebiusLease["2037Q3"].entities.NBIS.leaseSchedule.payment, usd((13.2426 - 0.5727) / 4 / 32));
 assert.equal(shorterNebiusLease["2037Q4"].entities.NBIS.leaseSchedule.payment, 0);
-const finalNebiusTranche = [{ commitment: 13.2426 / 4, termQuarters: 48, startQuarter: "2029Q4", type: "operating" }];
-assert.equal(engine.incrementalLeaseSchedule(finalNebiusTranche, "2041Q3").payment, firstNebiusRent);
+const finalNebiusTranche = [{ commitment: (13.2426 - 0.5727) / 4, termQuarters: 48, startQuarter: "2029Q4", type: "operating" }];
+assert.equal(engine.incrementalLeaseSchedule(finalNebiusTranche, "2041Q3").payment, usd((13.2426 - 0.5727) / 4 / 48));
 assert.equal(engine.incrementalLeaseSchedule(finalNebiusTranche, "2041Q4").payment, 0);
 const nebiusLedger = engine.runSimulation([nebius], [], { audit4Contracts: true }).timeline["2026Q4"];
 assert.equal(nebiusLedger.debtReconciliation.NBIS.namedTermPrincipal, 16.478);
