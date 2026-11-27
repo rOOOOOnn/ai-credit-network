@@ -307,9 +307,9 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Continuation | ANTHROPIC | Freeze | 171.8728 | 0 | — | — | 2026Q4 |
 | Remediated | ANTHROPIC | Freeze | 240.9793 | 0 | — | — | 2026Q4 |
 | Continuation | CRWV | Manual | -1.2404 | 3.2404 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Manual | 3.3688 | 0 | 1.5972 | — | — |
+| Remediated | CRWV | Manual | 3.3409 | 0 | 1.5318 | — | — |
 | Continuation | CRWV | Curve | -1.1763 | 3.1763 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Curve | 3.3688 | 0 | 1.5972 | — | — |
+| Remediated | CRWV | Curve | 3.3409 | 0 | 1.5318 | — | — |
 | Continuation | CRWV | Freeze | -31.6668 | 33.6668 | 0 | 2027Q1 | — |
 | Remediated | CRWV | Freeze | -26.211 | 28.211 | 0 | 2027Q1 | — |
 
@@ -327,11 +327,11 @@ Run `node scripts/replay_audit4_gpu.cjs`. Each case assigns the selected company
 
 | Entity | Life | Profile | First refresh | 2030Q4 cash | 2030Q4 gap | 2032Q4 cash | 2032Q4 gap | First default |
 | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | --- |
-| CRWV | 3 | Reference | 2029Q4 | -9.2869 | 11.2869 | -21.7487 | 23.7487 | 2029Q2 |
-| CRWV | 4 | Reference | 2030Q4 | -0.8001 | 2.8001 | -16.8362 | 18.8362 | 2030Q4 |
-| CRWV | 5 | Reference | 2031Q4 | 4.7279 | 0 | -12.5119 | 14.5119 | 2031Q4 |
-| CRWV | 6 | Reference | 2032Q4 | 8.5285 | 0 | -5.7043 | 7.7043 | 2032Q2 |
-| CRWV | 7 | Reference | 2033Q4 | 10.5847 | 0 | -2.2081 | 4.2081 | 2032Q3 |
+| CRWV | 3 | Reference | 2029Q4 | -9.2759 | 11.2759 | -21.738 | 23.738 | 2029Q2 |
+| CRWV | 4 | Reference | 2030Q4 | -0.7891 | 2.7891 | -16.8258 | 18.8258 | 2030Q4 |
+| CRWV | 5 | Reference | 2031Q4 | 4.7389 | 0 | -12.5015 | 14.5015 | 2031Q4 |
+| CRWV | 6 | Reference | 2032Q4 | 8.5395 | 0 | -5.6939 | 7.6939 | 2032Q2 |
+| CRWV | 7 | Reference | 2033Q4 | 10.5957 | 0 | -2.1977 | 4.1977 | 2032Q3 |
 | CRWV | 4 | Combined stress | 2030Q4 | -83.9581 | 85.9581 | -139.2453 | 141.2453 | 2027Q1 |
 | OPENAI | 3 | Reference | 2029Q4 | 47.3241 | 0 | 27.1594 | 0 | — |
 | OPENAI | 4 | Reference | 2030Q4 | 50.9129 | 0 | 27.9124 | 0 | — |
@@ -432,7 +432,7 @@ The original A–G tests retained the legacy profile as a regression. The same i
 | D | Oracle | -77.425 | -20.1044 | 87.425 | 2027Q4 |
 | E | CoreWeave | -34.1454 | -3.3912 | 36.1454 | 2027Q1 |
 | F | CoreWeave | -43.8987 | -4.8786 | 45.8987 | 2027Q1 |
-| G | CoreWeave | -60.1163 | -5.7059 | 62.1163 | 2026Q4 |
+| G | CoreWeave | -60.1128 | -5.7082 | 62.1128 | 2026Q4 |
 
 Values are scenario results in USD billions, reproducible with `node tests/audit4_foundations.cjs` in the final A–G table. The cash identity includes loan and lease principal, collateral-related margin, equipment sale proceeds, investment sales and both project and unallocated guarantee cash payments. The financing source sum is also verified for every eligible company-quarter. The updated CoreWeave values reflect the full audited profile. First default quarters are unchanged from the earlier audited replay.
 
@@ -635,8 +635,8 @@ The archive's longer financing comparison was adapted to this branch. Run `node 
 | Remediated | ANTHROPIC | Manual | 254.3391 | 0 | 166.2506 | — | 2026Q4 |
 | Remediated | ANTHROPIC | Curve | 254.3391 | 0 | 166.2506 | — | 2026Q4 |
 | Remediated | ANTHROPIC | Freeze | 224.3391 | 0 | 146.0041 | — | 2026Q4 |
-| Remediated | CRWV | Manual | -53.5452 | 55.5452 | 0 | 2029Q2 | — |
-| Remediated | CRWV | Curve | -53.5452 | 55.5452 | 0 | 2029Q2 | — |
+| Remediated | CRWV | Manual | -53.5352 | 55.5352 | 0 | 2029Q2 | — |
+| Remediated | CRWV | Curve | -53.5352 | 55.5352 | 0 | 2029Q2 | — |
 | Remediated | CRWV | Freeze | -82.4877 | 84.4877 | 0 | 2027Q1 | — |
 
 
@@ -1106,7 +1106,7 @@ The supplied archive runs its integrated stresses through 2031Q4. The audited br
 | D | Oracle | -294.8222 | -20.9639 | 304.8222 | 2027Q4 |
 | E | CoreWeave | -89.5535 | -7.0773 | 91.5535 | 2027Q1 |
 | F | CoreWeave | -120.2857 | -7.2469 | 122.2857 | 2027Q1 |
-| G | CoreWeave | -145.4853 | -7.0643 | 147.4853 | 2026Q4 |
+| G | CoreWeave | -145.4832 | -7.0643 | 147.4832 | 2026Q4 |
 
 ### Downloadable Core Scientific debt terms
 
@@ -1117,3 +1117,9 @@ The browser download now carries the legal issuer, maturity and secured-note amo
 The 2026Q3 historical record now uses the November 5 10-Q. Note 7 reports $71.840M interest incurred less $17.774M capitalized, or $54.066M interest expense. Coupon interest was $67.388M, and the income statement presents $35.047M net interest expense. The historical row stores each reported measure separately. The inherited $68M interest input is explicitly classified as an assumption. Substituting gross accounting interest changed the CoreWeave cash path through contagion. The cash-interest calibration is retained pending a quarterly cash-paid bridge. The forward debt ledger continues to use each instrument's contractual coupon.
 
 The filing also discloses $4.4B of gross purchase and construction commitments, including $202.2M expected to pass through to CoreWeave. Most spending is expected within 24 months, with timing dependent on construction and phased AMD lease commencement. Quarterly cash payments and reimbursements are unavailable. The totals remain source evidence pending a reconciliation against forecast baseline CapEx. The $100M cash revolver and $500M letter-of-credit facility are separately disclosed and need their own availability treatment. [Core Scientific September 10-Q](https://www.sec.gov/Archives/edgar/data/1839341/000183934126000030/core-20260930.htm).
+
+### Core Scientific revolver and letter-of-credit availability
+
+The August 2026 agreement provides a $0.100B general-purpose revolver and a separate $0.500B letter-of-credit facility. Both were unused at September 30. The cash ledger now opens with the $0.100B line and closes it in 2029Q3. The contractual 2030 extension is elective and the baseline keeps the original maturity. Issuing bank and lender allocations remain unknown. JPMorgan's administrative-agent role does not establish its lender exposure. The separate letter-of-credit commitment is stored with its reported zero use and a conditional $0.300B restricted-cash release estimate. The baseline assumes no release and no letter-of-credit cash draw. Contractual spread and fees are recorded as terms; facility-specific fee cash flows remain outside the baseline.
+
+Tests reconcile draws to borrower balances and check the maturity boundary. All 75 rows were replayed. In the 2028Q4 CoreWeave manual and curve paths, closing cash moves from $3.3688B to $3.3409B under the updated network simulation. First default and FCF break-even quarters are unchanged for those paths. [Core Scientific September 10-Q, Note 7 and Liquidity](https://www.sec.gov/Archives/edgar/data/1839341/000183934126000030/core-20260930.htm).
