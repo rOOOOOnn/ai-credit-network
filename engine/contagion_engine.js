@@ -1448,9 +1448,15 @@
         const refiRollover = Number((maturingPrincipal * availFactor * refiFactor).toFixed(4));
         const scheduledFacilityRepayments = Object.fromEntries((facilities ?? []).map(row => {
           const tx = transactions.find(item => item.id === row.txId);
+          const equalPrincipalMonths = tx.principalSchedule?.equalPrincipalMonthsAtOpening ?? 0;
+          const remainingMonths = equalPrincipalMonths - 3 * (parseQuarterNumber(q) - parseQuarterNumber(QUARTER_PARTIAL));
+          const equalPrincipalPayment = remainingMonths > 0
+            ? money((row.beginningOutstanding - row.nonCashConversion) * Math.min(3, remainingMonths) / remainingMonths) : 0;
+          const manualRepayment = options.facilityRepayments?.[tx.id]?.[q];
+          const scheduledRepayment = manualRepayment == null
+            ? modeledInstallments.get(tx.id)?.principal ?? equalPrincipalPayment : nonnegative(manualRepayment);
           const requested = tx.endQ === q ? row.beginningOutstanding :
-            (maturityByFacility[tx.id] ?? 0) + (options.facilityRepayments?.[tx.id]?.[q] == null
-              ? modeledInstallments.get(tx.id)?.principal ?? 0 : nonnegative(options.facilityRepayments[tx.id][q]));
+            (maturityByFacility[tx.id] ?? 0) + scheduledRepayment;
           return [row.txId, row.defaulted ? 0 : Math.min(row.beginningOutstanding - row.nonCashConversion, requested)];
         }));
         const explicitRepayments = (facilities ?? []).reduce((sum, row) => {

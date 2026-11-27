@@ -332,13 +332,25 @@ const finalNebiusTranche = [{ commitment: (13.2426 - 0.5727) / 4, termQuarters: 
 assert.equal(engine.incrementalLeaseSchedule(finalNebiusTranche, "2041Q3").payment, usd((13.2426 - 0.5727) / 4 / 48));
 assert.equal(engine.incrementalLeaseSchedule(finalNebiusTranche, "2041Q4").payment, 0);
 const nebiusLedger = engine.runSimulation([nebius], [], { audit4Contracts: true }).timeline["2026Q4"];
-assert.equal(nebiusLedger.debtReconciliation.NBIS.namedTermPrincipal, 16.478);
+assert.equal(usd(Object.values(nebiusLedger.financingLedger).reduce((sum, row) => sum + row.beginningOutstanding, 0)), 16.478);
+assert.equal(nebiusLedger.debtReconciliation.NBIS.namedTermPrincipal, usd(16.478 - 0.046));
 assert.equal(nebiusLedger.financingLedger.NBIS_FEB30.beginningOutstanding, 3.795);
 assert.equal(nebiusLedger.financingLedger.NBIS_FEB34.beginningOutstanding, 2.875);
 assert.equal(nebiusLedger.financingLedger.NBIS_FEB30.accruedInterest, usd(3.45 * 0.005 / 4));
 assert.equal(nebiusLedger.financingLedger.NBIS_FEB34.accruedInterest, usd(2.3 * 0.045 / 4));
 assert.equal(nebiusLedger.financingLedger.NBIS_FEB30.newDrawdown, 0);
 assert.equal(nebiusLedger.financingLedger.NBIS_FEB30.principalRepayment, 0);
+const nebiusTerm = nebiusLedger.financingLedger.NBIS_TERM;
+assert.equal(nebiusTerm.beginningOutstanding, 0.7518);
+assert.equal(nebiusTerm.newDrawdown, 0);
+assert.equal(nebiusTerm.principalRepayment, usd(0.7518 * 3 / 49));
+assert.equal(nebiusTerm.endingOutstanding, usd(0.7518 - nebiusTerm.principalRepayment));
+assert.equal(nebiusTerm.principalSchedule.scenarioDataType, "Assumption");
+const nebiusNoAmortization = engine.runSimulation([nebius], [], {
+  audit4Contracts: true, facilityRepayments: { NBIS_TERM: { "2026Q4": 0 } }
+}).timeline["2026Q4"];
+assert.equal(usd(nebiusNoAmortization.entities.NBIS.cash - nebiusLedger.entities.NBIS.cash), 0.046);
+assert.equal(usd(nebiusNoAmortization.entities.NBIS.debt - nebiusLedger.entities.NBIS.debt), 0.046);
 assert.equal(usd(16.478 - 2.1437 - 0.1715), 14.1628);
 const oracleEntity = entities.find(entity => entity.id === "ORCL");
 const oracleDebtEvidence = oracleEntity.audit4DebtMaturityEvidence;
