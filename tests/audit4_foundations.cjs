@@ -1558,6 +1558,14 @@ assert.equal(vertivFacility("2030Q4").undrawnCommitment, 2.484);
 assert.equal(vertivFacility("2031Q1").undrawnCommitment, 0);
 assert.equal(vertivCredit["2031Q2"].entities.VERTIV.undrawnCredit, 0);
 const cegIssuer = entities.find(entity => entity.id === "CEG");
+const cegSnapshot = cegIssuer.financials["2026Q3"];
+assert.equal(cegSnapshot.ocf, usd(4.979 - 1.553));
+assert.equal(cegSnapshot.capex, usd(3.461 - 2.521));
+assert.equal(cegSnapshot.fcf, usd(cegSnapshot.ocf - cegSnapshot.capex));
+assert.equal(cegSnapshot.shortTermDebt, usd(3.989 + 0.359));
+assert.equal(cegSnapshot.longTermDebt, 19.039);
+assert.equal(cegSnapshot.debt, usd(cegSnapshot.shortTermDebt + cegSnapshot.longTermDebt));
+assert.equal(cegSnapshot.undrawnCredit, usd(7 - 0.121 - 2.092));
 const cegRcfTimeline = engine.runSimulation([cegIssuer], [], { audit4Contracts: true, forecastThrough: 2031,
   overrides: { CEG: { ocfMarginBeforeFinancing: 0.9, capex: 0 } } }).timeline;
 const cegRcf = q => cegRcfTimeline[q].financingLedger.CEG_RCF_DISCLOSED;
