@@ -1558,6 +1558,14 @@ assert.equal(vertivFacility("2030Q4").undrawnCommitment, 2.484);
 assert.equal(vertivFacility("2031Q1").undrawnCommitment, 0);
 assert.equal(vertivCredit["2031Q2"].entities.VERTIV.undrawnCredit, 0);
 const cegIssuer = entities.find(entity => entity.id === "CEG");
+const corzSnapshot = entities.find(entity => entity.id === "CORZ").financials["2026Q3"];
+assert.deepEqual([corzSnapshot.cash, corzSnapshot.restrictedCash, corzSnapshot.customerFundingReceivable],
+  [0.803941, 0.837603, 0.282659]);
+assert.equal(Number((corzSnapshot.ocf - corzSnapshot.capex).toFixed(6)), corzSnapshot.fcf);
+assert.equal(corzSnapshot.fcf, -0.475441);
+assert.equal(corzSnapshot.shortTermDebt + corzSnapshot.longTermDebt, 4.302175);
+assert.equal(corzSnapshot.leaseLiab, 0.104626);
+assert.equal(corzSnapshot.customerConcentration, 0.93);
 const cegSnapshot = cegIssuer.financials["2026Q3"];
 assert.equal(cegSnapshot.ocf, usd(4.979 - 1.553));
 assert.equal(cegSnapshot.capex, usd(3.461 - 2.521));
