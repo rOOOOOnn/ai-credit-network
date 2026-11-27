@@ -25,3 +25,18 @@ for (const [script, args, heading] of replays) {
   assert.deepEqual(actual, table[0].trim().split(/\r?\n/), heading + " numbers differ");
   console.log(heading + " matches " + (actual.length - 2) + " report rows");
 }
+const entities = require("../data/entities.json");
+const register = readFileSync(path.join(root, "docs/audit4_entity_source_register.md"), "utf8");
+const [inventory] = register.split(/\r?\n\r?\n###? /);
+const entityRows = [...inventory.matchAll(/^\| ([A-Z][A-Z0-9_]*) \| (.+) \|$/gm)];
+assert.deepEqual(entityRows.map(row => row[1]).sort(), entities.map(entity => entity.id).sort(),
+  "The source inventory must contain every repository entity exactly once");
+for (const [, id, cells] of entityRows) {
+  const [quarter, classification, disclosureDate, source, gaps] = cells.split(" | ");
+  assert.match(quarter, /^(?:\d{4}Q[1-4]|—)$/, id + " needs a quarter or an unavailable marker");
+  assert.match(classification, /^(?:Actual|Estimated|Assumption|Forecast|Unavailable)/, id + " needs a classification");
+  assert.match(disclosureDate, /^(?:\d{4}-\d{2}-\d{2}|—)$/, id + " needs a disclosure date or an unavailable marker");
+  assert.match(source, /(?:https:\/\/|^—$)/, id + " needs a source or a missing source marker");
+  assert.ok(gaps?.trim(), id + " needs a missing-fields disclosure");
+}
+console.log("Source inventory covers " + entities.length + " entities");
