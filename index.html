@@ -10084,7 +10084,8 @@ const I18N = {
     const historicalRows = Object.entries(metadata.historyBySource ?? {}).flatMap(([source, history]) =>
       history.years.map((year, index) => ({ source, year, amount: history.amounts[index] })));
     const scale = Math.max(1, ...historicalRows.map(row => row.amount),
-      ...rows.flatMap(row => [row.total, row.received, row.allFinancing ?? 0, row.end?.fundingGap ?? 0]));
+      ...rows.flatMap(row => [row.total, row.received, row.allFinancing ?? 0, row.end?.fundingGap ?? 0,
+        row.end?.financingForecast?.remainingCapacity ?? 0, Math.abs(row.end?.cash ?? 0)]));
     const growthScale = Math.max(0.01, ...rows.flatMap(row =>
       [Math.abs(row.financingGrowth ?? 0), Math.abs(row.revenueGrowth ?? 0)]));
     const chart = panel.querySelector("[data-financing-chart]");
@@ -10101,13 +10102,19 @@ const I18N = {
     }
     for (const row of rows) {
       const item = document.createElement("li");
-      for (const [name, value] of [[t("Planned","\u8ba1\u5212"), row.total], [t("Scenario funded","\u60c5\u666f\u5230\u8d26"),row.received], [t("All financing","\u878d\u8d44\u5230\u8d26\u603b\u989d"), row.allFinancing],
-        [t("Gap","\u7f3a\u53e3"), row.end?.fundingGap ?? 0]]) {
+      for (const [name, value, metric] of [[t("Planned","\u8ba1\u5212"), row.total], [t("Scenario funded","\u60c5\u666f\u5230\u8d26"),row.received], [t("All financing","\u878d\u8d44\u5230\u8d26\u603b\u989d"), row.allFinancing],
+        [t("Gap","\u7f3a\u53e3"), row.end?.fundingGap],
+        [t("Remaining scenario capacity", "\u5269\u4f59\u60c5\u666f\u878d\u8d44\u989d\u5ea6"), row.end?.financingForecast?.remainingCapacity],
+        [t("Closing cash", "\u671f\u672b\u73b0\u91d1"), row.end?.cash, "closingCash"]]) {
         if (!Number.isFinite(value)) continue;
         const label = document.createElement("label");
         label.className = "block";
         label.textContent = row.year + " " + name + " " + value.toFixed(2) + " ";
         const bar = document.createElement("meter");
+        if (metric === "closingCash") {
+          label.dataset.financingClosingCash = row.year;
+          bar.min = -scale;
+        }
         bar.max = scale; bar.value = value;
         label.append(bar); item.append(label);
       }

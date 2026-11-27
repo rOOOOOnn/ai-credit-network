@@ -45,10 +45,20 @@ async function checkPage(browser, url) {
     await annualEquity.press("Tab");
     assert.equal(await row.locator("td").nth(7).innerText(), "8.00");
     assert.ok((await panel.locator("[data-financing-chart]").innerText()).includes("8.00"));
+    const chartClosingCash = panel.locator('[data-financing-closing-cash="2027"]');
+    const checkChartCash = async () => {
+      const displayed = await row.locator("td").last().innerText();
+      assert.ok((await chartClosingCash.innerText()).trimEnd().endsWith(displayed));
+      const meter = chartClosingCash.locator("meter");
+      assert.equal(Number(await meter.getAttribute("value")).toFixed(2), displayed);
+      assert.ok(Number(await meter.getAttribute("min")) < 0);
+    };
+    await checkChartCash();
     const financingFreeze = panel.locator("[data-scenario-financing-freeze]");
     await financingFreeze.selectOption("freeze");
     assert.equal(await annualEquity.inputValue(), "8");
     assert.equal(await row.locator("td").nth(7).innerText(), "0.00");
+    await checkChartCash();
     await financingFreeze.selectOption("enabled");
     assert.equal(await row.locator("td").nth(7).innerText(), "8.00");
     const financeChart = panel.locator("[data-financing-chart]");
@@ -61,6 +71,7 @@ async function checkPage(browser, url) {
     assert.equal(await finalYear.locator("td").nth(7).innerText(), "4.00");
     await panel.locator("select").first().selectOption("curve");
     assert.equal(await row.locator("input").count(), 0);
+    await checkChartCash();
     const curveEquity = panel.getByLabel("equity ($B)", { exact: true });
     await curveEquity.fill("10");
     await curveEquity.press("Tab");
