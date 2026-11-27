@@ -1271,3 +1271,9 @@ const lowTierRetires = engine.fleetRefresh([repurposed], "2029Q1", lowTierConfig
 assert.deepEqual(lowTierRetires.cohorts, []);
 assert.equal(lowTierRetires.replacementCapex, 0);
 assert.equal(lowTierRetires.disposalProceeds, 0.2);
+const tx26Cutoff = transactions.find(tx => tx.id === "TX26");
+assert.equal(engine.computeTransactionEAD(tx26Cutoff, "2027Q2").undrawnCommitment, null);
+const expiredTx26 = engine.computeTransactionEAD(tx26Cutoff, "2027Q3");
+assert.equal(expiredTx26.undrawnCommitment, 0);
+assert.equal(expiredTx26.fundedEAD, 4.583);
+assert.equal(termResult.timeline["2027Q3"].financingLedger.TX26.canDraw, false);

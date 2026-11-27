@@ -265,6 +265,12 @@
         eadBasis = "Unverified Drawn (amountDrawn=null, Conservative CCF)";
       }
 
+      if (tx.commitmentTerminationDate && quarterEndDate(quarter) > tx.commitmentTerminationDate) {
+        undrawnCommitment = 0;
+        undrawnEAD = 0;
+        eadBasis += "; commitment expired";
+      }
+
       const totalEAD = Number((fundedEAD + undrawnEAD).toFixed(4));
       const creditLossAtDefault = Number((totalEAD * txLgd).toFixed(4));
       const expectedLoss = Number((totalEAD * txPd * txLgd).toFixed(4));
@@ -374,6 +380,7 @@
         ? Number(principalByFacility.reduce((sum, principal) => sum + principal, 0).toFixed(3))
         : Number(sFin.fundedDebt ?? sFin.debt ?? 0);
       const undrawnByFacility = spvDebtTxs.map((tx, index) => {
+        if (tx.commitmentTerminationDate && quarterEndDate(quarter) > tx.commitmentTerminationDate) return 0;
         if (tx.principalOutstanding != null && compareQuarter(quarter, tx.principalAsOfQuarter) < 0) return null;
         if (tx.remainingCommitment != null && !isRevolvingFacility(tx)) return nonnegative(tx.remainingCommitment);
         if (tx.totalCommitment == null || tx.amountDrawn == null) return null;
