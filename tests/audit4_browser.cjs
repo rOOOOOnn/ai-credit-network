@@ -139,6 +139,13 @@ async function checkPage(browser, url) {
     assert.equal(firstQuarter.financingLedger.TX26.beginningOutstanding, 4.583);
     assert.equal(firstQuarter.financingLedger.TX26.lender, null);
     assert.equal(firstQuarter.financingLedger.TX26.undrawnCommitment, null);
+    const oracleInitialLease = firstQuarter.leaseCashSchedules.ORCL;
+    assert.equal(oracleInitialLease.incremental.uncommencedCommitment, 288);
+    assert.equal(oracleInitialLease.incremental.payment, 0);
+    const oracleStartedLease = ledger.quarters.find(row => row.quarter === "2027Q1").leaseCashSchedules.ORCL;
+    assert.equal(oracleStartedLease.incremental.payment, 1.4118);
+    assert.equal(oracleStartedLease.principalCashPaid, 0);
+    assert.equal(oracleStartedLease.incrementalOperatingCashPaid, 1.4118);
     assert.equal(ledger.quarters.at(-1).quarter, "2034Q4");
     await page.locator("#closeDataModalBtn").click();
     await page.locator('[data-network-entity="CRWV"]').dispatchEvent("click");

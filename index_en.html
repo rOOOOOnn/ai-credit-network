@@ -10219,8 +10219,16 @@ const I18N = {
         const financingCashSources = Object.fromEntries(Object.entries(row.entities)
           .filter(([, company]) => company.financingCashSources)
           .map(([id, company]) => [id, { ...company.financingCashSources, total: company.totalFinancingCashInflow }]));
+        const leaseCashSchedules = Object.fromEntries(Object.entries(row.entities)
+          .filter(([, company]) => company.leaseSchedule)
+          .map(([id, company]) => [id, {
+            incremental: company.leaseSchedule,
+            recognizedFinance: company.recognizedFinanceLease,
+            principalCashPaid: company.leasePrincipal,
+            incrementalOperatingCashPaid: company.leaseSchedule.ocfCashPayment
+          }]));
         return [{ quarter, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation,
-          operationalRevenueLedger, operatingCashBridges, financingCashSources }];
+          operationalRevenueLedger, operatingCashBridges, financingCashSources, leaseCashSchedules }];
       });
       triggerDownload("audit4_quarterly_credit_ledger.json", JSON.stringify({
         version: state.version,
