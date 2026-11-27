@@ -31,6 +31,7 @@ const [inventory] = register.split(/\r?\n\r?\n###? /);
 const entityRows = [...inventory.matchAll(/^\| ([A-Z][A-Z0-9_]*) \| (.+) \|$/gm)];
 assert.deepEqual(entityRows.map(row => row[1]).sort(), entities.map(entity => entity.id).sort(),
   "The source inventory must contain every repository entity exactly once");
+const entitiesById = new Map(entities.map(entity => [entity.id, entity]));
 for (const [, id, cells] of entityRows) {
   const [quarter, classification, disclosureDate, source, gaps] = cells.split(" | ");
   assert.match(quarter, /^(?:\d{4}Q[1-4]|—)$/, id + " needs a quarter or an unavailable marker");
@@ -38,5 +39,14 @@ for (const [, id, cells] of entityRows) {
   assert.match(disclosureDate, /^(?:\d{4}-\d{2}-\d{2}|—)$/, id + " needs a disclosure date or an unavailable marker");
   assert.match(source, /(?:https:\/\/|^—$)/, id + " needs a source or a missing source marker");
   assert.ok(gaps?.trim(), id + " needs a missing-fields disclosure");
+  const financials = entitiesById.get(id).financials ?? {};
+  const latestQuarter = Object.keys(financials).sort().at(-1);
+  if (latestQuarter) {
+    assert.equal(quarter, latestQuarter, id + " source register quarter differs from the dataset");
+    const latest = financials[latestQuarter];
+    if (latest.disclosedDate) {
+      assert.equal(disclosureDate, latest.disclosedDate, id + " source register disclosure date differs from the dataset");
+    }
+  }
 }
 console.log("Source inventory covers " + entities.length + " entities");
