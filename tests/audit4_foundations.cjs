@@ -657,6 +657,23 @@ assert.equal(rolloverQuarter.financingLedger[instrument.id].principalRepayment, 
 assert.equal(rolloverQuarter.entities.OPENAI.financingForecast.fundedRollover, 3);
 assert.equal(rolloverQuarter.entities.OPENAI.financingForecast.fundedDebt, 0);
 assert.equal(rolloverQuarter.entities.OPENAI.newDebt, 3);
+const extendedTerm = engine.runSimulation(entities, [...transactions, instrument], {
+  ...termOptions,
+  facilityDrawdowns: { [instrument.id]: { "2027Q1": 3 } },
+  facilityExtensions: { [instrument.id]: "2028Q2" }
+});
+const originalMaturity = extendedTerm.timeline["2027Q3"];
+const amendedMaturity = extendedTerm.timeline["2028Q2"];
+assert.equal(originalMaturity.financingLedger[instrument.id].principalRepayment, 0);
+assert.equal(originalMaturity.financingLedger[instrument.id].endingOutstanding, 3);
+assert.equal(originalMaturity.financingLedger[instrument.id].originalMaturityQuarter, "2027Q3");
+assert.equal(originalMaturity.financingLedger[instrument.id].maturityQuarter, "2028Q2");
+assert.equal(originalMaturity.financingLedger[instrument.id].maturityExtensionDataType, "Assumption");
+assert.equal(originalMaturity.debtReconciliation.OPENAI.namedTermPrincipal, 3);
+assert.equal(amendedMaturity.financingLedger[instrument.id].principalRepayment, 3);
+assert.equal(amendedMaturity.financingLedger[instrument.id].endingOutstanding, 0);
+assert.equal(amendedMaturity.debtReconciliation.OPENAI.namedTermPrincipal, 0);
+assert.equal(instrument.endQ, "2027Q3");
 const trackedReplacement = engine.runSimulation(entities, [...transactions, instrument], {
   ...termOptions, ocean: { refiSuccessRate: 100, fundingAvailability: 100 },
   overrides: { OPENAI: { ...termOptions.overrides.OPENAI, refiSuccess: 1 } },

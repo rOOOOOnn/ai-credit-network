@@ -1335,8 +1335,11 @@
     }
     transactions = transactions.map(tx => {
       const extension = options.facilityExtensions?.[tx.id];
-      return extension && isRevolvingFacility(tx) && compareQuarter(extension, tx.endQ) > 0
-        ? { ...tx, endQ: extension } : tx;
+      const canExtend = isRevolvingFacility(tx) || (useAudit4Contracts || options.audit4DebtLedger === true) &&
+        DEBT_TX_TYPES.includes(tx.type) && !tx.drawTenorQuarters;
+      return canExtend && /^\d{4}Q[1-4]$/.test(extension ?? "") &&
+        /^\d{4}Q[1-4]$/.test(tx.endQ ?? "") && compareQuarter(extension, tx.endQ) > 0
+        ? { ...tx, originalMaturityQuarter: tx.endQ, endQ: extension } : tx;
     });
     const reportedAnthropic = useAudit4Contracts && entities.find(e => e.id === "ANTHROPIC")?.audit4Observations;
     if (reportedAnthropic) {
@@ -1523,6 +1526,11 @@
           defaulted: previous?.defaulted ?? false,
           accruedInterest: 0
         };
+        if (tx.originalMaturityQuarter) {
+          row.originalMaturityQuarter = tx.originalMaturityQuarter;
+          row.maturityQuarter = tx.endQ;
+          row.maturityExtensionDataType = "Assumption";
+        }
         if (tx.drawTenorQuarters) {
           row.drawTenorQuarters = tx.drawTenorQuarters;
           row.drawEligibilityRequired = tx.drawEligibilityRequired === true;
