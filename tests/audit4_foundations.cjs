@@ -1503,3 +1503,11 @@ assert.equal(laterSameGeneration.cohorts[0].performanceUnitsPerGpu, 2);
 assert.deepEqual(replaced.gpuBookValueBridge, {
   opening: 1.0833, additions: 1, depreciation: 0.0833, disposedNetBookValue: 0.5, closing: 1.5
 });
+const upgradeCash = engine.runSimulation([refreshFixture], [], { audit4Contracts: true,
+  overrides: { [refreshFixture.id]: { gpuRefresh: { quarterlyMaintenanceCapex: 0.2 } } }
+}).timeline["2026Q4"].entities[refreshFixture.id];
+assert.equal(upgradeCash.gpuMaintenanceCapex, 0.2);
+assert.equal(upgradeCash.ocf, quantityReference.ocf);
+assert.equal(usd(quantityReference.fcf - upgradeCash.fcf), 0.2);
+assert.equal(usd(quantityReference.cash - upgradeCash.cash), 0.2);
+assert.deepEqual(upgradeCash.gpuClosingCohorts, []);

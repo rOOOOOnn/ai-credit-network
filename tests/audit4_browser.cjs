@@ -126,6 +126,10 @@ async function checkPage(browser, url) {
     const utilization = panel.locator('[data-gpu-setting="utilizationRate"]');
     await utilization.fill("0.5");
     await utilization.press("Tab");
+    const maintenanceCapex = panel.locator('[data-gpu-setting="quarterlyMaintenanceCapex"]');
+    await maintenanceCapex.fill("0.2");
+    await maintenanceCapex.press("Tab");
+    assert.equal(JSON.parse(await scenario.inputValue()).gpuRefresh.quarterlyMaintenanceCapex, 0.2);
     const performanceRatio = panel.locator('[data-gpu-setting="replacementPerformanceRatio"]');
     await performanceRatio.fill("2");
     await performanceRatio.press("Tab");
@@ -161,6 +165,7 @@ async function checkPage(browser, url) {
     assert.ok(weightedEntity);
     const gpuAcquisition = ledger.quarters.find(row => row.quarter === "2027Q1").gpuCashSchedules[weightedEntity];
     assert.equal(gpuAcquisition.purchasesIncludedInBaseCapex, 0.1);
+    assert.equal(gpuAcquisition.maintenanceCapex, 0.2);
     assert.deepEqual(gpuAcquisition.closingCohorts, [{ acquired: "2027Q1", cost: 0.1, quantity: 1000, unitCostUsd: 100000, generation: "Fixture" }]);
     const gpuRefresh = ledger.quarters.find(row => row.quarter === "2034Q1").gpuCashSchedules[weightedEntity];
     assert.equal(gpuRefresh.replacementCapex, 0.025);

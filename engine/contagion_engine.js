@@ -1575,7 +1575,8 @@
         const closingFleetCost = closingFleet.reduce((sum, cohort) => sum + cohort.cost, 0);
         const gpuFleetAgeYears = closingFleetCost > 0 ? money(closingFleet.reduce((sum, cohort) =>
           sum + cohort.cost * (parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired)) / 4, 0) / closingFleetCost) : null;
-        const capex = money(baseCapex + refresh.replacementCapex);
+        const gpuMaintenanceCapex = money(nonnegative(fleetConfig?.quarterlyMaintenanceCapex));
+        const capex = money(baseCapex + refresh.replacementCapex + gpuMaintenanceCapex);
         const legacyLease = ov?.incrementalLease;
         const disclosedLeaseBuckets = useAudit4Contracts && e.id === "NVDA" && ov?.includeNvidiaLeaseBuckets
           ? e.audit4LeaseDisclosure?.uncommencedLeasePayments.slice(1, 5).map((commitment, index) => ({
@@ -1747,6 +1748,7 @@
           leasePrincipal,
           leaseInterestAdjustment,
           gpuPurchases,
+          gpuMaintenanceCapex,
           gpuClosingCohorts: fleetConfig ? closingFleet : null,
           pledgedGpuValues,
           gpuCollateralValue: fleetOriginalCost > 0 ? money(fleetCollateral) : null,
