@@ -1508,7 +1508,9 @@
           : money(Math.max(0, nonnegative(tx.totalCommitment) - cumulativeDrawdown));
         const borrowerDefaultBlocksDraw = tx.drawEligibilityRequired === true &&
           (prevStates[tx.receiver]?.distressLevel === 3 || scenarioSummary[tx.receiver]?.defaultQuarter != null);
-        const canDraw = active && tx.endQ !== q && !previous?.defaulted && !borrowerDefaultBlocksDraw &&
+        const beforeMaturity = !tx.endQ || compareQuarter(q, tx.endQ) < 0;
+        const canDraw = active && (isRevolver ? beforeMaturity : tx.endQ !== q) &&
+          !previous?.defaulted && !borrowerDefaultBlocksDraw &&
           (!tx.commitmentTerminationDate || quarterEndDate(q) <= tx.commitmentTerminationDate);
         const row = {
           txId: tx.id, borrower: tx.receiver, lender, instrumentType: tx.type, isRevolver,

@@ -1024,7 +1024,11 @@ assert.equal(delayedAnthropic.incrementalLeasePayment, 0);
 assert.equal(usd(delayedAnthropic.cash - earlyAnthropic.cash), 11.28);
 assert.equal(usd(delayedAnthropic.fcf - earlyAnthropic.fcf), 11.28);
 assert.equal(delayedAnthropicLease["2027Q4"].entities.ANTHROPIC.incrementalLeasePayment, 11.28);
-assert.equal(earlyAnthropicLease["2031Q4"].entities.ANTHROPIC.fundingGap, 8);
+const earlyLeaseClosing = earlyAnthropicLease["2031Q4"].entities.ANTHROPIC;
+assert.equal(earlyLeaseClosing.minCash, 8);
+assert.equal(earlyLeaseClosing.cash, -12.5409);
+assert.equal(earlyLeaseClosing.rcfDraw, 0);
+assert.equal(earlyLeaseClosing.fundingGap, 20.5409);
 assert.equal(delayedAnthropicLease["2031Q4"].entities.ANTHROPIC.fundingGap, 0);
 
 assert.equal(usd(anthropicLease.operatingPayments.reduce((sum, payment) => sum + payment, 0) -
@@ -1425,6 +1429,8 @@ const withoutEquipment = engine.runSimulation([equipmentBorrower], [], equipment
 assert.equal(withoutEquipment["2028Q4"].financingLedger.AMZN_RCF_2023.canDraw, true);
 assert.equal(withoutEquipment["2031Q3"].financingLedger.AMZN_RCF_2023.canDraw, true);
 assert.equal(withoutEquipment["2031Q4"].financingLedger.AMZN_RCF_2023.canDraw, false);
+assert.equal(withoutEquipment["2032Q1"].financingLedger.AMZN_RCF_2023.canDraw, false);
+assert.equal(withoutEquipment["2032Q1"].financingLedger.AMZN_RCF_2023.undrawnCommitment, 0);
 assert.equal(withoutEquipment["2029Q2"].financingLedger.AMZN_TERM_2026.endingOutstanding, 17.5);
 assert.equal(withoutEquipment["2029Q3"].financingLedger.AMZN_TERM_2026.principalRepayment, 17.5);
 assert.equal(withoutEquipment["2029Q3"].financingLedger.AMZN_TERM_2026.endingOutstanding, 0);

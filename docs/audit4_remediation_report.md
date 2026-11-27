@@ -295,9 +295,9 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |
 | --- | --- | --- | ---: | ---: | ---: | --- | --- |
 | Continuation | OPENAI | Manual | -15.5228 | 25.5228 | 0 | 2028Q2 | — |
-| Remediated | OPENAI | Manual | -13.6421 | 23.6421 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Manual | -18.1923 | 28.1923 | 0 | 2028Q2 | — |
 | Continuation | OPENAI | Curve | -15.5178 | 25.5178 | 0 | 2028Q3 | — |
-| Remediated | OPENAI | Curve | -13.6188 | 23.6188 | 0 | 2028Q3 | — |
+| Remediated | OPENAI | Curve | -18.1923 | 28.1923 | 0 | 2028Q2 | — |
 | Continuation | OPENAI | Freeze | -46.1816 | 56.1816 | 0 | 2027Q4 | — |
 | Remediated | OPENAI | Freeze | -48.0878 | 58.0878 | 0 | 2027Q4 | — |
 | Continuation | ANTHROPIC | Manual | 201.8728 | 0 | — | — | 2026Q4 |
@@ -456,8 +456,8 @@ The Base path requests $20B and $18B of annual scenario equity in 2027 and 2028.
 
 | Entity | Scenario | End cash | OCF | FCF | Quarterly burn | Funding dependency | Available liquidity | Runway (months) | Funding gap | Required financing | Minimum FCF revenue growth | First default | First FCF break-even |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| OPENAI | Base | -5.6028 | -6.9164 | -8.4164 | 8.4164 | 0.5347 | 0 | 0 | 15.6028 | 15.6028 | 1.2709 | 2028Q3 | — |
-| OPENAI | Revenue slowdown | -23.6407 | -12.1642 | -13.6642 | 13.6642 | 0.3293 | 0 | 0 | 33.6407 | 33.6407 | 3.1539 | 2028Q2 | — |
+| OPENAI | Base | -10.1923 | -6.8415 | -8.3415 | 8.3415 | 0.5395 | 0 | 0 | 20.1923 | 20.1923 | 1.26 | 2028Q2 | — |
+| OPENAI | Revenue slowdown | -27.8492 | -10.1107 | -11.6107 | 11.6107 | 0.3876 | 0 | 0 | 37.8492 | 37.8492 | 3.2438 | 2028Q1 | — |
 | OPENAI | Funding taper (downside) | -31.8359 | -6.9537 | -8.4537 | 8.4537 | 0.1774 | 0 | 0 | 41.8359 | 41.8359 | 1.2962 | 2027Q4 | — |
 | OPENAI | Funding freeze | -47.9045 | -6.9927 | -8.4927 | 8.4927 | 0 | 0 | 0 | 57.9045 | 57.9045 | 1.302 | 2027Q4 | — |
 | OPENAI | Combined severe stress | -61.742 | -10.5544 | -12.0544 | 12.0544 | 0 | 0 | 0 | 71.742 | 71.742 | 3.2684 | 2027Q3 | — |
@@ -629,8 +629,8 @@ The archive's longer financing comparison was adapted to this branch. Run `node 
 
 | Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |
 | --- | --- | --- | ---: | ---: | ---: | --- | --- |
-| Remediated | OPENAI | Manual | -130.8041 | 140.8041 | 0 | 2028Q2 | — |
-| Remediated | OPENAI | Curve | -130.8069 | 140.8069 | 0 | 2028Q3 | — |
+| Remediated | OPENAI | Manual | -134.4555 | 144.4555 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Curve | -134.4555 | 144.4555 | 0 | 2028Q2 | — |
 | Remediated | OPENAI | Freeze | -163.4441 | 173.4441 | 0 | 2027Q4 | — |
 | Remediated | ANTHROPIC | Manual | 254.3391 | 0 | 166.2506 | — | 2026Q4 |
 | Remediated | ANTHROPIC | Curve | 254.3391 | 0 | 166.2506 | — | 2026Q4 |
@@ -644,7 +644,7 @@ The archive's longer financing comparison was adapted to this branch. Run `node 
 
 The final prospectus confirms approximately $451.2B of undiscounted payments for executed leases not yet commenced at September 30, 2026. Expected commencements are generally in 2026–2028, and the disclosed weighted average term is approximately ten years. The archive's longer phase schedule was an assumption. The prospectus excludes this amount from its September contractual-obligations table. It separately identifies $105.7B of commitments entered into after the cutoff. Combining these amounts with the filing's broader compute aggregate would risk duplication. The three company pages now expose the September figure and its filing link. [Final prospectus, Contractual Obligations](https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm).
 
-A gross operating-rent overlay assumes $451.2B divided by 40 quarterly installments, or $11.28B per quarter. Immediate commencement in 2026Q4 takes closing cash from $215.2262B to $203.9462B and FCF from $2.6262B to negative $8.6538B. Moving commencement four quarters later defers the first installment to 2027Q4. The modeled 2031Q4 funding gap is $8B in the immediate case and zero in the delayed case. This overlay uses the existing disclosed-estimate IPO inflow. Actual commencement cohorts, operating/finance classification and overlap with calibrated baseline compute costs are unresolved, so the overlay is a sensitivity outside the baseline.
+A gross operating-rent overlay assumes $451.2B divided by 40 quarterly installments, or $11.28B per quarter. Immediate commencement in 2026Q4 takes closing cash from $215.2262B to $203.9462B and FCF from $2.6262B to negative $8.6538B. Moving commencement four quarters later defers the first installment to 2027Q4. The modeled 2031Q4 funding gap is $20.5409B in the immediate case after the revolving expiry correction, and zero in the delayed case. This overlay uses the existing disclosed-estimate IPO inflow. Actual commencement cohorts, operating/finance classification and overlap with calibrated baseline compute costs are unresolved, so the overlay is a sensitivity outside the baseline.
 
 
 The final prospectus also supplies maturity buckets for commenced leases and separate purchase commitments. The model's input record now preserves the issuer's annual buckets. Deducting $1.414B of imputed interest from $4.224B in operating payments yields $2.810B of recognized operating lease liabilities. Deducting $0.276B from $1.950B of finance payments yields $1.674B of recognized finance lease liabilities. The separate $313.819B purchase schedule is kept outside both lease totals. The regression independently reconciles these three rows. The $451.2B uncommenced lease sensitivity adds only the explicitly selected scenario overlay. Allocation of existing obligations against calibrated compute expense still requires a contract-level bridge. [Final prospectus, Contractual Obligations and Note 9](https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm).
@@ -943,3 +943,7 @@ The audit profile now tracks the $17.5B September 2026 term loan as opening fund
 ### Alphabet committed revolvers
 
 Alphabet Note 6 reports $4B and $6B revolving facilities expiring in April 2027 and April 2030, respectively, with no September 2026 borrowings. Both facilities now populate the audited ledger without increasing opening principal or cash. Individual lender allocations remain unknown. The April month-end dates are upper bounds used for quarterly draw eligibility because the filing gives the months only. A solvent regression tests $10B opening availability, $6B after the first expiry and zero after the second, including several quarters beyond the first expiry. The $25B commercial paper program and unfunded equity issuance capacity are excluded from committed revolving liquidity. The 68 existing replay rows match. [Alphabet September 10-Q, Note 6](https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm).
+
+### Revolver availability after scheduled maturity
+
+The legacy lifecycle keeps facilities visible while a static commitment or unpaid balance exists. A separate ledger condition previously rejected draws only in the maturity quarter, allowing availability to reappear afterward. In the independent solvent Amazon fixture, the $15B replacement revolver still shows zero availability in 2032Q1 after its 2031Q4 maturity. The corrected draw gate preserves visibility for exposure reporting and rejects further revolving draws unless an explicit extension moves the maturity. In the Anthropic immediate lease scenario, TX17A/B remain closed after 2030Q2, and the company reaches negative $12.5409B of cash in 2031Q4 with no revolving draw. Against its unchanged $8B minimum cash, the funding gap is $20.5409B. The delayed overlay still has zero gap. Six financing replay rows changed; the 24 GPU rows and seven audited integrated stress rows are unchanged.
