@@ -1540,6 +1540,14 @@ for (const [id, live, expired, available] of [
 assert.equal(dlrRcf.newDrawdown, 0);
 assert.equal(eqixRcf.newDrawdown, 0);
 const vertivBorrower = entities.find(entity => entity.id === "VERTIV");
+const vertivFinancials = vertivBorrower.financials["2026Q3"];
+assert.deepEqual([vertivFinancials.revenue, vertivFinancials.cash, vertivFinancials.ar, vertivFinancials.accountsPayable],
+  [4.3128, 3.5129, 4.3797, 3.2447]);
+assert.equal(usd(0.1391 + 0.0027), vertivFinancials.capex);
+assert.equal(usd(vertivFinancials.ocf - vertivFinancials.capex), 0.6522);
+assert.equal(vertivFinancials.fcf, 0.6522);
+assert.equal(usd(vertivFinancials.shortTermDebt + vertivFinancials.longTermDebt), 2.9285);
+assert.equal(vertivFinancials.debt, 2.9285);
 const vertivCredit = engine.runSimulation([vertivBorrower], [], { audit4Contracts: true, forecastThrough: 2032,
   overrides: { VERTIV: { ocfMarginBeforeFinancing: 0.9, capex: 0 } } }).timeline;
 const vertivFacility = q => vertivCredit[q].financingLedger.VERTIV_RCF_2026;
