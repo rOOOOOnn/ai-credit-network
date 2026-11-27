@@ -1221,3 +1221,11 @@ assert.equal(usd(coreWeaveConsolidation.parentRecoursePrincipal + coreWeaveConso
 assert.equal(usd(coreWeaveConsolidation.parentConsolidatedPrincipal - coreWeaveConsolidation.parentConsolidatedDebt), 0.632);
 assert.equal(coreWeaveConsolidation.netSystemWidePrincipal, 47.505);
 assert.equal(coreWeaveConsolidation.spvFundedDebt, 4.583);
+
+const juneTx26 = engine.reconcileParentSpvDebt(entities, transactions, "2026Q2").find(row => row.spvId === "SPV_CRWV8");
+const marchTx26 = engine.reconcileParentSpvDebt(entities, transactions, "2026Q1").find(row => row.spvId === "SPV_CRWV8");
+assert.equal(juneTx26.spvFundedDebt, 2.837);
+assert.equal(juneTx26.spvUndrawnCommitment, null);
+assert.equal(marchTx26.spvFundedDebt, null);
+assert.equal(usd(coreWeaveConsolidation.spvFundedDebt - juneTx26.spvFundedDebt), 1.746);
+assert.equal(engine.computeTransactionEAD(transactions.find(tx => tx.id === "TX26"), "2026Q2").fundedEAD, 2.837);

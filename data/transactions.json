@@ -561,6 +561,7 @@
   },
   {
     "id": "TX26",
+    "priorPrincipalObservation": {"quarter":"2026Q2","principal":2.837,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000366/crwv-20260630.htm"},
     "payer": "BX_FUNDS",
     "receiver": "SPV_CRWV8",
     "type": "GPU-backed Financing",

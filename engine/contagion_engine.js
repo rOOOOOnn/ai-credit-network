@@ -187,6 +187,13 @@
    * P0-3: Strict Basel-style EAD / LGD / Expected Loss calculator.
    * Explicitly distinguishes amountDrawn === 0 (never substitutes totalCommitment!) vs amountDrawn === null.
    */
+  function reportedPrincipalAt(tx, quarter) {
+    if (tx.principalOutstanding != null && compareQuarter(quarter, tx.principalAsOfQuarter) >= 0)
+      return tx.principalOutstanding;
+    const prior = tx.priorPrincipalObservation;
+    return prior && compareQuarter(quarter, prior.quarter) >= 0 ? prior.principal : null;
+  }
+
   function computeTransactionEAD(tx, quarter, options = {}) {
     const defaultLgd = options.lgd ?? 0.45;
     const defaultPd = options.pd ?? 0.05;
@@ -231,9 +238,11 @@
       let eadBasis = "";
 
       if (tx.principalOutstanding != null) {
-        const knownPrincipal = compareQuarter(quarter, tx.principalAsOfQuarter) >= 0;
-        fundedEAD = knownPrincipal ? nonnegative(tx.principalOutstanding) : 0;
-        undrawnCommitment = knownPrincipal ? tx.remainingCommitment ?? null : null;
+        const reportedPrincipal = reportedPrincipalAt(tx, quarter);
+        const knownPrincipal = reportedPrincipal !== null;
+        fundedEAD = nonnegative(reportedPrincipal);
+        undrawnCommitment = compareQuarter(quarter, tx.principalAsOfQuarter) >= 0
+          ? tx.remainingCommitment ?? null : null;
         undrawnEAD = nonnegative(undrawnCommitment) * ccf;
         eadBasis = knownPrincipal ? "Reported principal; availability may be unknown" : "Principal unavailable as of quarter";
       } else if (tx.amountDrawn === 0) {
@@ -358,8 +367,11 @@
       const facilityCommitment = spvDebtTxs.length > 0
         ? Number(spvDebtTxs.reduce((s, t) => s + Number(t.totalCommitment || 0), 0).toFixed(3))
         : Number(sFin.facilityCommitment ?? sFin.debt ?? 0);
-      const fundedDebt = spvDebtTxs.length > 0
-        ? Number(spvDebtTxs.reduce((s, t) => s + (t.principalOutstanding ?? Math.max(0, Number(t.amountDrawn ?? 0) - Number(t.amountRepaid ?? 0))), 0).toFixed(3))
+      const principalByFacility = spvDebtTxs.map(tx => tx.principalOutstanding != null
+        ? reportedPrincipalAt(tx, quarter)
+        : Math.max(0, Number(tx.amountDrawn ?? 0) - Number(tx.amountRepaid ?? 0)));
+      const fundedDebt = principalByFacility.includes(null) ? null : principalByFacility.length
+        ? Number(principalByFacility.reduce((sum, principal) => sum + principal, 0).toFixed(3))
         : Number(sFin.fundedDebt ?? sFin.debt ?? 0);
       const undrawnCommitment = spvDebtTxs.some(t => t.principalOutstanding != null && t.remainingCommitment == null)
         ? null : Number(Math.max(0, facilityCommitment - fundedDebt).toFixed(3));
@@ -372,9 +384,9 @@
       // Consolidated SPV debt is ALREADY inside parentConsolidatedDebt -> elimination = fundedDebt
       // Unconsolidated SPV debt is off-parent balance sheet -> elimination = 0
       const consolidationElimination = isConsolidated ? fundedDebt : 0;
-      const netSystemWideDebt = parentConsolidatedDebt !== null
-        ? Number((parentConsolidatedDebt + fundedDebt - consolidationElimination).toFixed(3))
-        : fundedDebt;
+      const netSystemWideDebt = isConsolidated && parentConsolidatedDebt !== null ? parentConsolidatedDebt
+        : fundedDebt === null ? null
+        : parentConsolidatedDebt !== null ? Number((parentConsolidatedDebt + fundedDebt).toFixed(3)) : fundedDebt;
 
       rows.push({
         parentId,
@@ -388,7 +400,7 @@
         parentRecoursePrincipal: pFin.recoursePrincipal ?? null,
         parentNonRecoursePrincipal: pFin.nonRecoursePrincipal ?? null,
         netSystemWidePrincipal: isConsolidated ? pFin.borrowingPrincipal ?? null
-          : pFin.borrowingPrincipal == null ? null : money(pFin.borrowingPrincipal + fundedDebt),
+          : pFin.borrowingPrincipal == null || fundedDebt == null ? null : money(pFin.borrowingPrincipal + fundedDebt),
         spvFacilityCommitment: facilityCommitment,
         spvFundedDebt: fundedDebt,
         spvUndrawnCommitment: undrawnCommitment,
