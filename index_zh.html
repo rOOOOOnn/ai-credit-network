@@ -2801,7 +2801,10 @@
       }
       for (const [id, guarantee] of Object.entries(guaranteeLedger)) {
         guarantee.calledGuarantee = cumCreditLossByTx[id] ?? 0;
-        if (!guarantee.projects) guarantee.remainingGuaranteeLiability = money(Math.max(0, guarantee.effectiveExposure - guarantee.calledGuarantee));
+        if (!guarantee.projects) {
+          guarantee.remainingGuaranteeLiability = guarantee.effectiveExposure == null ? null
+            : money(Math.max(0, guarantee.effectiveExposure - guarantee.calledGuarantee));
+        }
         if (id === "TX11" && guarantee.projects) {
           guarantee.cashSettlementPending = money([...sbEnergySettlementQueue.values()]
             .reduce((sum, settlement) => sum + settlement.amount, 0));

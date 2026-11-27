@@ -576,6 +576,8 @@ const firstGuarantees = liquid.timeline["2026Q4"].guaranteeLedger;
 assert.equal(usd(firstGuarantees.TX11.disclosedMaximum + firstGuarantees[neocloud].disclosedMaximum +
   firstGuarantees[systems].disclosedMaximum), 118);
 assert.equal(firstGuarantees[neocloud].effectiveExposure, null);
+assert.equal(firstGuarantees[neocloud].remainingGuaranteeLiability, null);
+assert.equal(firstGuarantees[neocloud].remainingDisclosedCap, 3.5);
 assert.equal(firstGuarantees[systems].counterparty, null);
 const guaranteeStress = engine.runSimulation(entities, transactions, { audit4Contracts: true,
   overrides: { NVDA: { unallocatedGuaranteeCalls: {
@@ -584,6 +586,8 @@ const guaranteeStress = engine.runSimulation(entities, transactions, { audit4Con
   } } } });
 const calls = guaranteeStress.timeline["2027Q1"];
 assert.equal(calls.guaranteeLedger[neocloud].calledThisQuarter, 3);
+assert.equal(calls.guaranteeLedger[neocloud].remainingGuaranteeLiability, null);
+assert.equal(calls.guaranteeLedger[neocloud].remainingDisclosedCap, 0.5);
 assert.equal(calls.guaranteeLedger[systems].calledThisQuarter, 9.5);
 assert.equal(calls.entities.NVDA.unallocatedGuaranteeCashPaid, 12.5);
 assert.equal(usd(liquid.timeline["2027Q1"].entities.NVDA.cash - calls.entities.NVDA.cash), 12.5);
