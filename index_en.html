@@ -965,14 +965,21 @@
         const records = entries.filter(([, record]) =>
           Number.isFinite(record.amounts?.[source]) && record.amounts[source] >= 0);
         if (records.length < 2) continue;
-        const [prior, latest] = records.slice(-2);
-        if (Number(latest[0]) !== Number(prior[0]) + 1 || prior[1].amounts[source] <= 0) continue;
-        const first = prior[1].amounts[source];
-        const last = latest[1].amounts[source];
-        const forecast = last * (last / first) ** (year - Number(latest[0]));
+        const [latestYear, latest] = records.at(-1);
+        let start = records.length - 1;
+        while (start > 0 && Number(records[start][0]) === Number(records[start - 1][0]) + 1 &&
+          records[start - 1][1].amounts[source] > 0) start--;
+        const run = records.slice(start);
+        if (run.length < 2) continue;
+        const [firstYear, first] = run[0];
+        const growthFactor = (latest.amounts[source] / first.amounts[source]) ** (1 / (latestYear - firstYear));
+        const forecast = latest.amounts[source] * growthFactor ** (year - latestYear);
         if (!Number.isFinite(forecast)) continue;
         amounts[source] = forecast;
-        historyBySource[source] = { years: [prior[0], latest[0]], amounts: [first, last] };
+        historyBySource[source] = {
+          years: run.map(([recordYear]) => recordYear),
+          amounts: run.map(([, record]) => record.amounts[source])
+        };
       }
       const missingHistorySources = FINANCING_SOURCES.filter(source => !historyBySource[source]);
       return { amounts, historyBySource, missingHistorySources,

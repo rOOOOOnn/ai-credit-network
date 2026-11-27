@@ -593,9 +593,9 @@ assert.ok(independentHistory.missingHistorySources.includes("strategic"));
 const crwvHistorical = engine.runSimulation(entities, transactions, { audit4Contracts: true,
   overrides: { CRWV: { financing: { mode: "curve", curve: "historical", capacity: 100, quarterlyLimit: 25 } } }
 }).timeline["2027Q1"].entities.CRWV.financingForecast;
-assert.deepEqual(crwvHistorical.historyBySource.debt, { years: ["2024", "2025"], amounts: [7.018, 11.829] });
-assert.deepEqual(crwvHistorical.historyBySource.equity, { years: ["2024", "2025"], amounts: [1.172, 1.491] });
-assert.equal(usd(crwvHistorical.amounts.equity), usd(1.491 * (1.491 / 1.172) ** 2 / 4));
+assert.deepEqual(crwvHistorical.historyBySource.debt, { years: ["2023", "2024", "2025"], amounts: [1.404, 7.018, 11.829] });
+assert.deepEqual(crwvHistorical.historyBySource.equity, { years: ["2023", "2024", "2025"], amounts: [0.436, 1.172, 1.491] });
+assert.equal(usd(crwvHistorical.amounts.equity), usd(1.491 * (1.491 / 0.436) / 4));
 assert.ok(crwvHistorical.missingHistorySources.includes("prepayment"));
 const anthropicHistory = entities.find(entity => entity.id === "ANTHROPIC").verifiedFinancingHistory;
 assert.equal(usd(anthropicHistory[2023].amounts.equity + anthropicHistory[2023].amounts.debt +
@@ -607,8 +607,8 @@ const anthropicHistorical = engine.runSimulation(entities, transactions, { audit
   overrides: { ANTHROPIC: { financing: { mode: "curve", curve: "historical", capacity: 2, quarterlyLimit: 1 } } }
 });
 const anthropic2027 = anthropicHistorical.timeline["2027Q1"].entities.ANTHROPIC.financingForecast;
-assert.deepEqual(anthropic2027.historyBySource.equity, { years: ["2024", "2025"], amounts: [1.198, 16.659] });
-assert.deepEqual(anthropic2027.historyBySource.debt, { years: ["2024", "2025"], amounts: [6.05, 3.45] });
+assert.deepEqual(anthropic2027.historyBySource.equity, { years: ["2023", "2024", "2025"], amounts: [0.448, 1.198, 16.659] });
+assert.deepEqual(anthropic2027.historyBySource.debt, { years: ["2023", "2024", "2025"], amounts: [1.75, 6.05, 3.45] });
 assert.equal(usd(Object.values(anthropic2027.amounts).reduce((sum, amount) => sum + amount, 0)), 1);
 assert.equal(anthropicHistorical.timeline["2027Q2"].entities.ANTHROPIC.financingForecast.remainingCapacity, 0);
 const openAiData = entities.find(entity => entity.id === "OPENAI");
@@ -1322,3 +1322,9 @@ assert.deepEqual(tx26Bounds.cumulativeDrawdown, [4.583, tx26MaximumDraw]);
 assert.deepEqual(tx26Bounds.cumulativePrincipalRepaid, [0, usd(tx26MaximumDraw - 4.583)]);
 assert.equal(tx26Cutoff.amountDrawn, null);
 assert.equal(tx26Cutoff.amountRepaid, null);
+const cycleHistory = engine.financingForecast({ mode: "curve", curve: "historical", history: {
+  2024: { dataType: "Actual", fullYear: true, amounts: { equity: 4 } },
+  2025: { dataType: "Actual", fullYear: true, amounts: { equity: 2 } },
+  2026: { dataType: "Actual", fullYear: true, amounts: { equity: 4 } }
+} }, 2027);
+assert.equal(cycleHistory.amounts.equity, 4);
