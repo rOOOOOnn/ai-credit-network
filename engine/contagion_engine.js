@@ -1472,6 +1472,19 @@
           operatingCashBridge,
           newDebt: money(allowedDebt + contractualTermDraw),
           contractualTermDraw,
+          financingCashSources: {
+            scheduledEquity: scheduledEq,
+            scenarioEquity: funding?.amounts.equity ?? 0,
+            strategicInvestment: funding?.amounts.strategic ?? 0,
+            customerPrepayment: funding?.amounts.prepayment ?? 0,
+            otherFinancing: funding?.amounts.other ?? 0,
+            legacyNonDebtFinancing: funding ? 0 : money(assumedNonDebt),
+            scenarioDebt: funding?.amounts.debt ?? 0,
+            assetBackedFinancing: funding?.amounts.assetBacked ?? 0,
+            debtRollover: fundedRollover ?? money(Math.min(refiRollover, allowedDebt)),
+            legacyNewDebt: funding ? 0 : money(allowedDebt - Math.min(refiRollover, allowedDebt)),
+            contractualTermDraw
+          },
           assumedNewDebt: funding ? fundedScenarioDebt : null,
           financingForecast: funding ? { ...funding, fundedDebt: fundedScenarioDebt, remainingCapacity: financingRemaining[e.id], scheduledEquity: scheduledEq, scheduledEquityStatus, fundedRollover, rcfDraw } : null,
           replacementCapex: refresh.replacementCapex,
@@ -2071,6 +2084,10 @@
           state.availableLiquidity = money(Math.max(0, state.cash + (state.undrawnCredit ?? 0)));
           state.requiredFinancing = money(Math.max(0, minimumCash - state.cash - (state.undrawnCredit ?? 0)));
           const newFinancing = (state.newDebt ?? 0) + (state.rcfDraw ?? 0) + (state.equityInflow ?? 0);
+          if (state.financingCashSources) {
+            state.financingCashSources.rcfDraw = state.rcfDraw ?? 0;
+            state.totalFinancingCashInflow = money(newFinancing);
+          }
           const leaseInterest = (state.recognizedFinanceLease?.interest ?? 0) + (state.leaseSchedule?.financeInterest ?? 0);
           const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0) + (state.leasePrincipal ?? 0) + leaseInterest;
           const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0) + leaseInterest;

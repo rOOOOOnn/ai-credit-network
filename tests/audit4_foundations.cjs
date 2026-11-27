@@ -741,6 +741,8 @@ for (const [name, entity, overrides, options] of cases) {
       const label = `${name} ${quarter.quarter} ${id}`;
       assert.ok(quarter.debtReconciliation[id].unattributedDebt >= 0, label + " unattributed debt");
       assert.equal(state.fcf, usd(state.ocf - state.capex), label);
+      assert.equal(usd(Object.values(state.financingCashSources).reduce((sum, amount) => sum + amount, 0)),
+        state.totalFinancingCashInflow, label + " financing sources");
       const cash = state.begCash + state.fcf + state.newDebt + state.equityInflow + state.rcfDraw -
         state.principalRepay - state.leasePrincipal - state.gpuMarginCall + state.disposalProceeds +
         state.openingInvestmentSale - (state.unallocatedGuaranteeCashPaid ?? 0) - (state.projectGuaranteeCashPaid ?? 0);
@@ -1117,3 +1119,16 @@ const investmentSaleOpening = investmentSaleRun["2026Q4"].entities.DRAW_TEST;
 assert.deepEqual([investmentSaleOpening.openingInvestmentSale, investmentSaleOpening.cash,
   investmentSaleOpening.fcf, investmentSaleOpening.requiredRevenue], [5, 107, 2, 90]);
 assert.equal(investmentSaleRun["2027Q1"].entities.DRAW_TEST.openingInvestmentSale, 0);
+
+const mixedFinancingCash = engine.runSimulation([contractedCashFixture], [], { audit4Contracts: true, ocean: { refiSuccessRate: 100 }, overrides: {
+  DRAW_TEST: { refiSuccess: 1, financing: { mode: "manual", annual: { 2027: {
+    equity: 4, strategic: 8, prepayment: 12, other: 16, debt: 20, assetBacked: 24
+  } }, capacity: 84, quarterlyLimit: 21 } }
+} }).timeline["2027Q1"].entities.DRAW_TEST;
+assert.deepEqual(mixedFinancingCash.financingCashSources, {
+  scheduledEquity: 0, scenarioEquity: 1, strategicInvestment: 2, customerPrepayment: 3, otherFinancing: 4,
+  legacyNonDebtFinancing: 0, scenarioDebt: 5, assetBackedFinancing: 6, debtRollover: 0,
+  legacyNewDebt: 0, contractualTermDraw: 0, rcfDraw: 0
+});
+assert.equal(mixedFinancingCash.totalFinancingCashInflow, 21);
+assert.equal(mixedFinancingCash.scenarioEquityIssued, 1);

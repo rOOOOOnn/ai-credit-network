@@ -701,3 +701,6 @@ The same cash target check uncovered a second omission in the standard margin pa
 
 
 The cash-target metric now recognizes modeled GPU disposal and opening investment liquidation receipts once, on the same basis as closing cash. A test with a $20B GPU refresh and $5B of disposal proceeds reproduces the previous $140B required revenue, then verifies $130B after the correction at a 50% cash margin. Closing cash is $87B, OCF is $2B, and FCF is negative $18B under the existing gross CapEx convention. Thus the cash target reflects the disposal without treating it as operating cash or subtracting it from reported replacement CapEx.
+
+
+The downloadable quarterly audit ledger now itemizes financing cash by source, including scenario equity, strategic investment, customer prepayment, debt, asset-backed financing, rollover, contractual draws and the final RCF draw. Legacy assumptions remain explicitly named. These categories reconcile to total funded cash, including any RCF draw made during contagion. A mixed-source fixture independently checks six funded amounts of $1B through $6B and $21B total, with only $1B eligible for equity dilution. Each A–G borrower-quarter also verifies the source sum.

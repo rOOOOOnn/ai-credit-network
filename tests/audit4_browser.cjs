@@ -115,6 +115,9 @@ async function checkPage(browser, url) {
     assert.equal(firstQuarter.quarter, "2026Q4");
     assert.ok(Array.isArray(firstQuarter.operationalRevenueLedger));
     assert.equal(typeof firstQuarter.operatingCashBridges.CRWV.endingOCF, "number");
+    const coreWeaveFinancing = firstQuarter.financingCashSources.CRWV;
+    assert.equal(Number(Object.entries(coreWeaveFinancing).filter(([key]) => key !== "total")
+      .reduce((sum, [, amount]) => sum + amount, 0).toFixed(4)), coreWeaveFinancing.total);
     assert.equal(firstQuarter.financingLedger.TX26.beginningOutstanding, 4.583);
     assert.equal(firstQuarter.financingLedger.TX26.lender, null);
     assert.equal(firstQuarter.financingLedger.TX26.undrawnCommitment, null);
