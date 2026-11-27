@@ -1510,6 +1510,17 @@ assert.equal(smciRevolver("2026Q4").lender, null);
 assert.equal(smciRevolver("2030Q3").undrawnCommitment, 1.8);
 assert.equal(smciRevolver("2030Q4").undrawnCommitment, 0);
 assert.equal(smciCredit["2031Q1"].entities.SMCI.undrawnCredit, 0);
+const dellIssuer = entities.find(entity => entity.id === "DELL");
+const dellCredit = engine.runSimulation([dellIssuer], [], { audit4Contracts: true, forecastThrough: 2032,
+  overrides: { DELL: { ocfMarginBeforeFinancing: 0.9, capex: 0 } } }).timeline;
+const dellRcf = q => dellCredit[q].financingLedger.DELL_RCF_2026;
+assert.equal(dellRcf("2026Q4")?.undrawnCommitment, 5.884);
+assert.equal(dellRcf("2026Q4").lettersOfCredit, 0.116);
+assert.equal(dellRcf("2026Q4").endingOutstanding, 0);
+assert.equal(dellRcf("2026Q4").lender, null);
+assert.equal(dellRcf("2031Q1").undrawnCommitment, 5.884);
+assert.equal(dellRcf("2031Q2").undrawnCommitment, 0);
+assert.equal(dellCredit["2031Q3"].entities.DELL.undrawnCredit, 0);
 const alphabetEvidence = issuerBalance("GOOGL");
 assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
   alphabetEvidence.hedgeFairValueReduction), 126.118);
