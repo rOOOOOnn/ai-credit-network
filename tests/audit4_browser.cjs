@@ -346,6 +346,9 @@ async function checkPage(browser, url) {
     await page.locator('[data-network-entity="AMZN"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    assert.match(await panel.locator("[data-lease-disclosure]").innerText(), /164[.]92/);
+    await panel.locator("[data-amazon-lease-preset]").selectOption("annual");
+    assert.equal(JSON.parse(await scenario.inputValue()).includeAmazonLeaseBuckets, true);
     const equipmentDraw = panel.locator('[data-equipment-draw="2027Q1"]');
     await equipmentDraw.fill("2");
     await equipmentDraw.press("Tab");

@@ -297,6 +297,24 @@ assert.equal(amazonHistorical.fcf, usd(42.422 - 77.259));
 assert.equal(amazonHistorical.leaseLiab, usd(100.288 + 14.495));
 assert.equal(amazonHistorical.offBalanceLeases, usd(2.590 + 12.448 + 11.477 + 12.193 + 11.385 + 114.829));
 assert.equal(amazonHistorical.undrawnCredit, 20);
+const amazonLeaseIssuer = entities.find(entity => entity.id === "AMZN");
+const amazonLeaseScenario = (enabled, leaseDelayQuarters = 0) => engine.runSimulation([amazonLeaseIssuer], [], {
+  audit4Contracts: true, forecastThrough: 2031,
+  overrides: { AMZN: { includeAmazonLeaseBuckets: enabled, leaseDelayQuarters, ocfMarginBeforeFinancing: 0.5, capex: 0, minCash: 250 } }
+}).timeline;
+const amazonLeaseBase = amazonLeaseScenario(false)["2026Q4"].entities.AMZN;
+const amazonLeaseStress = amazonLeaseScenario(true);
+const amazonLeaseOpening = amazonLeaseStress["2026Q4"].entities.AMZN;
+assert.equal(amazonLeaseOpening.incrementalLeasePayment, 2.59);
+assert.equal(amazonLeaseOpening.leaseSchedule.unclassifiedPayment, 2.59);
+assert.equal(usd(amazonLeaseBase.ocf - amazonLeaseOpening.ocf), 2.59);
+assert.equal(usd(amazonLeaseBase.fcf - amazonLeaseOpening.fcf), 2.59);
+assert.equal(usd(amazonLeaseBase.cash - amazonLeaseOpening.cash), 2.59);
+assert.equal(usd(amazonLeaseOpening.requiredRevenue - amazonLeaseBase.requiredRevenue), 5.18);
+assert.equal(usd([1, 2, 3, 4].reduce((sum, quarter) =>
+  sum + amazonLeaseStress["2029Q" + quarter].entities.AMZN.incrementalLeasePayment, 0)), 12.193);
+assert.equal(amazonLeaseStress["2031Q1"].entities.AMZN.incrementalLeasePayment, 0);
+assert.equal(amazonLeaseScenario(true, 1)["2026Q4"].entities.AMZN.incrementalLeasePayment, 0);
 const alphabetHistorical = entities.find(entity => entity.id === "GOOGL").financials["2026Q3"];
 assert.equal(alphabetHistorical.cash, 56.334);
 assert.equal(alphabetHistorical.debt, usd(1.016 + 125.102));

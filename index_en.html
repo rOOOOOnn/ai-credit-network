@@ -1980,6 +1980,13 @@
           ? e.audit4LeaseDisclosure?.uncommencedLeasePayments.slice(1, 5).map((commitment, index) => ({
               commitment, termQuarters: 4, startQuarter: (2027 + index) + "Q2", type: "operating"
             })) : null;
+        const amazonLeaseBuckets = useAudit4Contracts && e.id === "AMZN" && ov?.includeAmazonLeaseBuckets
+          ? e.audit4LeaseDisclosure?.uncommencedPaymentBuckets.flatMap(({ year, quarters, amount }) =>
+              quarters.map((quarter, index) => ({
+                startQuarter: year + "Q" + quarter, termQuarters: 1, type: "unclassified",
+                commitment: money(money(amount * (index + 1) / quarters.length) -
+                  money(amount * index / quarters.length))
+              }))) : null;
         const leaseStressYears = ov?.disclosedLeaseStressYears;
         const stressStartYears = e.audit4LeaseDisclosure?.scenarioCalendarStartYears;
         const validLeaseStress = stressStartYears
@@ -2016,7 +2023,7 @@
           return [...initialCash, ...laterTranches];
         })() : null;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
-          : disclosedLeaseBuckets ?? leaseStress ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));
+          : disclosedLeaseBuckets ?? amazonLeaseBuckets ?? leaseStress ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));
         const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);
         const leasePayment = leaseSchedule.payment;
         const leaseOperatingCash = leaseSchedule.ocfCashPayment;
@@ -3456,6 +3463,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "AMZN",
+    "audit4LeaseDisclosure": {"asOf":"2026-09-30","uncommencedUndiscountedPayments":164.922,"operatingLeaseLiability":100.288,"financeLeaseLiability":14.495,"uncommencedPaymentsThereafter":114.829,"uncommencedPaymentBuckets":[{"year":2026,"quarters":[4],"amount":2.59},{"year":2027,"quarters":[1,2,3,4],"amount":12.448},{"year":2028,"quarters":[1,2,3,4],"amount":11.477},{"year":2029,"quarters":[1,2,3,4],"amount":12.193},{"year":2030,"quarters":[1,2,3,4],"amount":11.385}],"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"},
     "audit4ForecastCalibration": {"revenue":201.9,"interestExp":1.95,"dataType":"Assumption"},
     "legacyForecastOpening": {"revenue":201.9,"cash":114.2,"debt":180.3,"ocf":42.08,"interestExp":1.95,"undrawnCredit":80,"dataType":"Assumption"},
     "audit4Facilities": [{"id":"AMZN_RCF_2023","type":"Direct Loan","payer":null,"receiver":"AMZN","announcedDate":"2026-10-29","startQ":"2026Q4","endQ":"2031Q4","totalCommitment":15,"principalOutstanding":0,"principalAsOfQuarter":"2026Q4","amountDrawn":null,"amountRepaid":null,"remainingCommitment":15,"facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm","exposureBasis":"Reported revolving commitment, opening draw assumed zero at replacement for the forecast; lender shares unavailable"},{"id":"AMZN_RCF_2026","type":"Direct Loan","payer":null,"receiver":"AMZN","announcedDate":"2026-10-29","startQ":"2026Q4","endQ":"2027Q4","totalCommitment":5,"principalOutstanding":0,"principalAsOfQuarter":"2026Q4","amountDrawn":null,"amountRepaid":null,"remainingCommitment":5,"facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm","exposureBasis":"Reported revolving commitment, opening draw assumed zero at replacement for the forecast; lender shares unavailable"},{"id":"AMZN_TERM_2026","type":"Direct Loan","payer":null,"receiver":"AMZN","announcedDate":"2026-10-29","startQ":"2026Q3","endQ":"2029Q3","totalCommitment":17.5,"amountDrawn":17.5,"amountRepaid":0,"remainingCommitment":0,"facilityKind":"Term","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm","exposureBasis":"Reported September term loan principal and September 2029 maturity; lender shares unavailable"},{"id":"AMZN_EQUIPMENT_DDTL","type":"Equipment Financing","payer":null,"receiver":"AMZN","announcedDate":"2026-10-29","startQ":"2027Q1","commitmentTerminationDate":"2028-09-30","drawTenorQuarters":20,"drawEligibilityRequired":true,"totalCommitment":80,"amountDrawn":0,"amountRepaid":0,"remainingCommitment":80,"lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm","exposureBasis":"Conditional equipment financing; scenario draws require eligible purchases and pricing"}],
@@ -10022,6 +10030,7 @@ const I18N = {
       gpuRefresh:state.overrides[entity.id]?.gpuRefresh ?? {economicLife:5,replacementRatio:0.25,residualValue:0.2,cohorts:[]},
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
       incrementalLeaseTranches:state.overrides[entity.id]?.incrementalLeaseTranches ?? null,
+      includeAmazonLeaseBuckets:state.overrides[entity.id]?.includeAmazonLeaseBuckets ?? false,
       includeNvidiaLeaseBuckets:state.overrides[entity.id]?.includeNvidiaLeaseBuckets ?? false,
       includeOracleCommencedFinanceLease:state.overrides[entity.id]?.includeOracleCommencedFinanceLease ?? false,
       operationalSubstitutionAvailability:state.overrides[entity.id]?.operationalSubstitutionAvailability ?? null,
@@ -10278,6 +10287,14 @@ const I18N = {
           ["annual", t("FY2028–31 payments, evenly allocated", "FY2028–31 \u4ed8\u6b3e\u5b63\u5ea6\u5747\u5206")]]);
       leasePreset.dataset.nvidiaLeasePreset = "";
     }
+    if (entity.id === "AMZN") {
+      const leasePreset = setting(t("Amazon uncommenced lease cash scenario", "Amazon \u672a\u8d77\u79df\u79df\u8d41\u4ed8\u6b3e\u60c5\u666f"),
+        operating.includeAmazonLeaseBuckets ? "annual" : "off",
+        value => { settings().includeAmazonLeaseBuckets = value === "annual"; },
+        [["off", t("Off", "\u5173\u95ed")],
+          ["annual", t("2026-30 disclosed cash, quarterly allocation", "2026-30 \u5df2\u62ab\u9732\u4ed8\u6b3e\uff0c\u6309\u5b63\u5ea6\u5206\u914d")]]);
+      leasePreset.dataset.amazonLeasePreset = "";
+    }
     if (entity.audit4LeaseDisclosure?.scenarioCalendarStartYears || ["ANTHROPIC", "CRWV"].includes(entity.id)) {
       const terms = entity.audit4LeaseDisclosure.scenarioCalendarStartYears ?
         (entity.audit4LeaseDisclosure.scenarioTermYears ?? [10, 20]) :
@@ -10317,7 +10334,7 @@ const I18N = {
         [["off", t("Off", "\u5173\u95ed")], ["enabled", t("Use disclosed payment buckets", "\u4f7f\u7528\u62ab\u9732\u7684\u4ed8\u6b3e\u671f\u9650")]]);
       oracleFinance.dataset.oracleCommencedFinance = "";
     }
-    if (["ORCL", "NVDA", "ANTHROPIC", "CRWV", "MSFT", "GOOGL", "META", "NBIS"].includes(entity.id)) setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
+    if (["ORCL", "NVDA", "ANTHROPIC", "CRWV", "MSFT", "GOOGL", "META", "NBIS", "AMZN"].includes(entity.id)) setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
       state.overrides[entity.id]?.leaseDelayQuarters ?? 0, value => { settings().leaseDelayQuarters = Math.max(0, Math.trunc(value)); });
     const lastYear = Number(state.simResult.allQuarters.at(-1).slice(0, 4));
     for (let year = 2027; year <= lastYear; year++) {
@@ -10521,6 +10538,7 @@ const I18N = {
         settings.unallocatedGuaranteeCalls = data.unallocatedGuaranteeCalls;
         settings.incrementalLease = data.incrementalLease;
         settings.incrementalLeaseTranches = data.incrementalLeaseTranches;
+        settings.includeAmazonLeaseBuckets = data.includeAmazonLeaseBuckets === true;
         settings.includeNvidiaLeaseBuckets = data.includeNvidiaLeaseBuckets === true;
         settings.includeOracleCommencedFinanceLease = data.includeOracleCommencedFinanceLease === true;
         settings.disclosedLeaseStressYears = data.disclosedLeaseStressYears;

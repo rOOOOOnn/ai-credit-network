@@ -1663,6 +1663,13 @@
           ? e.audit4LeaseDisclosure?.uncommencedLeasePayments.slice(1, 5).map((commitment, index) => ({
               commitment, termQuarters: 4, startQuarter: (2027 + index) + "Q2", type: "operating"
             })) : null;
+        const amazonLeaseBuckets = useAudit4Contracts && e.id === "AMZN" && ov?.includeAmazonLeaseBuckets
+          ? e.audit4LeaseDisclosure?.uncommencedPaymentBuckets.flatMap(({ year, quarters, amount }) =>
+              quarters.map((quarter, index) => ({
+                startQuarter: year + "Q" + quarter, termQuarters: 1, type: "unclassified",
+                commitment: money(money(amount * (index + 1) / quarters.length) -
+                  money(amount * index / quarters.length))
+              }))) : null;
         const leaseStressYears = ov?.disclosedLeaseStressYears;
         const stressStartYears = e.audit4LeaseDisclosure?.scenarioCalendarStartYears;
         const validLeaseStress = stressStartYears
@@ -1699,7 +1706,7 @@
           return [...initialCash, ...laterTranches];
         })() : null;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
-          : disclosedLeaseBuckets ?? leaseStress ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));
+          : disclosedLeaseBuckets ?? amazonLeaseBuckets ?? leaseStress ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));
         const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);
         const leasePayment = leaseSchedule.payment;
         const leaseOperatingCash = leaseSchedule.ocfCashPayment;
