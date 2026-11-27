@@ -297,6 +297,16 @@ assert.equal(oracleSnapshot.debt, usd(oracleSnapshot.shortTermDebt + oracleSnaps
 assert.equal(oracleSnapshot.leaseLiab, usd(4.027 + 30.594 + 0.749 + 8.436));
 assert.equal(oracleSnapshot.offBalanceLeases, 288);
 const nebius = entities.find(entity => entity.id === "NBIS");
+const irenEvidenceEntity = entities.find(entity => entity.id === "IREN");
+const irenContractEvidence = irenEvidenceEntity.audit4ContractAndDebtEvidence;
+const irenContractSnapshot = irenEvidenceEntity.financials["2026Q3"];
+const irenFiscalPrincipal = usd(Object.values(irenContractEvidence.principalByFiscalYear).reduce((sum, value) => sum + value, 0));
+assert.equal(irenFiscalPrincipal, 10.041);
+assert.equal(usd(irenFiscalPrincipal - irenContractEvidence.unamortizedDebtIssuanceCosts), irenContractSnapshot.debt);
+assert.equal(usd(irenContractSnapshot.accountsPayable + irenContractEvidence.accruedExpenses), 2.583);
+assert.equal(irenContractSnapshot.rpo, usd(1.529 + 1.652 + 3.166));
+assert.equal(irenContractEvidence.asc842LessorMinimumPayments, 1.841);
+assert.equal(irenContractSnapshot.customerConcentration, 0.28);
 const nebiusSnapshot = nebius.financials["2026Q3"];
 const nebiusCustomerCash = nebius.audit4CustomerCashEvidence;
 assert.equal(usd(nebiusCustomerCash.deferredRevenueCurrent + nebiusCustomerCash.deferredRevenueNoncurrent), 9.4092);
