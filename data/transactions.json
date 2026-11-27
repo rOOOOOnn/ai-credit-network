@@ -576,7 +576,15 @@
     "remainingCommitment": null,
     "interestRate": "SOFR + 225 bps / ~5.9%",
     "maturityDate": "2032-03-31",
-    "quarterlyPayment": 0.13,
+    "quarterlyPayment": null,
+    "reportedAmortizationTerms": {
+      "frequency": "Monthly",
+      "startBasis": "Earliest applicable commitment termination, delayed-site amortization date or incremental top-up draw date",
+      "undrawnFeeAnnualRate": 0.005,
+      "paymentScheduleAvailable": false,
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/R16.htm",
+      "creditAgreementUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000129/ex1011.htm"
+    },
     "collateral": "SPV GPU Fleet & Contracted Revenue",
     "guarantor": "Non-Recourse to CRWV Parent",
     "arranger": "MUFG, Morgan Stanley, GS, JPM",

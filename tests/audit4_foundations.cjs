@@ -1309,3 +1309,7 @@ assert.deepEqual(tx27Margin, {
   basis: "AttributedPledge", principal: 10, effectiveHaircut: 0.4,
   stressedLtv: 1.0833, marginCall: 0.48, refinancingFactor: 0.52
 });
+assert.equal(tx26Cutoff.quarterlyPayment, null);
+assert.equal(tx26Cutoff.reportedAmortizationTerms.frequency, "Monthly");
+assert.equal(tx26Cutoff.reportedAmortizationTerms.paymentScheduleAvailable, false);
+assert.equal(tx26Cutoff.reportedAmortizationTerms.undrawnFeeAnnualRate, 0.005);
