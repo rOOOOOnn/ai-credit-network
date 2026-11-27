@@ -1219,6 +1219,7 @@
         // Case H: GPU Collateral Haircut & LTV Trigger
         const gpuDebtTxs = myDebtTxs.filter(tx => tx.type === "GPU-backed Financing" || tx.type === "Equipment Financing");
         let gpuMarginCall = 0;
+        const gpuMarginByFacility = {};
         let gpuRefiPenalty = 1.0;
         const openingFleet = fleets[e.id] ?? ov?.gpuRefresh?.cohorts ?? [];
         const gpuUtilization = Math.min(1, nonnegative(ov?.gpuRefresh?.utilizationRate ?? 1));
@@ -1243,19 +1244,29 @@
           const principal = loanPrincipal(tx);
           if (principal <= 0) continue;
           let effectiveHaircut = gpuCollateralHaircut;
+          let basis = "MarketScenario";
           if (attributedPledges.has(tx.id)) {
+            basis = "AttributedPledge";
             const pledged = openingFleet.filter(cohort => cohort.pledgedTo === tx.id);
             const pledgedCost = pledged.reduce((sum, cohort) => sum + nonnegative(cohort.cost), 0);
             const pledgedValue = pledged.reduce((sum, cohort) => sum + valueGpuCohort(cohort), 0);
             effectiveHaircut = pledgedCost > 0
               ? 1 - (1 - gpuCollateralHaircut) * pledgedValue / pledgedCost : 1;
           } else if (!hasAttributedPledge && fleetOriginalCost > 0) {
+            basis = "FleetProxy";
             effectiveHaircut = 1 - (1 - gpuCollateralHaircut) * fleetCollateral / fleetOriginalCost;
           }
-          if (effectiveHaircut > 0 && 0.65 / Math.max(0.2, 1 - effectiveHaircut) > 0.85) {
-            gpuMarginCall += principal * 0.12 * effectiveHaircut;
-            gpuRefiPenalty = Math.min(gpuRefiPenalty, Math.max(0.2, 1 - effectiveHaircut * 1.2));
-          }
+          const stressedLtv = 0.65 / Math.max(0.2, 1 - effectiveHaircut);
+          const triggered = effectiveHaircut > 0 && stressedLtv > 0.85;
+          const marginCall = triggered ? money(principal * 0.12 * effectiveHaircut) : 0;
+          const refinancingFactor = triggered ? Math.max(0.2, 1 - effectiveHaircut * 1.2) : 1;
+          gpuMarginCall += marginCall;
+          gpuRefiPenalty = Math.min(gpuRefiPenalty, refinancingFactor);
+          gpuMarginByFacility[tx.id] = {
+            basis, principal, effectiveHaircut: money(effectiveHaircut),
+            stressedLtv: money(stressedLtv), marginCall,
+            refinancingFactor: money(refinancingFactor)
+          };
         }
         gpuMarginCall = money(gpuMarginCall);
 
@@ -1552,6 +1563,7 @@
           principalRepay,
           nonCashDebtConversion,
           gpuMarginCall,
+          gpuMarginByFacility,
           computePay: incrementalCompute,
           operatingCashBridge,
           newDebt: money(allowedDebt + contractualTermDraw),

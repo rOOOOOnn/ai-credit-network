@@ -1295,3 +1295,8 @@ const soldPledgeDefault = soldPledge.creditEvents.find(event => event.txId === "
 assert.equal(soldPledgeDefault.collateralRecovery, 0);
 assert.equal(soldPledgeDefault.recognizedLoss, 4.5);
 assert.equal(pledgedGpu.timeline["2026Q4"].entities.CRWV.gpuMarginCall, 0.48);
+const tx27Margin = pledgedGpu.timeline["2026Q4"].entities.CRWV.gpuMarginByFacility.TX27;
+assert.deepEqual(tx27Margin, {
+  basis: "AttributedPledge", principal: 10, effectiveHaircut: 0.4,
+  stressedLtv: 1.0833, marginCall: 0.48, refinancingFactor: 0.52
+});

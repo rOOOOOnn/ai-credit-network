@@ -157,6 +157,10 @@ async function checkPage(browser, url) {
     assert.ok(Object.values(ledger.simulationOptions.overrides).some(row => row.equityPreMoneyValuation === 18));
     const firstQuarter = ledger.quarters[0];
     assert.equal(firstQuarter.quarter, "2026Q4");
+    const crwvMargin = firstQuarter.gpuCashSchedules.CRWV;
+    assert.equal(crwvMargin.marginStressByFacility.TX27.principal, 10);
+    assert.equal(crwvMargin.marginCall, Number(Object.values(crwvMargin.marginStressByFacility)
+      .reduce((sum, facility) => sum + facility.marginCall, 0).toFixed(4)));
     assert.ok(Array.isArray(firstQuarter.operationalRevenueLedger));
     assert.equal(typeof firstQuarter.operatingCashBridges.CRWV.endingOCF, "number");
     assert.ok(Array.isArray(firstQuarter.contagionEvents));
