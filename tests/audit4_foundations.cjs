@@ -1346,3 +1346,10 @@ assert.equal(usd(microsoftSep.currentBorrowings + microsoftSep.nonCurrentBorrowi
 assert.equal(microsoftSep.accountsPayable, 42.625);
 assert.equal(microsoftSep.propertyAndEquipmentInAccountsPayable, 26.5);
 assert.equal(usd(microsoftSep.ocf - microsoftSep.capex), 18.633);
+const issuerBalance = id => entities.find(entity => entity.id === id).audit4BalanceSheetEvidence;
+assert.equal(issuerBalance("GOOGL").accountsPayable, 21.975);
+assert.equal(usd(issuerBalance("GOOGL").currentPortionOfLongTermDebt + issuerBalance("GOOGL").nonCurrentBorrowings), 126.118);
+assert.equal(issuerBalance("AMZN").accountsPayable, 158.715);
+assert.equal(usd(issuerBalance("AMZN").currentPortionOfLongTermDebt + issuerBalance("AMZN").nonCurrentBorrowings), 179.952);
+assert.equal(issuerBalance("META").accountsPayable, 19.097);
+assert.equal(usd(issuerBalance("META").currentOperatingLeaseLiability + issuerBalance("META").nonCurrentOperatingLeaseLiability), 31.173);
