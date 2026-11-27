@@ -45,6 +45,8 @@ async function checkPage(browser, url) {
     await annualEquity.press("Tab");
     assert.equal(await row.locator("td").nth(7).innerText(), "8.00");
     assert.ok((await panel.locator("[data-financing-chart]").innerText()).includes("8.00"));
+    const financeChart = panel.locator("[data-financing-chart]");
+    assert.match(await financeChart.innerText(), /2028 (?:Financing growth|\u878d\u8d44\u589e\u901f) -100\.0%/);
     const finalYear = panel.locator("tbody tr").last();
     assert.equal(await finalYear.locator("td").first().innerText(), "2033");
     const finalYearEquity = finalYear.locator("input").first();

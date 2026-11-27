@@ -9849,7 +9849,7 @@ const I18N = {
         ? quartersData.reduce((sum, row) => sum + row.revenue, 0) : null;
       const financingGrowth = previous?.total > 0 ? total / previous.total - 1 : null;
       const revenueGrowth = previousRevenue > 0 && annualRevenue !== null ? annualRevenue / previousRevenue - 1 : null;
-      rows.push({year, total, received, end, annualRevenue});
+      rows.push({year, total, received, end, annualRevenue, financingGrowth, revenueGrowth});
       const tr = forecast.insertRow();
       tr.insertCell().textContent = year;
       for (const source of sources) {
@@ -9880,6 +9880,8 @@ const I18N = {
       }
     }
     const scale = Math.max(1, ...rows.flatMap(row => [row.total, row.received, row.end?.fundingGap ?? 0]));
+    const growthScale = Math.max(0.01, ...rows.flatMap(row =>
+      [Math.abs(row.financingGrowth ?? 0), Math.abs(row.revenueGrowth ?? 0)]));
     const chart = panel.querySelector("[data-financing-chart]");
     chart.replaceChildren();
     for (const row of rows) {
@@ -9892,6 +9894,21 @@ const I18N = {
         const bar = document.createElement("meter");
         bar.max = scale; bar.value = value;
         label.append(bar); item.append(label);
+      }
+      for (const [name, value] of [
+        [t("Financing growth", "\u878d\u8d44\u589e\u901f"), row.financingGrowth],
+        [t("Revenue growth", "\u6536\u5165\u589e\u901f"), row.revenueGrowth]
+      ]) {
+        if (!Number.isFinite(value)) continue;
+        const label = document.createElement("label");
+        label.className = "block";
+        label.textContent = row.year + " " + name + " " + (value * 100).toFixed(1) + "% ";
+        const bar = document.createElement("meter");
+        bar.min = -growthScale;
+        bar.max = growthScale;
+        bar.value = value;
+        label.append(bar);
+        item.append(label);
       }
       chart.append(item);
     }
