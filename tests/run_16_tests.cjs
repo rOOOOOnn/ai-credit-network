@@ -30,10 +30,10 @@ const sim = Engine.runSimulation(entities, transactions);
 runTest(1, 'Historical quarter displays disclosed data', () => {
   const q3 = sim.timeline['2026Q3'];
   assert.strictEqual(q3.entities['NVDA'].revenue, 115.84);
-  assert.strictEqual(q3.entities['ORCL'].debt, 125.3);
+  assert.strictEqual(q3.entities['ORCL'].debt, 125.337);
   assert.strictEqual(q3.entities['ANTHROPIC'].revenue, 17.0);
   assert.strictEqual(q3.entities['CRUSOE'].dataType, 'Unavailable');
-  return 'NVDA $115.84B, ORCL debt $125.3B, Anthropic $17.0B, Crusoe=Unavailable';
+  return 'NVDA $115.84B, ORCL debt $125.337B, Anthropic $17.0B, Crusoe=Unavailable';
 });
 
 // Test 2: Every real financing flow has a verified source URL

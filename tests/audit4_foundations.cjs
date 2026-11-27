@@ -289,6 +289,13 @@ assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments),
 assert.equal(usd(oracleFiling.ocf - oracleFiling.capex), -5.396);
 assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments - oracleFiling.capex), -16.759);
 assert.equal(usd(oracleFiling.currentBorrowings + oracleFiling.nonCurrentBorrowings), 125.337);
+const oracleSnapshot = entities.find(entity => entity.id === "ORCL").financials["2026Q3"];
+assert.equal(oracleSnapshot.accountsPayable, 11.063);
+assert.equal(oracleSnapshot.shortTermDebt, 7.625);
+assert.equal(oracleSnapshot.longTermDebt, 117.712);
+assert.equal(oracleSnapshot.debt, usd(oracleSnapshot.shortTermDebt + oracleSnapshot.longTermDebt));
+assert.equal(oracleSnapshot.leaseLiab, usd(4.027 + 30.594 + 0.749 + 8.436));
+assert.equal(oracleSnapshot.offBalanceLeases, 288);
 assert.equal(oracleOpening.priorQuarterRevenue, 19.345);
 assert.equal(oracleOpening.incrementalLeasePayment, 0);
 assert.equal(liquid.timeline["2027Q1"].entities.ORCL.incrementalLeasePayment, 1.4118);
