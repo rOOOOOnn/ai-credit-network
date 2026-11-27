@@ -800,3 +800,5 @@ CoreWeave's September 10-Q identifies June 30, 2027 as the DDTL 4.0 commitment t
 ### Coverage of lender default exposure
 
 The exported default event records undrawn commitment and exposure coverage. For TX26 in the draw window, the default fixture reports $4.583B of funded exposure and a null commitment. The reported exposure covers funded principal only. After the disclosed cutoff, the undrawn commitment is a known zero. If principal itself is unavailable, the coverage field identifies that gap. This metadata leaves the existing modeled credit loss calculation intact.
+
+The pledged GPU schedule now preserves a modeled facility's zero balance after its last attributed cohort is sold. The TX27 fixture sells its $4B opening-cost cohort for $0.8B, recognizes zero collateral recovery and $4.5B scenario loss on $10B funded exposure, and keeps the zero in the following quarter. The replacement purchase has no attributed lien. A facility with no configured pledge still has unknown modeled collateral coverage.

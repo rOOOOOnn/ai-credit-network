@@ -1280,3 +1280,17 @@ assert.equal(expiredTx26.undrawnCommitment, 0);
 assert.equal(expiredTx26.fundedEAD, 4.583);
 assert.equal(expiredTx26.exposureCoverage, "FundedAndUndrawn");
 assert.equal(termResult.timeline["2027Q3"].financingLedger.TX26.canDraw, false);
+const soldPledge = engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, forcedDefaults: ["CRWV"],
+  overrides: { CRWV: { gpuRefresh: {
+    cohorts: [{ acquired: "2022Q4", cost: 4, pledgedTo: "TX27" }],
+    economicLife: 4, replacementRatio: 1, residualValue: 0.2
+  } } }
+});
+const soldPledgeQuarter = soldPledge.timeline["2026Q4"].entities.CRWV;
+assert.equal(soldPledgeQuarter.disposalProceeds, 0.8);
+assert.equal(soldPledgeQuarter.pledgedGpuValues.TX27, 0);
+assert.equal(soldPledge.timeline["2027Q1"].entities.CRWV.pledgedGpuValues.TX27, 0);
+const soldPledgeDefault = soldPledge.creditEvents.find(event => event.txId === "TX27");
+assert.equal(soldPledgeDefault.collateralRecovery, 0);
+assert.equal(soldPledgeDefault.recognizedLoss, 4.5);
