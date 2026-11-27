@@ -997,8 +997,8 @@ const atCommencement = delayedCoreWeaveLease["2027Q4"].entities.CRWV;
 assert.deepEqual([preCommencement.incrementalLeasePayment, preCommencement.leaseSchedule.uncommencedCommitment,
   preCommencement.fcf, preCommencement.cash], [0, 47.4, -2.7039, 11.9317]);
 assert.deepEqual([atCommencement.incrementalLeasePayment, atCommencement.leaseSchedule.uncommencedCommitment,
-  atCommencement.fcf, atCommencement.cash], [1.6929, 0, -4.4515, 12.2908]);
-assert.equal(usd(atCommencement.cash - 5.5192), 4 * usd(47.4 / 28));
+  atCommencement.fcf, atCommencement.cash], [1.6929, 0, -4.3572, 12.3851]);
+assert.equal(usd(atCommencement.cash - 5.6135), 4 * usd(47.4 / 28));
 
 const releaseFixture = [{ readyQuarter: "2028Q1", leaseStartQuarter: "2028Q2", termQuarters: 80,
   cap: 12, qualifyingCreditRatingQuarter: "2028Q4", qualifyingReplacementQuarter: "2028Q3",
@@ -1571,7 +1571,14 @@ const corzNoteIds = ["CORZ_SECURED_2031", "CORZ_CONVERTIBLE_2029", "CORZ_CONVERT
 assert.deepEqual(corzNoteIds.map(id => corzDebt.financingLedger[id]?.beginningOutstanding), [3.3, 0.46, 0.625]);
 assert.deepEqual(corzNoteIds.map(id => corzDebt.financingLedger[id]?.newDrawdown), [0, 0, 0]);
 assert.deepEqual(corzNoteIds.map(id => corzDebt.financingLedger[id]?.lender), [null, null, null]);
-assert.equal(corzDebt.debtReconciliation.CORZ.namedTermPrincipal, 4.335);
+assert.equal(corzDebt.debtReconciliation.CORZ.namedTermPrincipal, 4.385);
+assert.equal(corzDebt.entities.CORZ.principalRepay, 0);
+const corzScheduled = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  facilityRepayments: { CORZ_SECURED_2031: { "2027Q2": 3.3 * 0.115 / 2 } }
+}).timeline["2027Q2"];
+assert.equal(corzScheduled.financingLedger.CORZ_SECURED_2031.principalRepayment, 0.1898);
+assert.equal(corzScheduled.financingLedger.CORZ_SECURED_2031.endingOutstanding, 3.1102);
+assert.equal(corzScheduled.financingLedger.CORZ_CONVERTIBLE_2029.principalRepayment, 0);
 const cegSnapshot = cegIssuer.financials["2026Q3"];
 assert.equal(cegSnapshot.ocf, usd(4.979 - 1.553));
 assert.equal(cegSnapshot.capex, usd(3.461 - 2.521));

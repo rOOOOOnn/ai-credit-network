@@ -1212,6 +1212,7 @@
           accruedInterest: 0
         };
         if (tx.commercialPaperBackstop != null) row.commercialPaperBackstop = tx.commercialPaperBackstop;
+        if (tx.principalRepaymentRequiresSchedule) row.principalRepaymentRequiresSchedule = true;
         if (tx.lettersOfCreditDataType) row.lettersOfCreditDataType = tx.lettersOfCreditDataType;
         if (tx.originalMaturityQuarter) {
           row.originalMaturityQuarter = tx.originalMaturityQuarter;
@@ -1455,7 +1456,7 @@
         const namedOpening = (facilities ?? []).reduce((sum, row) => sum + row.beginningOutstanding, 0);
         const unidentifiedOpening = Math.max(0, begDebt - namedOpening);
         const performingPrincipal = (facilities ?? []).reduce((sum, row) => row.defaulted ? sum :
-          sum + (row.trancheBalances || modeledInstallments.has(row.txId) ? 0 : Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledFacilityRepayments[row.txId])), 0);
+          sum + (row.trancheBalances || row.principalRepaymentRequiresSchedule || modeledInstallments.has(row.txId) ? 0 : Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledFacilityRepayments[row.txId])), 0);
         const genericRepayment = useAudit4Contracts && facilities?.length
           ? Math.min(p.debtRepay ?? 0, unidentifiedOpening + performingPrincipal) : p.debtRepay ?? 0;
         const principalRepay = money(Math.min(Math.max(0, begDebt - nonCashDebtConversion),
@@ -1488,7 +1489,7 @@
 
         if (useAudit4Contracts && repaymentRoom > 0 && facilities?.length) {
           const namedBudget = money(Math.max(0, repaymentRoom - unidentifiedOpening));
-          const eligible = facilities.filter(row => !row.defaulted && !row.trancheBalances && !modeledInstallments.has(row.txId) && row.endingOutstanding > 0);
+          const eligible = facilities.filter(row => !row.defaulted && !row.trancheBalances && !row.principalRepaymentRequiresSchedule && !modeledInstallments.has(row.txId) && row.endingOutstanding > 0);
           const inferredRepayments = allocateFunding(Object.fromEntries(eligible.map(row =>
             [row.txId, row.endingOutstanding])), namedBudget);
           for (const row of eligible) {
