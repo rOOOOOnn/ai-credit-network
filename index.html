@@ -1506,8 +1506,10 @@
         const investmentSale = money(eligibleInvestments * Math.min(1, nonnegative(ov?.openingInvestmentSaleFraction)));
         const begCash = liquidityOpening ? liquidityOpening.cashAndEquivalents : disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
         const fiscalOpening = useAudit4Contracts && q === QUARTER_PARTIAL ? e.audit4FiscalCashFlow : null;
-        const begDebt = fiscalOpening ? money(fiscalOpening.borrowingsPrincipal ?? (fiscalOpening.currentBorrowings + fiscalOpening.nonCurrentBorrowings))
-          : disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0);
+        const verifiedOpeningPrincipal = useAudit4Contracts && q === QUARTER_PARTIAL &&
+          e.audit4BalanceSheetEvidence?.asOf === "2026-09-30" ? e.audit4BalanceSheetEvidence.borrowingsPrincipal : null;
+        const begDebt = verifiedOpeningPrincipal ?? (fiscalOpening ? money(fiscalOpening.borrowingsPrincipal ?? (fiscalOpening.currentBorrowings + fiscalOpening.nonCurrentBorrowings))
+          : disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0));
         const priorQuarterRevenue = fiscalOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const prevRev = Math.max(0, priorQuarterRevenue - (prev.gpuUtilizationRevenueAdjustment ?? 0));
         const facilities = facilityByBorrower[e.id];
@@ -3472,7 +3474,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "META",
-    "audit4BalanceSheetEvidence": {"asOf":"2026-09-30","accountsPayable":19.097,"nonCurrentBorrowings":80.922,"currentOperatingLeaseLiability":2.522,"nonCurrentOperatingLeaseLiability":28.651,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},
+    "audit4BalanceSheetEvidence": {"asOf":"2026-09-30","accountsPayable":19.097,"nonCurrentBorrowings":80.922,"currentPortionOfLongTermDebt":2.747,"borrowingsPrincipal":84,"unamortizedDiscountAndIssuanceCosts":0.331,"annualNotePrincipalMaturities":{"2026Remaining":0,"2027":2.75,"2028":1.5,"2029":1,"2030":5,"thereafter":73.75},"currentOperatingLeaseLiability":2.522,"nonCurrentOperatingLeaseLiability":28.651,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},
     "audit4HardwareDisclosure": {"assetClass":"Servers and network assets","accountingUsefulLifeRangeYears":[5,5.5],"accountingChangeEffective":"2025-01-01","accountingUsefulLifeOfMostAssetsYears":5.5,"reportedServerNetworkDepreciationExpense":13.36,"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/meta-20251231.htm"},
     "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":96.873,"capex":83.055,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},"sixMonths":{"ocf":64.088,"capex":49.113,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026050705/meta-20260630.htm"}},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":11.222,"currentInvestments":71.227,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},

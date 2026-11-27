@@ -1353,3 +1353,9 @@ assert.equal(issuerBalance("AMZN").accountsPayable, 158.715);
 assert.equal(usd(issuerBalance("AMZN").currentPortionOfLongTermDebt + issuerBalance("AMZN").nonCurrentBorrowings), 179.952);
 assert.equal(issuerBalance("META").accountsPayable, 19.097);
 assert.equal(usd(issuerBalance("META").currentOperatingLeaseLiability + issuerBalance("META").nonCurrentOperatingLeaseLiability), 31.173);
+const metaScope = engine.runSimulation(entities, transactions, { audit4Contracts: true })
+  .timeline["2026Q4"].entities.META;
+assert.equal(usd(metaScope.debt + metaScope.principalRepay + metaScope.nonCashDebtConversion - metaScope.newDebt - metaScope.rcfDraw), 84);
+const metaEvidence = issuerBalance("META");
+assert.equal(usd(metaEvidence.nonCurrentBorrowings + metaEvidence.currentPortionOfLongTermDebt + metaEvidence.unamortizedDiscountAndIssuanceCosts), 84);
+assert.equal(usd(Object.values(metaEvidence.annualNotePrincipalMaturities).reduce((sum, principal) => sum + principal, 0)), 84);
