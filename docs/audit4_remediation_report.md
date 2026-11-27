@@ -327,32 +327,32 @@ Run `node scripts/replay_audit4_gpu.cjs`. Each case assigns the selected company
 
 | Entity | Life | Profile | First refresh | 2030Q4 cash | 2030Q4 gap | 2032Q4 cash | 2032Q4 gap | First default |
 | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | --- |
-| CRWV | 3 | Reference | 2029Q4 | -22.3586 | 24.3586 | -47.658 | 49.658 | 2029Q2 |
-| CRWV | 4 | Reference | 2030Q4 | -16.4593 | 18.4593 | -42.3388 | 44.3388 | 2029Q4 |
-| CRWV | 5 | Reference | 2031Q4 | -8.5108 | 10.5108 | -41.2249 | 43.2249 | 2030Q1 |
-| CRWV | 6 | Reference | 2032Q4 | -2.3389 | 4.3389 | -35.1146 | 37.1146 | 2030Q4 |
-| CRWV | 7 | Reference | 2033Q4 | 1.4033 | 0.5967 | -28.3399 | 30.3399 | 2031Q1 |
-| CRWV | 4 | Combined stress | 2030Q4 | -83.0796 | 85.0796 | -137.2816 | 139.2816 | 2027Q1 |
+| CRWV | 3 | Reference | 2029Q4 | -19.1604 | 21.1604 | -44.6976 | 46.6976 | 2029Q2 |
+| CRWV | 4 | Reference | 2030Q4 | -12.7052 | 14.7052 | -38.8538 | 40.8538 | 2029Q4 |
+| CRWV | 5 | Reference | 2031Q4 | -4.1019 | 6.1019 | -37.2131 | 39.2131 | 2030Q3 |
+| CRWV | 6 | Reference | 2032Q4 | 2.6828 | 0 | -30.5705 | 32.5705 | 2031Q1 |
+| CRWV | 7 | Reference | 2033Q4 | 6.8091 | 0 | -23.4519 | 25.4519 | 2031Q3 |
+| CRWV | 4 | Combined stress | 2030Q4 | -82.3134 | 84.3134 | -136.9288 | 138.9288 | 2027Q1 |
 | OPENAI | 3 | Reference | 2029Q4 | 48.3621 | 0 | 28.3766 | 0 | — |
 | OPENAI | 4 | Reference | 2030Q4 | 51.9509 | 0 | 29.1296 | 0 | — |
 | OPENAI | 5 | Reference | 2031Q4 | 53.7009 | 0 | 30.2651 | 0 | — |
 | OPENAI | 6 | Reference | 2032Q4 | 53.7009 | 0 | 33.8539 | 0 | — |
 | OPENAI | 7 | Reference | 2033Q4 | 53.7009 | 0 | 35.6039 | 0 | — |
-| OPENAI | 4 | Combined stress | 2030Q4 | -169.7551 | 179.7551 | -297.5116 | 307.5116 | 2027Q3 |
+| OPENAI | 4 | Combined stress | 2030Q4 | -169.6037 | 179.6037 | -297.2343 | 307.2343 | 2027Q3 |
 | ANTHROPIC | 3 | Reference | 2029Q4 | 235.0445 | 0 | 197.6702 | 0 | — |
 | ANTHROPIC | 4 | Reference | 2030Q4 | 238.6333 | 0 | 198.4232 | 0 | — |
 | ANTHROPIC | 5 | Reference | 2031Q4 | 240.3833 | 0 | 199.5587 | 0 | — |
 | ANTHROPIC | 6 | Reference | 2032Q4 | 240.3833 | 0 | 203.1475 | 0 | — |
 | ANTHROPIC | 7 | Reference | 2033Q4 | 240.3833 | 0 | 204.8975 | 0 | — |
 | ANTHROPIC | 4 | Combined stress | 2030Q4 | 210.5159 | 0 | 165.0847 | 0 | — |
-| ORCL | 3 | Reference | 2029Q4 | 18.939 | 0 | 29.3583 | 0 | — |
-| ORCL | 4 | Reference | 2030Q4 | 22.5278 | 0 | 30.1113 | 0 | — |
-| ORCL | 5 | Reference | 2031Q4 | 24.2778 | 0 | 31.2468 | 0 | — |
-| ORCL | 6 | Reference | 2032Q4 | 24.2778 | 0 | 34.8356 | 0 | — |
-| ORCL | 7 | Reference | 2033Q4 | 24.2778 | 0 | 36.5856 | 0 | — |
-| ORCL | 4 | Combined stress | 2030Q4 | -160.051 | 170.051 | -295.9463 | 305.9463 | 2027Q3 |
+| ORCL | 3 | Reference | 2029Q4 | 27.3136 | 0 | 37.3821 | 0 | — |
+| ORCL | 4 | Reference | 2030Q4 | 30.9024 | 0 | 38.1351 | 0 | — |
+| ORCL | 5 | Reference | 2031Q4 | 32.6524 | 0 | 39.2706 | 0 | — |
+| ORCL | 6 | Reference | 2032Q4 | 32.6524 | 0 | 42.8594 | 0 | — |
+| ORCL | 7 | Reference | 2033Q4 | 32.6524 | 0 | 44.6094 | 0 | — |
+| ORCL | 4 | Combined stress | 2030Q4 | -158.6114 | 168.6114 | -294.5226 | 304.5226 | 2027Q3 |
 
-At the first eligible quarter, the reference scenario allocates $2.25B to replacement CapEx and $0.50B to resale proceeds, for a $1.75B investing cash outflow. Shortening life from six to four years advances this first outflow from 2032Q4 to 2030Q4. At 2030Q4 it reduces CoreWeave modeled cash by $14.1204B and increases the funding gap by the same amount. That full-model difference includes collateral and refinancing effects that can precede replacement. In the other three profiles the same 2030Q4 cash difference is $1.75B and no reference funding gap opens. The combined stress has multiple simultaneous changes. It does not isolate the effects of lower replacement prices, residual values or financing.
+At the first eligible quarter, the reference scenario allocates $2.25B to replacement CapEx and $0.50B to resale proceeds, for a $1.75B investing cash outflow. Shortening life from six to four years advances this first outflow from 2032Q4 to 2030Q4. At 2030Q4 it reduces CoreWeave modeled cash by $15.388B and opens a $14.7052B funding gap from zero in the six-year reference. That full-model difference includes collateral and refinancing effects that can precede replacement. In the other three profiles the same 2030Q4 cash difference is $1.75B and no reference funding gap opens. The combined stress has multiple simultaneous changes. It does not isolate the effects of lower replacement prices, residual values or financing.
 
 The end-to-end regression independently fixes a solvent zero-debt fixture and tests every economic life from three to seven years. Its $100B fleet produces $22.5B gross CapEx and $5B resale proceeds in each first eligible quarter, reducing FCF by $22.5B and cash by $17.5B against the no-refresh path. The accounting life remains fixed across all cases.
 
