@@ -1283,3 +1283,7 @@ The A–G regression now recomputes runway from cash above the minimum and negat
 ### Field-level evidence in the coverage matrix
 
 The generated historical matrix now includes the interest input, separately reported gross interest expense and operating lease liability. Fields can link directly to their own source and state their measurement basis. For example, AMD's $4.75B scenario revolver availability links to the separate facility disclosure and identifies the full letter-of-credit reserve assumption. Core Scientific's $0.068B legacy interest assumption and $0.054066B reported gross interest expense appear in separate columns. The report regression checks both distinctions. These additions describe historical coverage and do not recalibrate the forecast.
+
+### Building 1 executed guarantee exhibit
+
+The filed Building 1 agreement corroborates a project-specific residual value guarantee. Its guaranteed minimum value schedule is redacted in the public exhibit. The TX11 evidence records that source and leaves the Building 1 cap blank. The $105B aggregate limit remains disclosed. A project cap or quarterly minimum cannot be inferred by dividing that portfolio figure among buildings. The existing project phases remain adjustable assumptions, and the report replays keep the same inputs. [Building 1 agreement, Exhibit 10.31](https://www.sec.gov/Archives/edgar/data/2133037/000162828026075026/exhibit1031-sx1a3.htm), [NVIDIA August 8-K](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000069/nvda-20260817.htm).

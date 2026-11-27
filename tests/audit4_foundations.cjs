@@ -1625,7 +1625,13 @@ const cycleHistory = engine.financingForecast({ mode: "curve", curve: "historica
   2026: { dataType: "Actual", fullYear: true, amounts: { equity: 4 } }
 } }, 2027);
 assert.equal(cycleHistory.amounts.equity, 4);
-const tx11Delivery = transactions.find(tx => tx.id === "TX11").audit4GuaranteeTerms.disclosedDeliveryOutlook;
+const tx11Terms = transactions.find(tx => tx.id === "TX11").audit4GuaranteeTerms;
+const tx11Delivery = tx11Terms.disclosedDeliveryOutlook;
+assert.deepEqual(tx11Terms.buildingOneAgreement, {
+  sourceUrl: "https://www.sec.gov/Archives/edgar/data/2133037/000162828026075026/exhibit1031-sx1a3.htm",
+  minimumValueSchedule: "Redacted",
+  projectCap: null
+});
 assert.equal(tx11Delivery.firstCoveredBuildingNvidiaFiscalYear, 2029);
 assert.deepEqual(tx11Delivery.buildingGroups.map(group => [group.capacityMwIt, group.expectedFullOperationYear, group.withinInitialGuarantee]),
   [[4248, 2031, true], [3776, 2032, false]]);
