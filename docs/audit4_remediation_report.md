@@ -730,3 +730,30 @@ The quarterly export also preserves configured GPU cohorts, base CapEx attributa
 ### Anthropic reported operating cash bridge
 
 The unaudited January–September 2026 statements reconcile a $104.039B net loss to $6.569B of operating cash after noncash and working capital adjustments. Among the noncash items are $94.324B of fair-value changes on convertible notes, derivatives and SAFEs and $10.277B for other financial instruments. Deducting $0.925B of cash PP&E purchases gives $5.644B. Deducting the separate $1.955B of leased asset and equipment prepayments and $0.088B of lease principal gives $3.601B on an extended cash-use measure. The data and tests retain all components and use the actual nine-month reporting window. Standalone September-quarter OCF remains unavailable, and the audited scenario continues to use modeled quarterly OCF. [Final prospectus cash flow statement](https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm).
+
+
+## Verification and open evidence
+
+The verification checkpoint is commit `9176448839ee6bb5bf56678039c45e7a6b7f3aed` on `audit4-financing-gpu-remediation`. Git ancestry includes both the original `b727da2` baseline and the `a515599` continuation. [Checkpoint Actions](https://github.com/rOOOOOnn/ai-credit-network/actions/runs/45926073070).
+
+| Verification | Executed at the checkpoint | Failed |
+| --- | ---: | ---: |
+| Standard functional cases | 16 | 0 |
+| Audit 2 regression cases | 12 | 0 |
+| Audit 3 independent cases | 20 | 0 |
+| Audit 4 assertion invocations, including repeated company-quarter reconciliations | 16,985 | 0 |
+| Browser entry points | 3 | 0 |
+| CI operating systems | 3 | 0 |
+
+The Audit 4 count is from one local execution of the suite with successful strict assertion calls counted by method. It comprises 11,172 equality, 58 deep equality and 5,755 truth assertions. These are assertion invocations, including loop repetitions. Data checks separately confirm 50 entities, 82 transactions, referential integrity, CSV alignment and that all three standalone pages embed the same engine and datasets.
+
+| Open evidence | Why it matters and where it can be verified |
+| --- | --- |
+| OpenAI quarter-end unrestricted cash, actual OCF and complete funding receipts by source | Investor reports establish individual investments and a supplier receivable. An issuer cash flow statement and financing roll-forward would establish the opening cash anchor and permit actual historical financing fits. |
+| Anthropic quarterly OCF and final net IPO cash | The prospectus reports nine-month OCF and an estimate of net proceeds. A subsequent issuer cash flow statement with the September and December cumulative windows and a financing bridge can establish fourth-quarter operating cash and net issuance cash. |
+| TX26 cumulative draws, principal repayments, carrying-cost allocation and drawable amount | The 10-Q gives principal and aggregate capacity. Facility schedules or a subsequent specific disclosure are required for exact project availability and the cash amortization calendar. |
+| NVIDIA project-phase guarantee values and settlements | The NVIDIA and SB Energy disclosures establish aggregate caps and contract conditions. The phase schedules, settlements and allocation of the Ward County support to the portfolio buckets are needed for actual quarter-level exposure. |
+| Oracle, Anthropic, CoreWeave and NVIDIA lease cash timing | Direct filings support aggregates and some fiscal buckets. Lease-by-lease commencements, classifications and amounts already embedded in operating costs are needed to use actual quarterly amounts without double counting. |
+| Company GPU cohorts and lender collateral | Filings identify broad accounting asset balances and some specific pledged pools. GPU-only spending, batch age, retention and resale outcomes, and lender-level liens are needed to validate company-specific replacement cash and recovery values. |
+
+The field-by-field review of all 50 entities remains open. The entity source register inventories the existing coverage and the reporting gaps.
