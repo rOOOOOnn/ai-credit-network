@@ -1499,6 +1499,17 @@ assert.equal(hpeFacility("2029Q2").undrawnCommitment, 5.25);
 assert.equal(hpeFacility("2029Q3").undrawnCommitment, 0);
 assert.equal(hpeFacility("2029Q4").undrawnCommitment, 0);
 assert.equal(hpeCredit["2029Q4"].entities.HPE.undrawnCredit, 0);
+const smciBorrower = entities.find(entity => entity.id === "SMCI");
+const smciCredit = engine.runSimulation([smciBorrower], [], { audit4Contracts: true, forecastThrough: 2031,
+  overrides: { SMCI: { ocfMarginBeforeFinancing: 0.9, capex: 0 } } }).timeline;
+const smciRevolver = q => smciCredit[q].financingLedger.SMCI_JPM_RCF;
+assert.equal(smciRevolver("2026Q4")?.undrawnCommitment, 1.8);
+assert.equal(smciRevolver("2026Q4").lettersOfCreditDataType, "Assumption");
+assert.equal(smciRevolver("2026Q4").endingOutstanding, 0);
+assert.equal(smciRevolver("2026Q4").lender, null);
+assert.equal(smciRevolver("2030Q3").undrawnCommitment, 1.8);
+assert.equal(smciRevolver("2030Q4").undrawnCommitment, 0);
+assert.equal(smciCredit["2031Q1"].entities.SMCI.undrawnCredit, 0);
 const alphabetEvidence = issuerBalance("GOOGL");
 assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
   alphabetEvidence.hedgeFairValueReduction), 126.118);
