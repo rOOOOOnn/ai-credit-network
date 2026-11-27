@@ -9879,11 +9879,25 @@ const I18N = {
         tr.insertCell().textContent = growth === null ? "—" : (growth * 100).toFixed(1) + "%";
       }
     }
-    const scale = Math.max(1, ...rows.flatMap(row => [row.total, row.received, row.end?.fundingGap ?? 0]));
+    const metadata = Engine.financingForecast(projectionConfig, selectedConfig.startYear ?? 2027);
+    const historicalRows = Object.entries(metadata.historyBySource ?? {}).flatMap(([source, history]) =>
+      history.years.map((year, index) => ({ source, year, amount: history.amounts[index] })));
+    const scale = Math.max(1, ...historicalRows.map(row => row.amount),
+      ...rows.flatMap(row => [row.total, row.received, row.end?.fundingGap ?? 0]));
     const growthScale = Math.max(0.01, ...rows.flatMap(row =>
       [Math.abs(row.financingGrowth ?? 0), Math.abs(row.revenueGrowth ?? 0)]));
     const chart = panel.querySelector("[data-financing-chart]");
     chart.replaceChildren();
+    for (const { source, year, amount } of historicalRows) {
+      const item = document.createElement("li");
+      item.dataset.historicalFinancing = source + "-" + year;
+      item.textContent = year + " " + t("Actual financing", "\u5b9e\u9645\u878d\u8d44") + " " + source + " " + amount.toFixed(2) + " ";
+      const bar = document.createElement("meter");
+      bar.max = scale;
+      bar.value = amount;
+      item.append(bar);
+      chart.append(item);
+    }
     for (const row of rows) {
       const item = document.createElement("li");
       for (const [name, value] of [[t("Planned","\u8ba1\u5212"), row.total], [t("Funded","\u5230\u8d26"),row.received],
@@ -9913,7 +9927,6 @@ const I18N = {
       chart.append(item);
     }
     const trend = panel.querySelector("[data-financing-trend]");
-    const metadata = Engine.financingForecast(projectionConfig, selectedConfig.startYear ?? 2027);
     trend.textContent = selectedConfig.curve === "historical" && selectedConfig.mode === "curve" ?
       [
         ...Object.entries(metadata.historyBySource ?? {}).map(([source, history]) =>

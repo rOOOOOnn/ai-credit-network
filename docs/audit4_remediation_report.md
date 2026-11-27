@@ -708,3 +708,5 @@ The downloadable quarterly audit ledger now itemizes financing cash by source, i
 All three company forecast panels now expose four quarterly financing weights for both forecast modes. A zero weight suppresses scenario funding in that quarter. The browser test changes Q2 to zero and verifies that the saved settings and exported 2027Q2 cash sources reflect it. The engine independently verifies the 1/0/1/2 allocation on an $8B annual financing plan.
 
 The financing charts now display signed annual financing and revenue growth on a separate percent scale. A zero planned financing year following a positive year appears as negative 100 percent. Growth stays unavailable when the comparison denominator is missing or zero.
+
+The financing chart now plots the actual yearly amounts used by the historical curve, per source and on the same amount scale as the projected values. The browser fixture verifies the two equity observations and the absence of a debt series when eligible debt history is missing.
