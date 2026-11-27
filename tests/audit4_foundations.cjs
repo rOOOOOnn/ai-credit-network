@@ -1341,3 +1341,8 @@ assert.equal(usd(nvidiaJuly.currentBorrowings + nvidiaJuly.nonCurrentBorrowings)
 assert.equal(nvidiaOctober.accountsPayable, 21.074);
 assert.equal(nvidiaOctober.currentBorrowings + nvidiaOctober.nonCurrentBorrowings, 32.371);
 assert.equal(usd(nvidiaOctober.cashAndEquivalents + nvidiaOctober.marketableDebtSecurities + nvidiaOctober.marketableEquitySecurities), 97.731);
+const microsoftSep = entities.find(entity => entity.id === "MSFT").audit4FiscalCashFlow;
+assert.equal(usd(microsoftSep.currentBorrowings + microsoftSep.nonCurrentBorrowings), 35.481);
+assert.equal(microsoftSep.accountsPayable, 42.625);
+assert.equal(microsoftSep.propertyAndEquipmentInAccountsPayable, 26.5);
+assert.equal(usd(microsoftSep.ocf - microsoftSep.capex), 18.633);
