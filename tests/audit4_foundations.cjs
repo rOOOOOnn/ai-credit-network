@@ -1782,6 +1782,10 @@ assert.equal(corzSnapshot.fcf, -0.475441);
 assert.equal(corzSnapshot.shortTermDebt + corzSnapshot.longTermDebt, 4.302175);
 assert.equal(corzSnapshot.leaseLiab, 0.104626);
 assert.equal(corzSnapshot.customerConcentration, 0.93);
+assert.equal(corzSnapshot.nineMonthCustomerFundedCapex, 0.1809);
+assert.equal(corzSnapshot.quarterlyIncreaseInReportedCustomerFundedCapex,
+  usd(corzSnapshot.nineMonthCustomerFundedCapex - corzSnapshot.sixMonthCustomerFundedCapex));
+assert.equal(usd(corzSnapshot.futurePurchaseAndConstructionCommitments - corzSnapshot.futureCustomerPassThroughCommitments), 4.1978);
 const corzDebt = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline["2026Q4"];
 const corzRevolver = corzDebt.financingLedger.CORZ_RCF_2026;
 assert.equal(corzRevolver.beginningOutstanding, 0);
