@@ -1376,3 +1376,29 @@ assert.equal(openingScope.AMZN.undrawnCredit + openingScope.AMZN.rcfDraw, 20);
 const amazonCredit = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline;
 assert.equal(amazonCredit["2027Q4"].financingLedger.AMZN_RCF_2026.canDraw, false);
 assert.equal(amazonCredit["2028Q4"].financingLedger.AMZN_RCF_2023.canDraw, false);
+const amazonEquipment = entities.find(entity => entity.id === "AMZN");
+const equipmentId = "AMZN_EQUIPMENT_DDTL";
+const equipmentBorrower = {
+  ...amazonEquipment,
+  defaults: { ...amazonEquipment.defaults, mode: "B", capex: 0, debtRepay: 0, newDebt: 0 },
+  financials: { "2026Q3": { ...amazonEquipment.financials["2026Q3"], cash: 1000 } }
+};
+const equipmentOptions = { audit4Contracts: true, forecastThrough: 2034,
+  overrides: { AMZN: { ocfMarginBeforeFinancing: 0.5, refiSuccess: 0 } } };
+const withoutEquipment = engine.runSimulation([equipmentBorrower], [], equipmentOptions).timeline;
+const withEquipment = engine.runSimulation([equipmentBorrower], [], { ...equipmentOptions,
+  overrides: { AMZN: { ...equipmentOptions.overrides.AMZN,
+    facilityDrawdowns: { [equipmentId]: { "2026Q4": 10, "2027Q1": 20, "2028Q3": 70, "2028Q4": 10 } }
+  } }
+}).timeline;
+assert.equal(withEquipment["2026Q4"].entities.AMZN.contractualTermDraw, 0);
+for (const [quarter, draw, total, undrawn] of [["2027Q1", 20, 20, 60], ["2028Q3", 60, 80, 0], ["2028Q4", 0, 80, 0]]) {
+  const facility = withEquipment[quarter].financingLedger[equipmentId];
+  assert.deepEqual([facility.newDrawdown, facility.endingOutstanding, facility.undrawnCommitment], [draw, total, undrawn]);
+}
+assert.equal(usd(withEquipment["2027Q1"].entities.AMZN.cash - withoutEquipment["2027Q1"].entities.AMZN.cash), 20);
+assert.equal(usd(withEquipment["2027Q1"].entities.AMZN.debt - withoutEquipment["2027Q1"].entities.AMZN.debt), 20);
+assert.equal(withEquipment["2032Q1"].financingLedger[equipmentId].principalRepayment, 20);
+assert.equal(withEquipment["2032Q1"].financingLedger[equipmentId].endingOutstanding, 60);
+assert.equal(withEquipment["2033Q3"].financingLedger[equipmentId].principalRepayment, 60);
+assert.equal(withEquipment["2033Q3"].financingLedger[equipmentId].endingOutstanding, 0);

@@ -1106,6 +1106,10 @@
           defaulted: previous?.defaulted ?? false,
           accruedInterest: 0
         };
+        if (tx.drawTenorQuarters) {
+          row.drawTenorQuarters = tx.drawTenorQuarters;
+          row.trancheBalances = (previous?.trancheBalances ?? []).map(tranche => ({ ...tranche }));
+        }
         financingLedger[tx.id] = row;
         (facilityByBorrower[tx.receiver] ??= []).push(row);
       }
@@ -1284,25 +1288,30 @@
         const refiFactor = Math.max(0, Math.min(1, (p.refiSuccess ?? 0.85) * (ocean.refiSuccessRate / 100) * gpuRefiPenalty * secRefiPenalty));
 
         // 100% Maturity Wall with Refinancing Rollover (strictly on fundedEAD of maturing ACTIVE debt)
-        const maturingPrincipal = myDebtTxs
-          .filter(tx => tx.endQ === q && !financingLedger[tx.id]?.defaulted)
-          .reduce((s, tx) => s + loanPrincipal(tx), 0);
+        const maturityByFacility = Object.fromEntries(myDebtTxs.map(tx => {
+          const row = financingLedger[tx.id];
+          const due = row?.defaulted ? 0 : tx.endQ === q ? loanPrincipal(tx) :
+            (row?.trancheBalances ?? []).filter(tranche => tranche.maturityQuarter === q)
+              .reduce((sum, tranche) => sum + tranche.principal, 0);
+          return [tx.id, money(due)];
+        }));
+        const maturingPrincipal = money(Object.values(maturityByFacility).reduce((sum, due) => sum + due, 0));
         const refiRollover = Number((maturingPrincipal * availFactor * refiFactor).toFixed(4));
         const scheduledFacilityRepayments = Object.fromEntries((facilities ?? []).map(row => {
           const tx = transactions.find(item => item.id === row.txId);
-          const requested = tx.endQ === q ? row.beginningOutstanding
-            : nonnegative(options.facilityRepayments?.[tx.id]?.[q]);
+          const requested = tx.endQ === q ? row.beginningOutstanding :
+            (maturityByFacility[tx.id] ?? 0) + nonnegative(options.facilityRepayments?.[tx.id]?.[q]);
           return [row.txId, row.defaulted ? 0 : Math.min(row.beginningOutstanding - row.nonCashConversion, requested)];
         }));
         const explicitRepayments = (facilities ?? []).reduce((sum, row) => {
           const tx = transactions.find(item => item.id === row.txId);
-          return sum + (tx.endQ === q ? 0 : scheduledFacilityRepayments[row.txId]);
+          return sum + Math.max(0, scheduledFacilityRepayments[row.txId] - (maturityByFacility[tx.id] ?? 0));
         }, 0);
         const nonCashDebtConversion = money((facilities ?? []).reduce((sum, row) => sum + row.nonCashConversion, 0));
         const namedOpening = (facilities ?? []).reduce((sum, row) => sum + row.beginningOutstanding, 0);
         const unidentifiedOpening = Math.max(0, begDebt - namedOpening);
         const performingPrincipal = (facilities ?? []).reduce((sum, row) => row.defaulted ? sum :
-          sum + Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledFacilityRepayments[row.txId]), 0);
+          sum + (row.trancheBalances ? 0 : Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledFacilityRepayments[row.txId])), 0);
         const genericRepayment = useAudit4Contracts && facilities?.length
           ? Math.min(p.debtRepay ?? 0, unidentifiedOpening + performingPrincipal) : p.debtRepay ?? 0;
         const principalRepay = money(Math.min(Math.max(0, begDebt - nonCashDebtConversion),
@@ -1316,6 +1325,13 @@
           row.principalRepayment = money(Math.min(scheduledFacilityRepayments[row.txId], repaymentRoom));
           repaymentRoom = money(repaymentRoom - row.principalRepayment);
           row.endingOutstanding = money(row.beginningOutstanding - row.nonCashConversion - row.principalRepayment);
+          let trancheRepayment = row.principalRepayment;
+          for (const tranche of row.trancheBalances ?? []) {
+            const paid = Math.min(tranche.principal, trancheRepayment);
+            tranche.principal = money(tranche.principal - paid);
+            trancheRepayment = money(trancheRepayment - paid);
+          }
+          if (row.trancheBalances) row.trancheBalances = row.trancheBalances.filter(tranche => tranche.principal > 0);
           if (row.isRevolver && row.canDraw) {
             row.undrawnCommitment = money(row.undrawnCommitment + row.principalRepayment);
           }
@@ -1323,7 +1339,7 @@
 
         if (useAudit4Contracts && repaymentRoom > 0 && facilities?.length) {
           const namedBudget = money(Math.max(0, repaymentRoom - unidentifiedOpening));
-          const eligible = facilities.filter(row => !row.defaulted && row.endingOutstanding > 0);
+          const eligible = facilities.filter(row => !row.defaulted && !row.trancheBalances && row.endingOutstanding > 0);
           const inferredRepayments = allocateFunding(Object.fromEntries(eligible.map(row =>
             [row.txId, row.endingOutstanding])), namedBudget);
           for (const row of eligible) {
@@ -1340,12 +1356,17 @@
         let contractualTermDraw = 0;
         for (const row of facilities ?? []) {
           if (row.isRevolver || row.undrawnCommitment == null || row.undrawnCommitment <= 0) continue;
-          const draw = money(Math.min(row.undrawnCommitment, nonnegative(options.facilityDrawdowns?.[row.txId]?.[q])));
+          const requestedDraw = ov?.facilityDrawdowns?.[row.txId]?.[q] ?? options.facilityDrawdowns?.[row.txId]?.[q];
+          const draw = money(Math.min(row.undrawnCommitment, nonnegative(requestedDraw)));
           row.newDrawdown = draw;
           row.endingOutstanding = money(row.endingOutstanding + draw);
           if (row.cumulativeDrawdown !== null) row.cumulativeDrawdown = money(row.cumulativeDrawdown + draw);
           row.remainingCommitment = money(row.remainingCommitment - draw);
           row.undrawnCommitment = money(row.undrawnCommitment - draw);
+          if (row.drawTenorQuarters && draw > 0) {
+            const maturity = parseQuarterNumber(q) + row.drawTenorQuarters;
+            row.trancheBalances.push({ drawQuarter: q, maturityQuarter: Math.floor(maturity / 4) + "Q" + (maturity % 4 + 1), principal: draw });
+          }
           contractualTermDraw = money(contractualTermDraw + draw);
         }
         const configuredForecast = ov?.financing;
@@ -1367,8 +1388,9 @@
           : money(Math.max(0, Math.min(requestedDebt, sharedDebtRoom)));
         if (trackTermDebt) {
           const realizedRollover = fundedRollover ?? money(Math.min(refiRollover, allowedDebt));
-          const principalByFacility = Object.fromEntries(myDebtTxs.filter(tx => tx.endQ === q)
-            .map(tx => [tx.id, financingLedger[tx.id]?.principalRepayment ?? 0]));
+          const principalByFacility = Object.fromEntries(Object.entries(maturityByFacility)
+            .filter(([, due]) => due > 0)
+            .map(([txId, due]) => [txId, Math.min(due, financingLedger[txId]?.principalRepayment ?? 0)]));
           const allocation = allocateFunding(principalByFacility, realizedRollover);
           for (const [txId, amount] of Object.entries(allocation)) {
             if (amount <= 0) continue;
