@@ -1160,3 +1160,11 @@ const leasePresetRun = engine.runSimulation(entities, transactions, { audit4Cont
 assert.equal(leasePresetRun["2026Q4"].entities.ANTHROPIC.incrementalLeasePayment, 0);
 assert.equal(leasePresetRun["2027Q4"].entities.ANTHROPIC.incrementalLeasePayment, 11.28);
 assert.equal(leasePresetRun["2026Q4"].entities.CRWV.incrementalLeasePayment, 1.6929);
+
+const anthropicReportedCash = entities.find(row => row.id === "ANTHROPIC").audit4Observations;
+assert.equal(usd(Object.values(anthropicReportedCash.nineMonthOperatingCashReconciliation)
+  .reduce((total, amount) => total + amount, 0)), 6.569);
+assert.equal(usd(anthropicReportedCash.nineMonthOperatingCashFlow - anthropicReportedCash.nineMonthCashPpePurchases), 5.644);
+assert.equal(usd(anthropicReportedCash.nineMonthOperatingCashFlow - anthropicReportedCash.nineMonthCashPpePurchases -
+  anthropicReportedCash.nineMonthLeasedAssetAndEquipmentPrepayments - anthropicReportedCash.nineMonthFinanceLeasePrincipalPaid), 3.601);
+assert.equal(anthropicReportedCash.standaloneQ3OperatingCashFlow, null);

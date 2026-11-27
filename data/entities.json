@@ -1161,7 +1161,12 @@
     "audit4Observations": {
       "cashAtQ3": 95.6,
       "principalAtQ3": 6.2,
-      "nineMonthOperatingCashFlow": 6.6,
+      "nineMonthOperatingCashFlow": 6.569,
+      "nineMonthOperatingCashReconciliation": {"netLoss":-104.039,"stockCompensation":3.255,"depreciationAndAmortization":0.25,"fairValueRevaluation":94.324,"donationMatchingLiability":2.086,"otherFinancialInstruments":10.277,"otherNoncash":-0.011,"receivables":-7.076,"prepaidAndOtherAssets":1.435,"payablesAndOtherLiabilities":4.377,"leaseLiabilities":-0.011,"deferredRevenue":1.702},
+      "nineMonthCashPpePurchases": 0.925,
+      "nineMonthLeasedAssetAndEquipmentPrepayments": 1.955,
+      "nineMonthFinanceLeasePrincipalPaid": 0.088,
+      "standaloneQ3OperatingCashFlow": null,
       "estimatedNetProceeds": 117,
       "noteExposureIds": ["TX12A", "TX12B", "TX14A"],
       "nonCashConversionByQuarter": {"2026Q4": 0.5793},

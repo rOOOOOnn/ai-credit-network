@@ -725,3 +725,8 @@ The Anthropic ten-year and CoreWeave seven- and seventeen-year gross rent sensit
 The quarterly audit download now preserves incremental lease schedules, recognized finance lease schedules where available, and the modeled principal and operating cash postings. The browser check independently verifies Oracle’s $288B uncommenced opening commitment and the first $96B / 68 quarterly payment, retaining the distinction between that payment and finance principal.
 
 The quarterly export also preserves configured GPU cohorts, base CapEx attributable to GPU purchases, replacement spending, sale receipts, net refresh cash and collateral values with facility attribution where available. Browser coverage follows a modeled acquisition into the cohort ledger and reconciles net replacement cash in its first eligible refresh quarter.
+
+
+### Anthropic reported operating cash bridge
+
+The unaudited January–September 2026 statements reconcile a $104.039B net loss to $6.569B of operating cash after noncash and working capital adjustments. Among the noncash items are $94.324B of fair-value changes on convertible notes, derivatives and SAFEs and $10.277B for other financial instruments. Deducting $0.925B of cash PP&E purchases gives $5.644B. Deducting the separate $1.955B of leased asset and equipment prepayments and $0.088B of lease principal gives $3.601B on an extended cash-use measure. The data and tests retain all components and use the actual nine-month reporting window. Standalone September-quarter OCF remains unavailable, and the audited scenario continues to use modeled quarterly OCF. [Final prospectus cash flow statement](https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm).
