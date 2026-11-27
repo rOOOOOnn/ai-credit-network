@@ -659,7 +659,7 @@ assert.equal(rolloverQuarter.entities.OPENAI.financingForecast.fundedDebt, 0);
 assert.equal(rolloverQuarter.entities.OPENAI.newDebt, 3);
 const extendedTerm = engine.runSimulation(entities, [...transactions, instrument], {
   ...termOptions,
-  facilityDrawdowns: { [instrument.id]: { "2027Q1": 3 } },
+  facilityDrawdowns: { [instrument.id]: { "2027Q1": 3, "2028Q2": 1, "2028Q3": 1 } },
   facilityExtensions: { [instrument.id]: "2028Q2" }
 });
 const originalMaturity = extendedTerm.timeline["2027Q3"];
@@ -673,6 +673,15 @@ assert.equal(originalMaturity.debtReconciliation.OPENAI.namedTermPrincipal, 3);
 assert.equal(amendedMaturity.financingLedger[instrument.id].principalRepayment, 3);
 assert.equal(amendedMaturity.financingLedger[instrument.id].endingOutstanding, 0);
 assert.equal(amendedMaturity.debtReconciliation.OPENAI.namedTermPrincipal, 0);
+assert.equal(amendedMaturity.financingLedger[instrument.id].newDrawdown, 0);
+const afterAmendedMaturity = extendedTerm.timeline["2028Q3"];
+const expiredTerm = afterAmendedMaturity.financingLedger[instrument.id];
+assert.equal(expiredTerm.remainingCommitment, 2);
+assert.equal(expiredTerm.undrawnCommitment, 0);
+assert.equal(expiredTerm.newDrawdown, 0);
+assert.equal(expiredTerm.endingOutstanding, 0);
+assert.equal(afterAmendedMaturity.entities.OPENAI.contractualTermDraw, 0);
+assert.equal(afterAmendedMaturity.debtReconciliation.OPENAI.namedTermPrincipal, 0);
 assert.equal(instrument.endQ, "2027Q3");
 const trackedReplacement = engine.runSimulation(entities, [...transactions, instrument], {
   ...termOptions, ocean: { refiSuccessRate: 100, fundingAvailability: 100 },
@@ -1434,6 +1443,19 @@ assert.equal(withoutEquipment["2032Q1"].financingLedger.AMZN_RCF_2023.undrawnCom
 assert.equal(withoutEquipment["2029Q2"].financingLedger.AMZN_TERM_2026.endingOutstanding, 17.5);
 assert.equal(withoutEquipment["2029Q3"].financingLedger.AMZN_TERM_2026.principalRepayment, 17.5);
 assert.equal(withoutEquipment["2029Q3"].financingLedger.AMZN_TERM_2026.endingOutstanding, 0);
+const expiringTerm = { ...instrument, receiver: "AMZN" };
+const termExpiry = engine.runSimulation([equipmentBorrower], [expiringTerm], {
+  ...equipmentOptions, facilityDrawdowns: { [expiringTerm.id]: { "2027Q2": 3, "2027Q4": 2 } }
+}).timeline;
+assert.equal(termExpiry["2027Q2"].financingLedger[expiringTerm.id].newDrawdown, 3);
+assert.equal(termExpiry["2027Q3"].financingLedger[expiringTerm.id].principalRepayment, 3);
+const termAfterExpiry = termExpiry["2027Q4"].financingLedger[expiringTerm.id];
+assert.equal(termAfterExpiry.defaulted, false);
+assert.equal(termAfterExpiry.remainingCommitment, 2);
+assert.equal(termAfterExpiry.canDraw, false);
+assert.equal(termAfterExpiry.newDrawdown, 0);
+assert.equal(termAfterExpiry.endingOutstanding, 0);
+assert.equal(termExpiry["2027Q4"].entities.AMZN.contractualTermDraw, 0);
 const withEquipment = engine.runSimulation([equipmentBorrower], [], { ...equipmentOptions,
   overrides: { AMZN: { ...equipmentOptions.overrides.AMZN,
     facilityDrawdowns: { [equipmentId]: { "2026Q4": 10, "2027Q1": 20, "2028Q3": 70, "2028Q4": 10 } }

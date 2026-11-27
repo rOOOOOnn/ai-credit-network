@@ -1192,7 +1192,7 @@
         const borrowerDefaultBlocksDraw = tx.drawEligibilityRequired === true &&
           (prevStates[tx.receiver]?.distressLevel === 3 || scenarioSummary[tx.receiver]?.defaultQuarter != null);
         const beforeMaturity = !tx.endQ || compareQuarter(q, tx.endQ) < 0;
-        const canDraw = active && (isRevolver ? beforeMaturity : tx.endQ !== q) &&
+        const canDraw = active && beforeMaturity &&
           !previous?.defaulted && !borrowerDefaultBlocksDraw &&
           (!tx.commitmentTerminationDate || quarterEndDate(q) <= tx.commitmentTerminationDate);
         const row = {
