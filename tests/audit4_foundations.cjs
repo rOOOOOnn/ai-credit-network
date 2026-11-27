@@ -1333,3 +1333,11 @@ assert.equal(tx11Delivery.firstCoveredBuildingNvidiaFiscalYear, 2029);
 assert.deepEqual(tx11Delivery.buildingGroups.map(group => [group.capacityMwIt, group.expectedFullOperationYear, group.withinInitialGuarantee]),
   [[4248, 2031, true], [3776, 2032, false]]);
 assert.equal(tx11Delivery.siteLevelQuarterDatesAvailable, false);
+const nvidiaSources = entities.find(entity => entity.id === "NVDA");
+const nvidiaJuly = nvidiaSources.audit4FiscalCashFlow;
+const nvidiaOctober = nvidiaSources.audit4LaterFiscalDisclosure;
+assert.equal(nvidiaJuly.accountsPayable, 15.059);
+assert.equal(usd(nvidiaJuly.currentBorrowings + nvidiaJuly.nonCurrentBorrowings), 33.366);
+assert.equal(nvidiaOctober.accountsPayable, 21.074);
+assert.equal(nvidiaOctober.currentBorrowings + nvidiaOctober.nonCurrentBorrowings, 32.371);
+assert.equal(usd(nvidiaOctober.cashAndEquivalents + nvidiaOctober.marketableDebtSecurities + nvidiaOctober.marketableEquitySecurities), 97.731);
