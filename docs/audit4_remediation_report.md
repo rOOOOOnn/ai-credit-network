@@ -311,7 +311,7 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Continuation | CRWV | Curve | -1.1763 | 3.1763 | 0 | 2028Q4 | — |
 | Remediated | CRWV | Curve | 3.3442 | 0 | 1.5438 | — | — |
 | Continuation | CRWV | Freeze | -31.6668 | 33.6668 | 0 | 2027Q1 | — |
-| Remediated | CRWV | Freeze | -26.2414 | 28.2414 | 0 | 2027Q1 | — |
+| Remediated | CRWV | Freeze | -26.2255 | 28.2255 | 0 | 2027Q1 | — |
 
 OpenAI's manual and curve cash improve while their first default quarters stay in 2028Q2 and 2028Q3. In scenario freeze, cash worsens by $1.9062B and first default stays in 2027Q4. These are whole-profile differences that include changes to counterparties and contagion. Anthropic's higher opening cash and the revised estimated financing proceeds increase its liquidity in all three paths. Scenario freeze still lets the separately modeled closing proceeds enter. CoreWeave's manual and curve no longer trigger default through 2028, while freeze still triggers in 2027Q1. Its opening cash-flow and facility corrections change financial capacity and network outcomes. None of the CoreWeave or OpenAI paths reaches modeled FCF break-even. These comparisons do not isolate individual changes or establish underlying private-company forecast inputs.
 
@@ -332,7 +332,7 @@ Run `node scripts/replay_audit4_gpu.cjs`. Each case assigns the selected company
 | CRWV | 5 | Reference | 2031Q4 | 4.6991 | 0 | -12.5409 | 14.5409 | 2031Q4 |
 | CRWV | 6 | Reference | 2032Q4 | 8.4997 | 0 | -5.7333 | 7.7333 | 2032Q2 |
 | CRWV | 7 | Reference | 2033Q4 | 10.5559 | 0 | -2.2371 | 4.2371 | 2032Q3 |
-| CRWV | 4 | Combined stress | 2030Q4 | -83.9787 | 85.9787 | -139.2652 | 141.2652 | 2027Q1 |
+| CRWV | 4 | Combined stress | 2030Q4 | -83.9677 | 85.9677 | -139.2543 | 141.2543 | 2027Q1 |
 | OPENAI | 3 | Reference | 2029Q4 | 47.3241 | 0 | 27.1594 | 0 | — |
 | OPENAI | 4 | Reference | 2030Q4 | 50.9129 | 0 | 27.9124 | 0 | — |
 | OPENAI | 5 | Reference | 2031Q4 | 52.6629 | 0 | 29.0479 | 0 | — |
@@ -428,10 +428,10 @@ The original A–G tests retained the legacy profile as a regression. The same i
 | --- | --- | ---: | ---: | ---: | --- |
 | A | OpenAI | -64.6984 | -13.3109 | 74.6984 | 2027Q4 |
 | B | Anthropic | 104.3167 | -0.8852 | 0 | — |
-| C | CoreWeave | -35.8945 | -3.3009 | 37.8945 | 2027Q1 |
+| C | CoreWeave | -35.8786 | -3.3005 | 37.8786 | 2027Q1 |
 | D | Oracle | -77.425 | -20.1044 | 87.425 | 2027Q4 |
-| E | CoreWeave | -34.1759 | -3.3918 | 36.1759 | 2027Q1 |
-| F | CoreWeave | -43.9279 | -4.8787 | 45.9279 | 2027Q1 |
+| E | CoreWeave | -34.16 | -3.3914 | 36.16 | 2027Q1 |
+| F | CoreWeave | -43.9121 | -4.8783 | 45.9121 | 2027Q1 |
 | G | CoreWeave | -60.1185 | -5.7043 | 62.1185 | 2026Q4 |
 
 Values are scenario results in USD billions, reproducible with `node tests/audit4_foundations.cjs` in the final A–G table. The cash identity includes loan and lease principal, collateral-related margin, equipment sale proceeds, investment sales and both project and unallocated guarantee cash payments. The financing source sum is also verified for every eligible company-quarter. The updated CoreWeave values reflect the full audited profile. First default quarters are unchanged from the earlier audited replay.
@@ -637,7 +637,7 @@ The archive's longer financing comparison was adapted to this branch. Run `node 
 | Remediated | ANTHROPIC | Freeze | 224.3391 | 0 | 146.0041 | — | 2026Q4 |
 | Remediated | CRWV | Manual | -53.5712 | 55.5712 | 0 | 2029Q2 | — |
 | Remediated | CRWV | Curve | -53.5712 | 55.5712 | 0 | 2029Q2 | — |
-| Remediated | CRWV | Freeze | -82.5222 | 84.5222 | 0 | 2027Q1 | — |
+| Remediated | CRWV | Freeze | -82.5035 | 84.5035 | 0 | 2027Q1 | — |
 
 
 ### Anthropic lease commitment independently verified
@@ -1085,3 +1085,7 @@ The September historical record now uses the same cash flow bridge as the audite
 The historical snapshot now matches the audited September cash-flow bridge: $0.065294B OCF less $0.540735B cash CapEx yields negative $0.475441B FCF. Unrestricted cash of $0.803941B is separate from $0.837603B restricted cash. The latter includes a debt service reserve. The balance sheet reports $4.302175B noncurrent carrying debt, no current debt line, and $0.120876B accounts payable. Reported operating lease liabilities of $0.103734B and noncurrent finance lease liabilities of $0.000892B total $0.104626B in the presented lease table.
 
 CoreWeave accounted for approximately 93% of third-quarter consolidated revenue and 84% over nine months. The $0.282659B customer funding receivable is reimbursement due for spending incurred on CoreWeave's behalf. The corresponding costs are presented in payables and accruals and the reimbursement is not an incremental committed financing inflow. The quarterly recognition and future reimbursement schedules remain unavailable. All 68 audit report rows reproduce. [Core Scientific September 10-Q](https://www.sec.gov/Archives/edgar/data/1839341/000183934126000030/core-20260930.htm), [June 10-Q](https://www.sec.gov/Archives/edgar/data/1839341/000183934126000014/core-20260630.htm).
+
+### Core Scientific bond principal and carrying debt
+
+The audited opening balance now tracks $4.385B face principal, consisting of $3.300B subsidiary-issued secured notes, $0.460B of 2029 convertible notes, and $0.625B of 2031 convertible notes. Less $0.082825B aggregate unamortized discounts and issuance costs, this reconciles to $4.302175B carrying debt in the historical financials. All three notes enter as existing funded principal, with zero new cash proceeds. The ledger tests the amounts and leaves beneficial holders unknown. Stated maturities and coupons are attributed to their instruments. The secured issue's legal issuer remains Core Scientific Finance I LLC, with this ledger aggregated at the consolidated borrower. The secured notes' first installment depends on contractual rent and credit milestones. Their actual first installment date, future early redemptions and conversion elections are unavailable. The generic scheduled repayment remains a scenario, including the $0.050B opening-quarter repayment. The audit tables have been rerun with the same scenario inputs on the corrected principal and coupon basis. [September 10-Q, Note 7](https://www.sec.gov/Archives/edgar/data/1839341/000183934126000030/core-20260930.htm), [May secured note indenture](https://www.sec.gov/Archives/edgar/data/1839341/000119312526208905/d47435dex41.htm).
