@@ -296,6 +296,15 @@ assert.equal(oracleSnapshot.longTermDebt, 117.712);
 assert.equal(oracleSnapshot.debt, usd(oracleSnapshot.shortTermDebt + oracleSnapshot.longTermDebt));
 assert.equal(oracleSnapshot.leaseLiab, usd(4.027 + 30.594 + 0.749 + 8.436));
 assert.equal(oracleSnapshot.offBalanceLeases, 288);
+const oracleEntity = entities.find(entity => entity.id === "ORCL");
+const oracleRevolverAudit = engine.runSimulation([oracleEntity], [], {
+  audit4Contracts: true, forecastThrough: 2031,
+  overrides: { ORCL: { ocfMarginBeforeFinancing: 0.9, capex: 0 } }
+}).timeline;
+assert.equal(oracleRevolverAudit["2026Q4"].financingLedger.ORCL_RCF_2026?.undrawnCommitment, 10);
+assert.equal(oracleRevolverAudit["2030Q4"].financingLedger.ORCL_RCF_2026.undrawnCommitment, 10);
+assert.equal(oracleRevolverAudit["2031Q1"].financingLedger.ORCL_RCF_2026.undrawnCommitment, 0);
+assert.equal(oracleRevolverAudit["2031Q2"].entities.ORCL.undrawnCredit, 0);
 assert.equal(oracleSnapshot.revenue, 19.345);
 assert.equal(oracleSnapshot.cash, 36.369);
 assert.equal(oracleSnapshot.ar, 11.394);

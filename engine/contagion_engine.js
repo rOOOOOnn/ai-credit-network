@@ -1320,7 +1320,7 @@
         const hasNamedFacility = revolving.some(tx => tx.receiver === e.id && compareQuarter(q, tx.startQ) >= 0);
         let undrawn = hasNamedFacility
           ? money((revolvers ?? []).reduce((sum, row) => sum + row.undrawnCommitment, 0))
-          : prev.undrawnCredit ?? 0;
+          : legacyOpening?.undrawnCredit ?? prev.undrawnCredit ?? 0;
         const loanPrincipal = tx => financingLedger[tx.id]?.beginningOutstanding ?? computeTransactionEAD(tx, q, options).fundedEAD;
 
         // Floating-rate debt share + Ocean base rate + L4 secondary spread wiring (strictly on ACTIVE debt txs!)

@@ -1637,7 +1637,7 @@
         const hasNamedFacility = revolving.some(tx => tx.receiver === e.id && compareQuarter(q, tx.startQ) >= 0);
         let undrawn = hasNamedFacility
           ? money((revolvers ?? []).reduce((sum, row) => sum + row.undrawnCommitment, 0))
-          : prev.undrawnCredit ?? 0;
+          : legacyOpening?.undrawnCredit ?? prev.undrawnCredit ?? 0;
         const loanPrincipal = tx => financingLedger[tx.id]?.beginningOutstanding ?? computeTransactionEAD(tx, q, options).fundedEAD;
 
         // Floating-rate debt share + Ocean base rate + L4 secondary spread wiring (strictly on ACTIVE debt txs!)
@@ -3574,7 +3574,9 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "ORCL",
-    "legacyForecastOpening": {"cash":36.37,"revenue":17.16,"ocf":6.8,"interestExp":1.65,"dataType":"Assumption"},
+    "audit4Facilities": [{"id":"ORCL_RCF_2026","type":"Direct Loan","payer":null,"receiver":"ORCL","announcedDate":"2026-03-06","startQ":"2026Q1","endQ":"2031Q1","maturityDate":"2031-03-06","totalCommitment":10,"principalOutstanding":0,"principalAsOfQuarter":"2026Q2","amountDrawn":null,"amountRepaid":null,"remainingCommitment":10,"facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526277521/orcl-20260531.htm","exposureBasis":"Reported May 31 zero draw carried into forecast as assumption; August revolver-only availability and lender shares unverified"}],
+    "audit4RevolverEvidence": {"asOf":"2026-08-31","combinedRevolverAndCommercialPaperAvailable":19.7,"commercialPaperProgramLimit":10,"revolverOnlyAvailable":null,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526445846/d181336d424b2.htm"},
+    "legacyForecastOpening": {"cash":36.37,"revenue":17.16,"ocf":6.8,"interestExp":1.65,"undrawnCredit":6,"dataType":"Assumption"},
     "audit4HardwareDisclosure": {"assetClass":"Computer, network, machinery and equipment, primarily servers and networking equipment","accountingUsefulLifeYears":6,"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
     "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q1","periodStart":"2026-06-01","periodEnd":"2026-08-31","calendarBucket":"2026Q3","revenue":19.345,"ocf":23.103,"financingComponentPrepayments":11.363,"capex":28.499,"currentBorrowings":7.625,"nonCurrentBorrowings":117.712,"operatingLeaseLiability":34.621,"financeLeaseLiability":9.185,"financeLeaseRateProxy":0.057,"financeLeaseRateSourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526277521/orcl-20260531.htm","commencedLeaseMaturities":{"fiscalYears":["FY2027 remaining","FY2028","FY2029","FY2030","FY2031","FY2032","Thereafter"],"operatingPayments":[3.219,4.135,4.097,4.109,4.089,4.030,24.371],"financePayments":[0.620,0.852,0.923,0.947,0.971,0.996,9.886],"operatingImputedInterest":13.429,"financeImputedInterest":6.010},"reportedLeaseCashPaid":{"operating":0.950,"finance":0.186},"noncashFinanceLeaseAcquisitions":1.539,"uncommencedLeaseCommitment":288,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
     "audit4Liquidity": {"asOf":"2026-08-31","cashAndEquivalents":36.369,"currentInvestments":0.708,"knownRestrictedWithinCurrentInvestments":0,"restrictedCashSeparate":2.565,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
@@ -3693,7 +3695,7 @@ const INITIAL_ENTITIES = [
         "rpo": 664,
         "leaseLiab": 43.806,
         "interestExp": 1.428,
-        "undrawnCredit": 6,
+        "undrawnCredit": null,
         "dataType": "Actual",
         "disclosedDate": "2026-09-10",
         "fiscalPeriod": "FY27 Q1",
