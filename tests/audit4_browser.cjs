@@ -82,7 +82,23 @@ async function checkPage(browser, url) {
     assert.equal(await row.locator("td").nth(10).innerText(), "50.0%");
     assert.match(await financeChart.innerText(), /2027 (?:Financing growth|融资增速) 50\.0%/);
 
-    await panel.locator("[data-financing-curve]").selectOption("historical");
+    const curveType = panel.locator("[data-financing-curve]");
+    const nextYear = panel.locator("tbody tr").nth(1);
+    assert.equal(await nextYear.locator("td").first().innerText(), "2028");
+    // $15B in 2027. The 2028 growth rate is 30%, 40.94% or 46.36%,
+    // respectively, using a 50% start, zero floor and six-year horizon.
+    for (const [shape, growth, planned, received] of [
+      ["linear", "30.0%", "19.50", "19.50"],
+      ["exponential", "40.9%", "21.14", "21.00"],
+      ["logistic", "46.4%", "21.95", "21.00"]
+    ]) {
+      await curveType.selectOption(shape);
+      assert.equal(await nextYear.locator("td").nth(1).innerText(), planned);
+      assert.equal(await nextYear.locator("td").nth(7).innerText(), received);
+      assert.equal(await nextYear.locator("td").nth(10).innerText(), growth);
+      await checkChartCash();
+    }
+    await curveType.selectOption("historical");
     assert.match(await panel.locator("[data-financing-trend]").innerText(), /Insufficient Historical Data|历史融资数据不足/);
     const historicalSettings = JSON.parse(await scenario.inputValue());
     historicalSettings.financing.history = {
