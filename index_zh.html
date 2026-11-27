@@ -1036,18 +1036,21 @@
       const age = parseQuarterNumber(quarter) - parseQuarterNumber(cohort.acquired);
       const cost = nonnegative(cohort.cost);
       const physicallyRetired = config.physicalLife != null && age >= 4 * config.physicalLife;
-      const eligible = age >= 4 * (config.economicLife ?? 5);
+      const eligible = !cohort.lowTier && age >= 4 * (config.economicLife ?? 5);
       const share = physicallyRetired ? 1 : eligible ? Math.min(1, nonnegative(config.replacementRatio ?? 0.25)) : 0;
       const residual = physicallyRetired ? config.physicalResidualValue ?? 0 : config.residualValue;
       const replaced = cost * share;
-      const newCost = replaced * Math.max(0, 1 - (config.priceDecline ?? 0));
+      const repurposed = physicallyRetired ? 0 : replaced * Math.min(1, nonnegative(config.repurposeShare));
+      const disposed = replaced - repurposed;
+      const newCost = cohort.lowTier ? 0 : replaced * Math.max(0, 1 - (config.priceDecline ?? 0));
       replacementCapex += newCost;
-      disposedCost += replaced;
+      disposedCost += disposed;
       if (config.accountingLife > 0) {
-        disposedBookValue += replaced * (1 - Math.min(1, Math.max(0, age) / (4 * config.accountingLife)));
+        disposedBookValue += disposed * (1 - Math.min(1, Math.max(0, age) / (4 * config.accountingLife)));
       }
-      disposalProceeds += replaced * Math.min(1, nonnegative(residual));
+      disposalProceeds += disposed * Math.min(1, nonnegative(residual));
       if (cost > replaced) next.push({ ...cohort, cost: cost - replaced });
+      if (repurposed > 0) next.push({ ...cohort, cost: repurposed, lowTier: true });
       if (newCost > 0) next.push({ acquired: quarter, cost: newCost });
     }
     return {
@@ -9931,6 +9934,7 @@ const I18N = {
       ["economicLife", t("Economic GPU life (years)", "GPU \u7ecf\u6d4e\u5bff\u547d（\u5e74）"), 5, 3, 7],
       ["physicalLife", t("Physical GPU life (years)", "GPU \u7269\u7406\u5bff\u547d（\u5e74）"), null, 1, 30],
       ["accountingLife", t("Accounting GPU life (years)", "GPU \u6298\u65e7\u5e74\u9650"), null, 1, 30],
+      ["repurposeShare", t("Share of replaced GPU equipment retained for lower-tier workloads", "\u66ff\u6362\u540e\u4fdd\u7559\u7528\u4e8e\u4f4e\u6027\u80fd\u4efb\u52a1\u7684 GPU \u6bd4\u4f8b"), 0, 0, 1],
       ["replacementRatio", t("Quarterly replacement ratio", "\u5b63\u5ea6\u66f4\u65b0\u6bd4\u4f8b"), 0.25, 0, 1],
       ["residualValue", t("Residual value ratio", "\u6b8b\u503c\u6bd4\u4f8b"), 0.2, 0, 0.6],
       ["physicalResidualValue", t("Physical retirement residual ratio", "\u7269\u7406\u9000\u5f79\u6b8b\u503c\u6bd4\u7387"), 0, 0, 0.6],

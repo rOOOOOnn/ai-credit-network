@@ -1257,3 +1257,17 @@ const gpuSaleWithoutAccountingLife = engine.fleetRefresh(
 assert.equal(gpuSaleWithoutAccountingLife.disposalProceeds, 1);
 assert.equal(gpuSaleWithoutAccountingLife.netBookValueDisposed, null);
 assert.equal(gpuSaleWithoutAccountingLife.disposalGainLoss, null);
+const lowTierConfig = { economicLife: 4, physicalLife: 6, accountingLife: 6,
+  replacementRatio: 0.5, repurposeShare: 0.5, residualValue: 0.2, physicalResidualValue: 0.1 };
+const lowTierRefresh = engine.fleetRefresh([{ acquired: "2023Q1", cost: 8, pledgedTo: "TEST" }], "2027Q1", lowTierConfig);
+assert.equal(lowTierRefresh.replacementCapex, 4);
+assert.equal(lowTierRefresh.disposalProceeds, 0.4);
+const repurposed = lowTierRefresh.cohorts.find(cohort => cohort.lowTier);
+assert.deepEqual(repurposed, { acquired: "2023Q1", cost: 2, pledgedTo: "TEST", lowTier: true });
+const lowTierContinues = engine.fleetRefresh([repurposed], "2028Q1", lowTierConfig);
+assert.deepEqual(lowTierContinues.cohorts, [repurposed]);
+assert.equal(lowTierContinues.replacementCapex, 0);
+const lowTierRetires = engine.fleetRefresh([repurposed], "2029Q1", lowTierConfig);
+assert.deepEqual(lowTierRetires.cohorts, []);
+assert.equal(lowTierRetires.replacementCapex, 0);
+assert.equal(lowTierRetires.disposalProceeds, 0.2);

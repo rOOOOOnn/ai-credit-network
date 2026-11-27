@@ -716,18 +716,21 @@
       const age = parseQuarterNumber(quarter) - parseQuarterNumber(cohort.acquired);
       const cost = nonnegative(cohort.cost);
       const physicallyRetired = config.physicalLife != null && age >= 4 * config.physicalLife;
-      const eligible = age >= 4 * (config.economicLife ?? 5);
+      const eligible = !cohort.lowTier && age >= 4 * (config.economicLife ?? 5);
       const share = physicallyRetired ? 1 : eligible ? Math.min(1, nonnegative(config.replacementRatio ?? 0.25)) : 0;
       const residual = physicallyRetired ? config.physicalResidualValue ?? 0 : config.residualValue;
       const replaced = cost * share;
-      const newCost = replaced * Math.max(0, 1 - (config.priceDecline ?? 0));
+      const repurposed = physicallyRetired ? 0 : replaced * Math.min(1, nonnegative(config.repurposeShare));
+      const disposed = replaced - repurposed;
+      const newCost = cohort.lowTier ? 0 : replaced * Math.max(0, 1 - (config.priceDecline ?? 0));
       replacementCapex += newCost;
-      disposedCost += replaced;
+      disposedCost += disposed;
       if (config.accountingLife > 0) {
-        disposedBookValue += replaced * (1 - Math.min(1, Math.max(0, age) / (4 * config.accountingLife)));
+        disposedBookValue += disposed * (1 - Math.min(1, Math.max(0, age) / (4 * config.accountingLife)));
       }
-      disposalProceeds += replaced * Math.min(1, nonnegative(residual));
+      disposalProceeds += disposed * Math.min(1, nonnegative(residual));
       if (cost > replaced) next.push({ ...cohort, cost: cost - replaced });
+      if (repurposed > 0) next.push({ ...cohort, cost: repurposed, lowTier: true });
       if (newCost > 0) next.push({ acquired: quarter, cost: newCost });
     }
     return {
