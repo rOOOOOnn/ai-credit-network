@@ -1878,6 +1878,20 @@
             .reduce((sum, cohort) => sum + cohort.quantity * gpuPerformanceUnits(cohort), 0)),
           includesEveryModeledCohort: countedFleet.length === closingFleet.length
         };
+        let gpuBookValueBridge = null;
+        if (Number.isFinite(fleetConfig?.accountingLife) && fleetConfig.accountingLife > 0) {
+          const lifeQuarters = fleetConfig.accountingLife * 4;
+          const remainingBookValue = (cohort, periodsAgo) => {
+            const age = Math.max(0, parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired) - periodsAgo);
+            return gpuCohortCost(cohort) * Math.max(0, 1 - age / lifeQuarters);
+          };
+          const opening = openingFleet.reduce((sum, cohort) => sum + remainingBookValue(cohort, 1), 0);
+          const depreciated = openingFleet.reduce((sum, cohort) => sum + remainingBookValue(cohort, 0), 0);
+          const closing = closingFleet.reduce((sum, cohort) => sum + remainingBookValue(cohort, 0), 0);
+          gpuBookValueBridge = { opening: money(opening), additions: money(gpuPurchases + refresh.replacementCapex),
+            depreciation: money(opening - depreciated), disposedNetBookValue: refresh.netBookValueDisposed,
+            closing: money(closing) };
+        }
         const closingFleetCost = closingFleet.reduce((sum, cohort) => sum + cohort.cost, 0);
         const gpuFleetAgeYears = closingFleetCost > 0 ? money(closingFleet.reduce((sum, cohort) =>
           sum + cohort.cost * (parseQuarterNumber(q) - parseQuarterNumber(cohort.acquired)) / 4, 0) / closingFleetCost) : null;
@@ -2035,6 +2049,7 @@
           replacementCapex: refresh.replacementCapex,
           disposalProceeds: refresh.disposalProceeds,
           gpuNetBookValueDisposed: refresh.netBookValueDisposed ?? null,
+          gpuBookValueBridge,
           gpuDisposalGainLoss: refresh.disposalGainLoss ?? null,
           netGpuReplacementCashOutflow: money(refresh.replacementCapex - refresh.disposalProceeds),
           gpuFleetAgeYears,
@@ -10735,6 +10750,7 @@ const I18N = {
             replacementCapex: company.replacementCapex,
             disposalProceeds: company.disposalProceeds,
             netBookValueDisposed: company.gpuNetBookValueDisposed,
+            bookValueBridge: company.gpuBookValueBridge,
             disposalGainLoss: company.gpuDisposalGainLoss,
             netReplacementCash: company.netGpuReplacementCashOutflow,
             collateralValue: company.gpuCollateralValue,

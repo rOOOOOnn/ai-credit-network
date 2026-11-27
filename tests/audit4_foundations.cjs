@@ -1500,3 +1500,6 @@ const laterSameGeneration = engine.fleetRefresh([fasterGpu.cohorts.at(-1)], "203
 });
 assert.equal(laterSameGeneration.cohorts[0].quantity, 2500);
 assert.equal(laterSameGeneration.cohorts[0].performanceUnitsPerGpu, 2);
+assert.deepEqual(replaced.gpuBookValueBridge, {
+  opening: 1.0833, additions: 1, depreciation: 0.0833, disposedNetBookValue: 0.5, closing: 1.5
+});
