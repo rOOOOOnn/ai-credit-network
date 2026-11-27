@@ -1567,3 +1567,6 @@ const finalLeaseLiability = engine.incrementalLeaseSchedule(mixedLeases, "2027Q4
 assert.deepEqual(finalLeaseLiability, {
   opening: 0.9091, newlyRecognized: 0, principalPaid: 0.9091, rounding: 0, closing: 0
 });
+const deferredBeyondHorizon = withOperationalScenario({ operationalRecoveryRate: 0.5, operationalRecoveryDelayQuarters: 12 });
+const closingDeferral = deferredBeyondHorizon["2028Q4"].operationalRecoverySchedule.CRWV["2030Q2"];
+assert.deepEqual(closingDeferral, { revenue: 0.0558, cash: 0.0275 });

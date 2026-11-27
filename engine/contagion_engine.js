@@ -2369,6 +2369,7 @@
         }
       }
 
+      const operationalRecoverySchedule = {};
       const operationalRevenueLedger = deferredRevenue.map(entry => {
         const customer = states[entry.customer];
         const canRecover = entry.due <= stepIdx && customer && !customer.insufficientData;
@@ -2384,8 +2385,15 @@
           entry.settled = true;
         }
         const due = parseQuarterNumber(QUARTER_PARTIAL) + entry.due;
+        const dueQuarter = `${Math.floor(due / 4)}Q${due % 4 + 1}`;
+        if (!entry.settled) {
+          const byQuarter = operationalRecoverySchedule[entry.customer] ??= {};
+          const pending = byQuarter[dueQuarter] ??= { revenue: 0, cash: 0 };
+          pending.revenue = money(pending.revenue + entry.amount);
+          pending.cash = money(pending.cash + money(entry.amount * entry.cashFactor));
+        }
         return { txId: entry.txId, customer: entry.customer, originQuarter: forwardQs[entry.originated],
-          dueQuarter: `${Math.floor(due / 4)}Q${due % 4 + 1}`,
+          dueQuarter,
           beginning: entry.originated === stepIdx ? 0 : entry.amount,
           added: entry.originated === stepIdx ? entry.amount : 0,
           recovered, cashRecovered, ending: money(entry.amount - recovered), dataType: "Forecast" };
@@ -2455,7 +2463,7 @@
             : unattributedDebt > 0 ? "Partial instrument coverage" : "Reconciled"
         };
       }
-      timeline[q] = { quarter: q, status, entities: states, contagionLog, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation, operationalRevenueLedger };
+      timeline[q] = { quarter: q, status, entities: states, contagionLog, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation, operationalRevenueLedger, operationalRecoverySchedule };
       prevStates = states;
     });
 
