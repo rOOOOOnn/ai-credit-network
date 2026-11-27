@@ -3585,6 +3585,7 @@
   },
   {
     "id": "VERTIV",
+    "audit4Facilities": [{"id":"VERTIV_RCF_2026","type":"Direct Loan","payer":null,"receiver":"VERTIV","announcedDate":"2026-10-28","startQ":"2026Q1","endQ":"2031Q1","maturityDate":"2031-03-03","totalCommitment":2.5,"principalOutstanding":0,"principalAsOfQuarter":"2026Q3","amountDrawn":null,"amountRepaid":null,"remainingCommitment":2.484,"lettersOfCredit":0.016,"facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1674101/000162828026067893/vrt-20260930.htm","exposureBasis":"Reported replacement revolver net of standby letters of credit; lender allocations unavailable"}],
     "audit4CashFlowBridge": {"quarter":"2026Q3","direct":{"ocf":0.794,"capex":0.1391,"capitalizedSoftware":0.0027,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1674101/000162828026067707/q32026exhibit991vrt10282026.htm"}},
     "name": "Vertiv Holdings Co.",
     "ticker": "VRT",
