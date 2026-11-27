@@ -327,11 +327,11 @@ Run `node scripts/replay_audit4_gpu.cjs`. Each case assigns the selected company
 
 | Entity | Life | Profile | First refresh | 2030Q4 cash | 2030Q4 gap | 2032Q4 cash | 2032Q4 gap | First default |
 | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | --- |
-| CRWV | 3 | Reference | 2029Q4 | -19.1604 | 21.1604 | -44.6976 | 46.6976 | 2029Q2 |
-| CRWV | 4 | Reference | 2030Q4 | -12.7052 | 14.7052 | -38.8538 | 40.8538 | 2029Q4 |
-| CRWV | 5 | Reference | 2031Q4 | -4.1019 | 6.1019 | -37.2131 | 39.2131 | 2030Q3 |
-| CRWV | 6 | Reference | 2032Q4 | 2.6828 | 0 | -30.5705 | 32.5705 | 2031Q1 |
-| CRWV | 7 | Reference | 2033Q4 | 6.8091 | 0 | -23.4519 | 25.4519 | 2031Q3 |
+| CRWV | 3 | Reference | 2029Q4 | -3.9579 | 5.9579 | -16.1115 | 18.1115 | 2029Q2 |
+| CRWV | 4 | Reference | 2030Q4 | 5.5525 | 0 | -10.2019 | 12.2019 | 2031Q3 |
+| CRWV | 5 | Reference | 2031Q4 | 11.4528 | 0 | -5.553 | 7.553 | 2032Q2 |
+| CRWV | 6 | Reference | 2032Q4 | 15.6451 | 0 | 1.5918 | 0.4082 | 2033Q1 |
+| CRWV | 7 | Reference | 2033Q4 | 17.9198 | 0 | 5.2749 | 0 | 2033Q3 |
 | CRWV | 4 | Combined stress | 2030Q4 | -82.3134 | 84.3134 | -136.9288 | 138.9288 | 2027Q1 |
 | OPENAI | 3 | Reference | 2029Q4 | 48.3621 | 0 | 28.3766 | 0 | — |
 | OPENAI | 4 | Reference | 2030Q4 | 51.9509 | 0 | 29.1296 | 0 | — |
@@ -352,7 +352,7 @@ Run `node scripts/replay_audit4_gpu.cjs`. Each case assigns the selected company
 | ORCL | 7 | Reference | 2033Q4 | 32.6524 | 0 | 44.6094 | 0 | — |
 | ORCL | 4 | Combined stress | 2030Q4 | -158.6114 | 168.6114 | -294.5226 | 304.5226 | 2027Q3 |
 
-At the first eligible quarter, the reference scenario allocates $2.25B to replacement CapEx and $0.50B to resale proceeds, for a $1.75B investing cash outflow. Shortening life from six to four years advances this first outflow from 2032Q4 to 2030Q4. At 2030Q4 it reduces CoreWeave modeled cash by $15.388B and opens a $14.7052B funding gap from zero in the six-year reference. That full-model difference includes collateral and refinancing effects that can precede replacement. In the other three profiles the same 2030Q4 cash difference is $1.75B and no reference funding gap opens. The combined stress has multiple simultaneous changes. It does not isolate the effects of lower replacement prices, residual values or financing.
+At the first eligible quarter, the reference scenario allocates $2.25B to replacement CapEx and $0.50B to resale proceeds, for a $1.75B investing cash outflow. Shortening life from six to four years advances this first outflow from 2032Q4 to 2030Q4. At 2030Q4 it reduces CoreWeave modeled cash by $10.0926B, with no funding gap in either reference at that quarter. By 2032Q4 the four-year gap is $12.2019B versus $0.4082B in the six-year reference. That full-model difference includes collateral and refinancing effects that can precede replacement. In the other three profiles the same 2030Q4 cash difference is $1.75B and no reference funding gap opens. The combined stress has multiple simultaneous changes. It does not isolate the effects of lower replacement prices, residual values or financing.
 
 The end-to-end regression independently fixes a solvent zero-debt fixture and tests every economic life from three to seven years. Its $100B fleet produces $22.5B gross CapEx and $5B resale proceeds in each first eligible quarter, reducing FCF by $22.5B and cash by $17.5B against the no-refresh path. The accounting life remains fixed across all cases.
 
@@ -808,3 +808,5 @@ The pledged GPU schedule now preserves a modeled facility's zero balance after i
 When the scenario identifies a facility's pledged GPU cohorts, its margin stress is calculated on that collateral pool and its own outstanding principal. The TX27 regression places $50B of new unpledged equipment next to a $4B older pledged cohort valued at $2.4B. The unpledged equipment previously suppressed the call. The pledged pool's 40% haircut now gives a $0.48B scenario call on $10B of principal. Facilities with unknown allocations use the market haircut when other facilities have attributed pools. Where the entire fleet lacks facility attribution, the existing fleet-wide proxy remains a scenario assumption. The borrower-level refinancing penalty uses the highest triggered facility stress. The modeled triggers and rates are scenario parameters, with actual covenants and collateral packages still requiring loan documentation.
 
 The quarterly ledger now exports each modeled GPU margin call with opening loan principal, collateral basis, effective haircut, stressed LTV and refinancing multiplier. The company cash outflow is the sum of the separately rounded facility amounts. The independent TX27 case checks 108.33% stressed LTV, $0.48B of margin and a 0.52 refinancing multiplier. The browser regression downloads and reconciles the facility amounts on each of the three standalone pages.
+
+The replay tables were checked after the facility-level margin change. The five CoreWeave reference GPU rows changed. The financing before/after table, extended financing comparison and five-profile sustainability table reproduced exactly. In the revised refinancing calculation only facilities with positive outstanding principal can impose the modeled margin-based rollover multiplier.
