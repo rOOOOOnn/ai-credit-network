@@ -1168,3 +1168,13 @@ assert.equal(usd(anthropicReportedCash.nineMonthOperatingCashFlow - anthropicRep
 assert.equal(usd(anthropicReportedCash.nineMonthOperatingCashFlow - anthropicReportedCash.nineMonthCashPpePurchases -
   anthropicReportedCash.nineMonthLeasedAssetAndEquipmentPrepayments - anthropicReportedCash.nineMonthFinanceLeasePrincipalPaid), 3.601);
 assert.equal(anthropicReportedCash.standaloneQ3OperatingCashFlow, null);
+
+const frozenPlan = { mode: "manual", capacity: 8, quarterlyLimit: 2, annual: { 2027: { equity: 8 } }, frozen: true };
+const scheduledEquityFixture = { ...contractedCashFixture, scheduledEquityInflows: { "2027Q1": 3 } };
+const frozenCash = engine.runSimulation([scheduledEquityFixture], [], { audit4Contracts: true,
+  overrides: { DRAW_TEST: { financing: frozenPlan } }
+}).timeline["2027Q1"].entities.DRAW_TEST;
+assert.equal(frozenCash.financingCashSources.scenarioEquity, 0);
+assert.equal(frozenCash.financingCashSources.scheduledEquity, 3);
+assert.equal(frozenCash.totalFinancingCashInflow, 3);
+assert.equal(engine.financingForecast(frozenPlan, 2027).amounts.equity, 8);

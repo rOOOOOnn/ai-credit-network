@@ -1578,7 +1578,8 @@
         const configuredForecast = ov?.financing;
         const forecastConfig = configuredForecast?.curve === "historical" && configuredForecast.history == null
           ? { ...configuredForecast, history: e.verifiedFinancingHistory } : configuredForecast;
-        const remaining = forecastConfig ? financingRemaining[e.id] ?? nonnegative(forecastConfig.capacity) : 0;
+        const remaining = forecastConfig && !forecastConfig.frozen
+          ? financingRemaining[e.id] ?? nonnegative(forecastConfig.capacity) : 0;
         const funding = forecastConfig ? scenarioFunding(forecastConfig, q, remaining, availFactor, refiFactor) : null;
         const assumedDebt = funding ? funding.amounts.debt + funding.amounts.assetBacked : (p.newDebt ?? 0) * availFactor * refiFactor;
         const requestedDebt = assumedDebt + refiRollover;
@@ -9645,6 +9646,14 @@ const I18N = {
       ["capacity", t("Total financing limit ($B)", "\u7d2f\u8ba1\u878d\u8d44\u4e0a\u9650（\u5341\u4ebf\u7f8e\u5143）"), 0],
       ["quarterlyLimit", t("Quarterly financing limit ($B)", "\u5b63\u5ea6\u878d\u8d44\u4e0a\u9650（\u5341\u4ebf\u7f8e\u5143）"), 0]
     ]) setting(label, selectedConfig[key] ?? fallback, value => assignFunding(key, Math.max(0, value)));
+    const freeze = setting(t("Scenario financing", "\u60c5\u666f\u878d\u8d44"),
+      selectedConfig.frozen ? "freeze" : "enabled", value => assignFunding("frozen", value === "freeze"),
+      [["enabled", t("Enabled", "\u542f\u7528")], ["freeze", t("Freeze", "\u51bb\u7ed3")]]);
+    freeze.dataset.scenarioFinancingFreeze = "";
+    setting(t("Separately scheduled equity", "\u5355\u72ec\u6392\u671f\u7684\u80a1\u6743\u878d\u8d44"),
+      state.overrides[entity.id]?.includeScheduledEquity === false ? "exclude" : "include",
+      value => { settings().includeScheduledEquity = value === "include"; },
+      [["include", t("Include", "\u8ba1\u5165")], ["exclude", t("Exclude", "\u6392\u9664")]]);
     for (let quarter = 0; quarter < 4; quarter++) {
       const label = t("Financing weight for Q", "\u878d\u8d44\u5206\u914d\u6743\u91cd Q") + (quarter + 1);
       const control = setting(label, selectedConfig.quarterWeights?.[quarter] ?? 1, value => {
@@ -9655,9 +9664,10 @@ const I18N = {
       control.dataset.financingQuarterWeight = String(quarter + 1);
     }
     if (selectedConfig.mode === "curve") {
-      setting(t("Curve", "\u66f2\u7ebf"), selectedConfig.curve ?? "linear", value => assignFunding("curve", value),
+      const curveControl = setting(t("Curve", "\u66f2\u7ebf"), selectedConfig.curve ?? "linear", value => assignFunding("curve", value),
         [["linear", t("Linear", "\u7ebf\u6027")], ["exponential", t("Exponential", "\u6307\u6570")],
           ["logistic", t("Logistic", "\u903b\u8f91\u65af\u8482")], ["historical", t("Historical", "\u5386\u53f2\u8d8b\u52bf")]]);
+      curveControl.dataset.financingCurve = "";
       for (const [key, label, fallback] of [
         ["initialGrowth", t("Initial financing growth", "\u521d\u59cb\u878d\u8d44\u589e\u901f"), 0],
         ["annualDecline", t("Annual decline", "\u5e74\u5ea6\u589e\u901f\u964d\u5e45"), 0.2],

@@ -757,3 +757,5 @@ The Audit 4 count is from one local execution of the suite with successful stric
 | Company GPU cohorts and lender collateral | Filings identify broad accounting asset balances and some specific pledged pools. GPU-only spending, batch age, retention and resale outcomes, and lender-level liens are needed to validate company-specific replacement cash and recovery values. |
 
 The field-by-field review of all 50 entities remains open. The entity source register inventories the existing coverage and the reporting gaps.
+
+The forecast panel now has a separate scenario freeze control and an independent switch for scheduled equity. Freeze preserves the requested annual schedule and underlying limits. The browser test disables and restores a planned $8B financing path. A separate model fixture leaves a $3B scheduled equity receipt in place while scenario financing is frozen. Rollover and facility draws retain their independent rules.

@@ -1261,7 +1261,8 @@
         const configuredForecast = ov?.financing;
         const forecastConfig = configuredForecast?.curve === "historical" && configuredForecast.history == null
           ? { ...configuredForecast, history: e.verifiedFinancingHistory } : configuredForecast;
-        const remaining = forecastConfig ? financingRemaining[e.id] ?? nonnegative(forecastConfig.capacity) : 0;
+        const remaining = forecastConfig && !forecastConfig.frozen
+          ? financingRemaining[e.id] ?? nonnegative(forecastConfig.capacity) : 0;
         const funding = forecastConfig ? scenarioFunding(forecastConfig, q, remaining, availFactor, refiFactor) : null;
         const assumedDebt = funding ? funding.amounts.debt + funding.amounts.assetBacked : (p.newDebt ?? 0) * availFactor * refiFactor;
         const requestedDebt = assumedDebt + refiRollover;

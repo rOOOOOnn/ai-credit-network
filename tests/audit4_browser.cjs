@@ -45,6 +45,12 @@ async function checkPage(browser, url) {
     await annualEquity.press("Tab");
     assert.equal(await row.locator("td").nth(7).innerText(), "8.00");
     assert.ok((await panel.locator("[data-financing-chart]").innerText()).includes("8.00"));
+    const financingFreeze = panel.locator("[data-scenario-financing-freeze]");
+    await financingFreeze.selectOption("freeze");
+    assert.equal(await annualEquity.inputValue(), "8");
+    assert.equal(await row.locator("td").nth(7).innerText(), "0.00");
+    await financingFreeze.selectOption("enabled");
+    assert.equal(await row.locator("td").nth(7).innerText(), "8.00");
     const financeChart = panel.locator("[data-financing-chart]");
     assert.match(await financeChart.innerText(), /2028 (?:Financing growth|\u878d\u8d44\u589e\u901f) -100\.0%/);
     const finalYear = panel.locator("tbody tr").last();
@@ -60,7 +66,7 @@ async function checkPage(browser, url) {
     await curveEquity.press("Tab");
     assert.equal(await row.locator("td").nth(7).innerText(), "10.00");
 
-    await panel.locator("select").nth(1).selectOption("historical");
+    await panel.locator("[data-financing-curve]").selectOption("historical");
     assert.match(await panel.locator("[data-financing-trend]").innerText(), /Insufficient Historical Data|历史融资数据不足/);
     const historicalSettings = JSON.parse(await scenario.inputValue());
     historicalSettings.financing.history = {
