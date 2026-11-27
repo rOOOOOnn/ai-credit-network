@@ -4,6 +4,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { once } = require("node:events");
 const { chromium } = require("playwright");
+const { runSimulation } = require("../engine/contagion_engine.js");
 
 const pages = ["index.html", "index_en.html", "index_zh.html"];
 const server = http.createServer(async (request, response) => {
@@ -182,6 +183,18 @@ async function checkPage(browser, url) {
     assert.equal(download.suggestedFilename(), "audit4_quarterly_credit_ledger.json");
     const ledger = JSON.parse(await fs.readFile(await download.path(), "utf8"));
     assert.equal(ledger.currency, "USD billions");
+    const replay = runSimulation(ledger.entities, ledger.transactions, ledger.simulationOptions);
+    for (const id of ["OPENAI", "ANTHROPIC", "CRWV"]) {
+      assert.deepEqual(ledger.scenarioSummary[id], replay.scenarioSummary[id]);
+      for (const exported of ledger.quarters) {
+        const actual = exported.liquiditySchedules[id];
+        const expected = replay.timeline[exported.quarter].entities[id];
+        assert.deepEqual([actual.endingCash, actual.fundingGap, actual.cashRunwayMonths,
+          actual.distressLevel, exported.operatingCashBridges[id].endingFCF],
+        [expected.cash, expected.fundingGap, expected.cashRunwayMonths, expected.distressLevel, expected.fcf],
+        id + " " + exported.quarter + " exported scenario replay");
+      }
+    }
     const weightedEntity = Object.keys(ledger.simulationOptions.overrides)
       .find(id => ledger.simulationOptions.overrides[id].financing?.quarterWeights?.[1] === 0);
     assert.ok(weightedEntity);
