@@ -109,6 +109,7 @@ async function checkPage(browser, url) {
     await secondQuarterWeight.fill("0");
     await secondQuarterWeight.press("Tab");
     assert.deepEqual(JSON.parse(await scenario.inputValue()).financing.quarterWeights, [1, 0, 1, 1]);
+    const shownAllFinancing = await panel.locator('[data-all-financing="2027"]').innerText();
     await page.locator("#openDataModalBtn").click();
     const downloadPromise = page.waitForEvent("download");
     await page.locator("#dlAuditLedgerJson").click();
@@ -119,6 +120,9 @@ async function checkPage(browser, url) {
     const weightedEntity = Object.keys(ledger.simulationOptions.overrides)
       .find(id => ledger.simulationOptions.overrides[id].financing?.quarterWeights?.[1] === 0);
     assert.ok(weightedEntity);
+    const totalCashFinancing = ledger.quarters.filter(row => row.quarter.startsWith("2027"))
+      .reduce((sum, row) => sum + row.financingCashSources[weightedEntity].total, 0);
+    assert.equal(shownAllFinancing, totalCashFinancing.toFixed(2));
     const zeroWeightQuarter = ledger.quarters.find(row => row.quarter === "2027Q2");
     assert.equal(zeroWeightQuarter.financingCashSources[weightedEntity].scenarioEquity, 0);
     assert.ok(Object.values(ledger.simulationOptions.overrides).some(row => row.capexGrowth === 0.1));

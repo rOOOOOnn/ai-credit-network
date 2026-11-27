@@ -710,3 +710,5 @@ All three company forecast panels now expose four quarterly financing weights fo
 The financing charts now display signed annual financing and revenue growth on a separate percent scale. A zero planned financing year following a positive year appears as negative 100 percent. Growth stays unavailable when the comparison denominator is missing or zero.
 
 The financing chart now plots the actual yearly amounts used by the historical curve, per source and on the same amount scale as the projected values. The browser fixture verifies the two equity observations and the absence of a debt series when eligible debt history is missing.
+
+The annual forecast tables now show scenario financing received, total modeled financing received and closing cash separately. Total financing sums the quarterly cash source ledger and includes actual modeled facility draws, rollover and separately scheduled equity. The browser check independently reconciles the annual displayed total against the downloaded quarterly ledger.

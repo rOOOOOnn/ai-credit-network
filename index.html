@@ -259,7 +259,7 @@
           </div>
         </div>
         <div id="paramControls" class="grid grid-cols-2 gap-2.5"></div>
-        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><p data-lease-disclosure></p><p data-lease-result></p><p data-gpu-disclosure></p><p data-gpu-result></p><p data-equity-dilution></p><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th>Funded</th><th>Remaining</th><th>Gap</th><th>Financing growth</th><th>Revenue growth</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
+        <details id="financingScenario" class="mt-3 text-xs"><summary></summary><p></p><textarea rows="8" aria-label="Scenario JSON" class="w-full bg-slate-950 border border-slate-700"></textarea><button type="button" class="border border-slate-700 px-2"></button><output class="block"></output><p data-lease-disclosure></p><p data-lease-result></p><p data-gpu-disclosure></p><p data-gpu-result></p><p data-equity-dilution></p><label>Mode <select class="bg-slate-950"><option value="manual">Manual</option><option value="curve">Curve</option></select></label><div data-audit-settings></div><p data-financing-trend></p><div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Equity</th><th>Debt</th><th>Strategic</th><th>Prepay</th><th>Asset-backed</th><th>Other</th><th data-scenario-funded-heading>Scenario funded</th><th>Remaining</th><th>Gap</th><th>Financing growth</th><th>Revenue growth</th><th data-all-financing-heading>All financing</th><th data-closing-cash-heading>Closing cash</th></tr></thead><tbody data-financing-years></tbody></table></div><ul data-financing-chart></ul></details>
         <div class="flex gap-2 pt-1">
           <button id="applyParamsBtn" class="flex-1 py-1.5 rounded bg-[#5B8DEF] hover:bg-[#4A7CE0] text-white font-medium transition"></button>
           <button id="resetParamsBtn" class="px-3 py-1.5 rounded bg-[#161B24] hover:bg-[#1E2532] text-slate-300 border border-[#252E3E] transition"></button>
@@ -9734,6 +9734,9 @@ const I18N = {
       t("Incremental lease cash / finance principal / finance interest ($B): ",
         "\u65b0\u589e\u79df\u8d41\u4ed8\u6b3e / \u878d\u8d44\u79df\u8d41\u672c\u91d1 / \u5229\u606f: ") +
       [lease.payment, lease.financePrincipal, lease.financeInterest].map(value => value.toFixed(2)).join(" / ") : "";
+    panel.querySelector("[data-scenario-funded-heading]").textContent = t("Scenario funded", "\u60c5\u666f\u5230\u8d26");
+    panel.querySelector("[data-all-financing-heading]").textContent = t("All financing", "\u878d\u8d44\u5230\u8d26\u603b\u989d");
+    panel.querySelector("[data-closing-cash-heading]").textContent = t("Closing cash", "\u671f\u672b\u73b0\u91d1");
     const forecast = panel.querySelector("[data-financing-years]");
     forecast.replaceChildren();
     const selectedConfig = config ?? example;
@@ -9849,7 +9852,9 @@ const I18N = {
         ? quartersData.reduce((sum, row) => sum + row.revenue, 0) : null;
       const financingGrowth = previous?.total > 0 ? total / previous.total - 1 : null;
       const revenueGrowth = previousRevenue > 0 && annualRevenue !== null ? annualRevenue / previousRevenue - 1 : null;
-      rows.push({year, total, received, end, annualRevenue, financingGrowth, revenueGrowth});
+      const allFinancing = quartersData.every(row => Number.isFinite(row.totalFinancingCashInflow))
+        ? quartersData.reduce((sum, row) => sum + row.totalFinancingCashInflow, 0) : null;
+      rows.push({year, total, received, allFinancing, end, annualRevenue, financingGrowth, revenueGrowth});
       const tr = forecast.insertRow();
       tr.insertCell().textContent = year;
       for (const source of sources) {
@@ -9878,12 +9883,16 @@ const I18N = {
       for (const growth of [financingGrowth, revenueGrowth]) {
         tr.insertCell().textContent = growth === null ? "—" : (growth * 100).toFixed(1) + "%";
       }
+      const allFinancingCell = tr.insertCell();
+      allFinancingCell.dataset.allFinancing = year;
+      allFinancingCell.textContent = allFinancing?.toFixed(2) ?? "—";
+      tr.insertCell().textContent = Number.isFinite(end?.cash) ? end.cash.toFixed(2) : "—";
     }
     const metadata = Engine.financingForecast(projectionConfig, selectedConfig.startYear ?? 2027);
     const historicalRows = Object.entries(metadata.historyBySource ?? {}).flatMap(([source, history]) =>
       history.years.map((year, index) => ({ source, year, amount: history.amounts[index] })));
     const scale = Math.max(1, ...historicalRows.map(row => row.amount),
-      ...rows.flatMap(row => [row.total, row.received, row.end?.fundingGap ?? 0]));
+      ...rows.flatMap(row => [row.total, row.received, row.allFinancing ?? 0, row.end?.fundingGap ?? 0]));
     const growthScale = Math.max(0.01, ...rows.flatMap(row =>
       [Math.abs(row.financingGrowth ?? 0), Math.abs(row.revenueGrowth ?? 0)]));
     const chart = panel.querySelector("[data-financing-chart]");
@@ -9900,8 +9909,9 @@ const I18N = {
     }
     for (const row of rows) {
       const item = document.createElement("li");
-      for (const [name, value] of [[t("Planned","\u8ba1\u5212"), row.total], [t("Funded","\u5230\u8d26"),row.received],
+      for (const [name, value] of [[t("Planned","\u8ba1\u5212"), row.total], [t("Scenario funded","\u60c5\u666f\u5230\u8d26"),row.received], [t("All financing","\u878d\u8d44\u5230\u8d26\u603b\u989d"), row.allFinancing],
         [t("Gap","\u7f3a\u53e3"), row.end?.fundingGap ?? 0]]) {
+        if (!Number.isFinite(value)) continue;
         const label = document.createElement("label");
         label.className = "block";
         label.textContent = row.year + " " + name + " " + value.toFixed(2) + " ";
