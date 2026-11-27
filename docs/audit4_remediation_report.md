@@ -712,3 +712,8 @@ The financing charts now display signed annual financing and revenue growth on a
 The financing chart now plots the actual yearly amounts used by the historical curve, per source and on the same amount scale as the projected values. The browser fixture verifies the two equity observations and the absence of a debt series when eligible debt history is missing.
 
 The annual forecast tables now show scenario financing received, total modeled financing received and closing cash separately. Total financing sums the quarterly cash source ledger and includes actual modeled facility draws, rollover and separately scheduled equity. The browser check independently reconciles the annual displayed total against the downloaded quarterly ledger.
+
+
+### NVIDIA tenant lease commitment
+
+The October 25 CFO disclosure identifies $74B of data center leases not yet commenced and $28B of separate cloud service agreements. The $102B combined commitment excludes any interpretation as a single rent schedule. The lease buckets are $0B, $1B, $2B, $4B, $4B and $63B across the remainder of FY2027, FY2028–2031 and FY2032 onward. The forecast panel shows the dated lease total and links the original source. Recognized lease liabilities, assignments to third parties and the quarterly timing of the $63B tail cannot be inferred from the rows. The figures remain an audit disclosure outside the September opening balance and quarterly baseline cash schedule. [NVIDIA CFO disclosure](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/q3fy27cfocommentary.htm).

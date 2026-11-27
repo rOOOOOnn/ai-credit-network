@@ -1,6 +1,7 @@
 [
   {
     "id": "NVDA",
+    "audit4LeaseDisclosure": {"asOf":"2026-10-25","disclosedDate":"2026-11-17","uncommencedUndiscountedPayments":74,"fiscalBuckets":["FY2027 remaining","FY2028","FY2029","FY2030","FY2031","FY2032 and later"],"uncommencedLeasePayments":[0,1,2,4,4,63],"separateCloudServicePayments":[2,7,7,6,4,2],"expectedCommencementFiscalYears":[2027,2033],"maximumLeaseTermYears":20,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/q3fy27cfocommentary.htm"},
     "audit4HardwareDisclosure": {"assetClass":"Depreciable property and equipment, excluding buildings","accountingUsefulLifeRangeYears":[2,7],"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"},
     "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q2","periodStart":"2026-04-27","periodEnd":"2026-07-26","calendarBucket":"2026Q3","revenue":96.221,"ocf":24.077,"capex":2.677,"currentBorrowings":1,"nonCurrentBorrowings":32.366,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm","cashFlowSourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000073/q2fy27pr.htm"},
     "audit4Liquidity": {"asOf":"2026-07-26","cashAndEquivalents":22.443,"currentInvestments":34.143,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"},

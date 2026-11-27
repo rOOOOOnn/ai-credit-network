@@ -1132,3 +1132,8 @@ assert.deepEqual(mixedFinancingCash.financingCashSources, {
 });
 assert.equal(mixedFinancingCash.totalFinancingCashInflow, 21);
 assert.equal(mixedFinancingCash.scenarioEquityIssued, 1);
+
+const nvidiaLeases = entities.find(row => row.id === "NVDA").audit4LeaseDisclosure;
+assert.equal(nvidiaLeases.uncommencedLeasePayments.reduce((sum, payment) => sum + payment, 0), 74);
+assert.equal(nvidiaLeases.separateCloudServicePayments.reduce((sum, payment) => sum + payment, 0), 28);
+assert.equal(nvidiaLeases.uncommencedLeasePayments.at(-1), 63);
