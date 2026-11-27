@@ -759,7 +759,11 @@
       const disposed = replaced - repurposed;
       const priceFactor = Math.max(0, 1 - (config.priceDecline ?? 0));
       const newUnitCost = counted ? nonnegative(config.replacementUnitCostUsd ?? cohort.unitCostUsd * priceFactor) : null;
-      const newCost = cohort.lowTier ? 0 : counted ? replacedUnits * newUnitCost / 1e9 : replaced * priceFactor;
+      const sameGeneration = config.replacementGeneration != null && config.replacementGeneration === cohort.generation;
+      const performanceRatio = !sameGeneration && Number.isFinite(config.replacementPerformanceRatio)
+        ? Math.max(0.1, config.replacementPerformanceRatio) : 1;
+      const newUnits = counted ? Math.ceil(replacedUnits / performanceRatio) : null;
+      const newCost = cohort.lowTier ? 0 : counted ? newUnits * newUnitCost / 1e9 : replaced * priceFactor;
       replacementCapex += newCost;
       disposedCost += disposed;
       if (config.accountingLife > 0) {
@@ -772,7 +776,7 @@
         });
         if (repurposedUnits > 0) next.push({ ...cohort, quantity: repurposedUnits, cost: repurposed, lowTier: true });
         if (!cohort.lowTier && replacedUnits > 0) next.push({
-          acquired: quarter, cost: newCost, quantity: replacedUnits, unitCostUsd: newUnitCost,
+          acquired: quarter, cost: newCost, quantity: newUnits, unitCostUsd: newUnitCost,
           generation: config.replacementGeneration ?? cohort.generation
         });
       } else {

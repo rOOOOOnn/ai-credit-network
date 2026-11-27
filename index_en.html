@@ -1076,7 +1076,11 @@
       const disposed = replaced - repurposed;
       const priceFactor = Math.max(0, 1 - (config.priceDecline ?? 0));
       const newUnitCost = counted ? nonnegative(config.replacementUnitCostUsd ?? cohort.unitCostUsd * priceFactor) : null;
-      const newCost = cohort.lowTier ? 0 : counted ? replacedUnits * newUnitCost / 1e9 : replaced * priceFactor;
+      const sameGeneration = config.replacementGeneration != null && config.replacementGeneration === cohort.generation;
+      const performanceRatio = !sameGeneration && Number.isFinite(config.replacementPerformanceRatio)
+        ? Math.max(0.1, config.replacementPerformanceRatio) : 1;
+      const newUnits = counted ? Math.ceil(replacedUnits / performanceRatio) : null;
+      const newCost = cohort.lowTier ? 0 : counted ? newUnits * newUnitCost / 1e9 : replaced * priceFactor;
       replacementCapex += newCost;
       disposedCost += disposed;
       if (config.accountingLife > 0) {
@@ -1089,7 +1093,7 @@
         });
         if (repurposedUnits > 0) next.push({ ...cohort, quantity: repurposedUnits, cost: repurposed, lowTier: true });
         if (!cohort.lowTier && replacedUnits > 0) next.push({
-          acquired: quarter, cost: newCost, quantity: replacedUnits, unitCostUsd: newUnitCost,
+          acquired: quarter, cost: newCost, quantity: newUnits, unitCostUsd: newUnitCost,
           generation: config.replacementGeneration ?? cohort.generation
         });
       } else {
@@ -9982,6 +9986,7 @@ const I18N = {
       ["physicalLife", t("Physical GPU life (years)", "GPU \u7269\u7406\u5bff\u547d（\u5e74）"), null, 1, 30],
       ["accountingLife", t("Accounting GPU life (years)", "GPU \u6298\u65e7\u5e74\u9650"), null, 1, 30],
       ["repurposeShare", t("Share of replaced GPU equipment retained for lower-tier workloads", "\u66ff\u6362\u540e\u4fdd\u7559\u7528\u4e8e\u4f4e\u6027\u80fd\u4efb\u52a1\u7684 GPU \u6bd4\u4f8b"), 0, 0, 1],
+      ["replacementPerformanceRatio", t("New GPU performance per device relative to old GPU", "\u65b0 GPU \u5355\u53f0\u6027\u80fd\u76f8\u5bf9\u4e8e\u65e7 GPU \u7684\u500d\u6570"), 1, 0.1, 100],
       ["replacementRatio", t("Quarterly replacement ratio", "\u5b63\u5ea6\u66f4\u65b0\u6bd4\u4f8b"), 0.25, 0, 1],
       ["residualValue", t("Residual value ratio", "\u6b8b\u503c\u6bd4\u4f8b"), 0.2, 0, 0.6],
       ["physicalResidualValue", t("Physical retirement residual ratio", "\u7269\u7406\u9000\u5f79\u6b8b\u503c\u6bd4\u7387"), 0, 0, 0.6],

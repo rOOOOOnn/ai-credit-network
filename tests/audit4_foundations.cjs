@@ -1482,3 +1482,14 @@ assert.equal(quantityAcquisition.gpuPurchases, 0.3);
 assert.deepEqual(quantityAcquisition.gpuClosingCohorts, [
   { acquired: "2026Q4", cost: 0.3, quantity: 7500, unitCostUsd: 40000, generation: "Hopper" }
 ]);
+const fasterGpu = engine.fleetRefresh([
+  { acquired: "2023Q1", quantity: 10000, unitCostUsd: 40000, generation: "Hopper" }
+], "2027Q1", { economicLife: 4, replacementRatio: 0.5, residualValue: 0.25,
+  replacementUnitCostUsd: 50000, replacementGeneration: "Blackwell", replacementPerformanceRatio: 2 });
+assert.equal(fasterGpu.replacementCapex, 0.125);
+assert.equal(fasterGpu.disposalProceeds, 0.05);
+assert.equal(fasterGpu.cohorts.at(-1).quantity, 2500);
+const sameGen = engine.fleetRefresh([
+  { acquired: "2023Q1", quantity: 10000, unitCostUsd: 40000, generation: "Hopper" }
+], "2027Q1", { economicLife: 4, replacementRatio: 0.5, replacementGeneration: "Hopper", replacementPerformanceRatio: 2 });
+assert.equal(sameGen.cohorts.at(-1).quantity, 5000);
