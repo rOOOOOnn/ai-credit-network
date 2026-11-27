@@ -2071,11 +2071,15 @@
               if (isPoolId(custId) || !states[custId] || states[custId].insufficientData) return;
               const cust = states[custId];
               const opCat = tx.operationalCategory || tx.type;
-              const subAvail = tx.substitutionAvailability ?? 0.60;
+              const operationalScenario = overrides[custId] ?? {};
+              const scenarioSubstitution = operationalScenario.operationalSubstitutionAvailability;
+              const subAvail = Number.isFinite(scenarioSubstitution)
+                ? Math.min(1, nonnegative(scenarioSubstitution)) : tx.substitutionAvailability ?? 0.60;
               const switchWks = tx.switchingTimeWeeks ?? 12;
               const costPrem = tx.replacementCostPremium ?? 0.25;
               const disruptionMult = tx.disruptionMode === "FULL" ? 1.0 : 0.70;
-              const friction = Math.max(0.05, 1 - subAvail);
+              const friction = Number.isFinite(scenarioSubstitution)
+                ? 1 - subAvail : Math.max(0.05, 1 - subAvail);
 
               // Anchor operational exposure: disclosed quarterlyPayment if > 0; else operationalExposureShare * customer CapEx/Rev
               const qPay = tx.quarterlyPayment || (tx.totalCommitment ? tx.totalCommitment / 20 : 0);
@@ -2112,7 +2116,7 @@
                 const revDelay = Number((opBase * Math.min(1, switchWks / 13) * friction * 0.45 * disruptionMult * decay).toFixed(4));
                 if (revDelay > 0) {
                   const lostCapacityRevenue = money(Math.min(cust.revenue, revDelay));
-                  const recoveryRate = Math.min(1, nonnegative(overrides[custId]?.operationalRecoveryRate ?? 0.75));
+                  const recoveryRate = Math.min(1, nonnegative(operationalScenario.operationalRecoveryRate ?? 0.75));
                   const deferred = money(lostCapacityRevenue * recoveryRate);
                   const cashFactor = cust.grossMargin * cust.cashConv;
                   cust.operationalRevDelay = money(cust.operationalRevDelay + deferred);
@@ -2122,7 +2126,9 @@
                   cust.revenue = money(cust.revenue - lostCapacityRevenue);
                   applyCashDelta(custId, -lostCapacityRevenue * cashFactor);
                   if (deferred > 0) deferredRevenue.push({
-                    txId: tx.id, customer: custId, originated: stepIdx, due: operationalStartQByTx[tx.id] + switchQuarters,
+                    txId: tx.id, customer: custId, originated: stepIdx,
+                    due: operationalStartQByTx[tx.id] + switchQuarters +
+                      Math.trunc(nonnegative(operationalScenario.operationalRecoveryDelayQuarters)),
                     amount: deferred, cashFactor
                   });
                   contagionLog.push({
@@ -9532,6 +9538,8 @@ const I18N = {
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
       incrementalLeaseTranches:state.overrides[entity.id]?.incrementalLeaseTranches ?? null,
       includeNvidiaLeaseBuckets:state.overrides[entity.id]?.includeNvidiaLeaseBuckets ?? false,
+      operationalSubstitutionAvailability:state.overrides[entity.id]?.operationalSubstitutionAvailability ?? null,
+      operationalRecoveryDelayQuarters:state.overrides[entity.id]?.operationalRecoveryDelayQuarters ?? 0,
       disclosedLeaseStressYears:state.overrides[entity.id]?.disclosedLeaseStressYears ?? 0,
       includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75, openingInvestmentSaleFraction:state.overrides[entity.id]?.openingInvestmentSaleFraction ?? 0, includeExistingFinanceLease:state.overrides[entity.id]?.includeExistingFinanceLease ?? true, unallocatedGuaranteeCalls:state.overrides[entity.id]?.unallocatedGuaranteeCalls ?? {}}, null, 2);
     panel.querySelector("button").textContent = t("Apply assumptions", "\u5e94\u7528\u5047\u8bbe");
@@ -9696,6 +9704,16 @@ const I18N = {
       operating.workingCapitalCashUse ?? 0, value => { settings().workingCapitalCashUse = value; });
     setting(t("Scenario equity pre-money valuation ($B)", "\u60c5\u666f\u80a1\u6743\u6295\u524d\u4f30\u503c\uff08\u5341\u4ebf\u7f8e\u5143\uff09"),
       operating.equityPreMoneyValuation, value => { settings().equityPreMoneyValuation = value; }, undefined, true);
+    setting(t("Operational substitution ratio", "\u8fd0\u8425\u66ff\u4ee3\u5bb9\u91cf\u6bd4\u7387"),
+      operating.operationalSubstitutionAvailability, value => {
+        settings().operationalSubstitutionAvailability = value === null ? null : Math.min(1, Math.max(0, value));
+      }, undefined, true);
+    setting(t("Operational revenue recovery ratio", "\u8fd0\u8425\u5ef6\u8fdf\u6536\u5165\u6536\u56de\u6bd4\u7387"),
+      operating.operationalRecoveryRate ?? 0.75,
+      value => { settings().operationalRecoveryRate = Math.min(1, Math.max(0, value)); });
+    setting(t("Additional revenue recovery delay (quarters)", "\u6536\u5165\u6536\u56de\u989d\u5916\u5ef6\u8fdf\uff08\u5b63\u5ea6\uff09"),
+      operating.operationalRecoveryDelayQuarters ?? 0,
+      value => { settings().operationalRecoveryDelayQuarters = Math.max(0, Math.trunc(value)); });
     const gpu = state.overrides[entity.id]?.gpuRefresh ?? {};
     for (const [key, label, fallback, min, max] of [
       ["economicLife", t("Economic GPU life (years)", "GPU \u7ecf\u6d4e\u5bff\u547d（\u5e74）"), 5, 3, 7],
@@ -9899,6 +9917,8 @@ const I18N = {
         settings.includeScheduledEquity = data.includeScheduledEquity;
         settings.leaseDelayQuarters = data.leaseDelayQuarters;
         settings.operationalRecoveryRate = data.operationalRecoveryRate;
+        settings.operationalSubstitutionAvailability = data.operationalSubstitutionAvailability;
+        settings.operationalRecoveryDelayQuarters = data.operationalRecoveryDelayQuarters;
         settings.openingInvestmentSaleFraction = data.openingInvestmentSaleFraction;
         settings.includeExistingFinanceLease = data.includeExistingFinanceLease;
         settings.unallocatedGuaranteeCalls = data.unallocatedGuaranteeCalls;

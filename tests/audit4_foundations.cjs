@@ -1178,3 +1178,17 @@ assert.equal(frozenCash.financingCashSources.scenarioEquity, 0);
 assert.equal(frozenCash.financingCashSources.scheduledEquity, 3);
 assert.equal(frozenCash.totalFinancingCashInflow, 3);
 assert.equal(engine.financingForecast(frozenPlan, 2027).amounts.equity, 8);
+
+const withOperationalScenario = CRWV => engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, forcedDefaults: ["CORZ"], overrides: { CRWV }
+}).timeline;
+const fullSubstitution = withOperationalScenario({ operationalSubstitutionAvailability: 1 });
+assert.equal(fullSubstitution["2026Q4"].contagionLog.filter(row => row.txId === "TX66" &&
+  row.layer === "L3_OPERATIONAL").length, 0);
+const slowerRecovery = withOperationalScenario({ operationalRecoveryRate: 0.5, operationalRecoveryDelayQuarters: 1 });
+const tx66Deferred = quarter => slowerRecovery[quarter].operationalRevenueLedger.filter(row => row.txId === "TX66");
+assert.equal(tx66Deferred("2026Q4")[0].added, 0.0372);
+assert.deepEqual(tx66Deferred("2027Q2").map(row => [row.recovered, row.ending]), [[0, 0.0372], [0, 0.0186]]);
+assert.deepEqual(tx66Deferred("2027Q3").map(row => [row.recovered, row.cashRecovered, row.ending]),
+  [[0.0372, 0.0183, 0], [0.0186, 0.0092, 0]]);
+assert.equal(tx66Deferred("2027Q4").length, 0);

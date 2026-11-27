@@ -1754,11 +1754,15 @@
               if (isPoolId(custId) || !states[custId] || states[custId].insufficientData) return;
               const cust = states[custId];
               const opCat = tx.operationalCategory || tx.type;
-              const subAvail = tx.substitutionAvailability ?? 0.60;
+              const operationalScenario = overrides[custId] ?? {};
+              const scenarioSubstitution = operationalScenario.operationalSubstitutionAvailability;
+              const subAvail = Number.isFinite(scenarioSubstitution)
+                ? Math.min(1, nonnegative(scenarioSubstitution)) : tx.substitutionAvailability ?? 0.60;
               const switchWks = tx.switchingTimeWeeks ?? 12;
               const costPrem = tx.replacementCostPremium ?? 0.25;
               const disruptionMult = tx.disruptionMode === "FULL" ? 1.0 : 0.70;
-              const friction = Math.max(0.05, 1 - subAvail);
+              const friction = Number.isFinite(scenarioSubstitution)
+                ? 1 - subAvail : Math.max(0.05, 1 - subAvail);
 
               // Anchor operational exposure: disclosed quarterlyPayment if > 0; else operationalExposureShare * customer CapEx/Rev
               const qPay = tx.quarterlyPayment || (tx.totalCommitment ? tx.totalCommitment / 20 : 0);
@@ -1795,7 +1799,7 @@
                 const revDelay = Number((opBase * Math.min(1, switchWks / 13) * friction * 0.45 * disruptionMult * decay).toFixed(4));
                 if (revDelay > 0) {
                   const lostCapacityRevenue = money(Math.min(cust.revenue, revDelay));
-                  const recoveryRate = Math.min(1, nonnegative(overrides[custId]?.operationalRecoveryRate ?? 0.75));
+                  const recoveryRate = Math.min(1, nonnegative(operationalScenario.operationalRecoveryRate ?? 0.75));
                   const deferred = money(lostCapacityRevenue * recoveryRate);
                   const cashFactor = cust.grossMargin * cust.cashConv;
                   cust.operationalRevDelay = money(cust.operationalRevDelay + deferred);
@@ -1805,7 +1809,9 @@
                   cust.revenue = money(cust.revenue - lostCapacityRevenue);
                   applyCashDelta(custId, -lostCapacityRevenue * cashFactor);
                   if (deferred > 0) deferredRevenue.push({
-                    txId: tx.id, customer: custId, originated: stepIdx, due: operationalStartQByTx[tx.id] + switchQuarters,
+                    txId: tx.id, customer: custId, originated: stepIdx,
+                    due: operationalStartQByTx[tx.id] + switchQuarters +
+                      Math.trunc(nonnegative(operationalScenario.operationalRecoveryDelayQuarters)),
                     amount: deferred, cashFactor
                   });
                   contagionLog.push({

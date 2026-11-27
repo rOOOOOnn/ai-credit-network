@@ -115,6 +115,10 @@ async function checkPage(browser, url) {
     await secondQuarterWeight.fill("0");
     await secondQuarterWeight.press("Tab");
     assert.deepEqual(JSON.parse(await scenario.inputValue()).financing.quarterWeights, [1, 0, 1, 1]);
+    const substitutionRatio = panel.getByLabel(/Operational substitution ratio|\u8fd0\u8425\u66ff\u4ee3\u5bb9\u91cf\u6bd4\u7387/);
+    await substitutionRatio.fill("0.6");
+    await substitutionRatio.press("Tab");
+    assert.equal(JSON.parse(await scenario.inputValue()).operationalSubstitutionAvailability, 0.6);
     const shownAllFinancing = await panel.locator('[data-all-financing="2027"]').innerText();
     await page.locator("#openDataModalBtn").click();
     const downloadPromise = page.waitForEvent("download");
