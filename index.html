@@ -591,7 +591,8 @@
         undrawnEAD = 0;
         eadBasis = "Funded principal; eligible undrawn amount unavailable";
       }
-      if (tx.commitmentTerminationDate && quarterEndDate(quarter) > tx.commitmentTerminationDate) {
+      if ((tx.endQ && compareQuarter(quarter, tx.endQ) >= 0) ||
+          (tx.commitmentTerminationDate && quarterEndDate(quarter) > tx.commitmentTerminationDate)) {
         undrawnCommitment = 0;
         undrawnEAD = 0;
         eadBasis += "; commitment expired";

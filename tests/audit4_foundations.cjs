@@ -198,6 +198,14 @@ console.log("Audit 4 A–G stress accounting checks passed");
 const instrument = { id: "Audit4-term", type: "Direct Loan", payer: "JPM", receiver: "OPENAI",
   announcedDate: "2026-12-01", startQ: "2026Q4", endQ: "2027Q3", amountDrawn: 0,
   amountRepaid: 0, totalCommitment: 5, remainingCommitment: 5 };
+const termExposure = { ...instrument, amountDrawn: 3 };
+for (const [quarter, expectedUndrawn] of [["2027Q2", 2], ["2027Q3", 0], ["2027Q4", 0]]) {
+  const exposure = engine.computeTransactionEAD(termExposure, quarter);
+  assert.equal(exposure.fundedEAD, 3);
+  assert.equal(exposure.undrawnCommitment, expectedUndrawn);
+  assert.equal(exposure.undrawnEAD, expectedUndrawn * 0.4);
+  assert.equal(exposure.totalEAD, 3 + expectedUndrawn * 0.4);
+}
 const termOptions = { audit4DebtLedger: true, ocean: { refiSuccessRate: 0 }, overrides: {
   OPENAI: { financing: { mode: "manual", capacity: 30, quarterlyLimit: 7.5, annual: { 2027: { equity: 30 } } } }
 } };

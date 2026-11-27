@@ -951,3 +951,7 @@ The legacy lifecycle keeps facilities visible while a static commitment or unpai
 ### Term commitment after final maturity
 
 The post-maturity draw gate also applies to term facilities. In a solvent fixture with a $5B commitment, $3B is drawn before expiry and repaid at maturity. The remaining $2B is preserved as unused nominal commitment, with zero drawable availability. A $2B request in the next quarter produces zero cash receipts, zero loan principal and no lender exposure. Before the fix the same request drew the remaining $2B. The extension fixture checks the amended quarter, and the separate equipment financing fixture continues to check its draw-window cutoff and per-tranche maturities. All 68 report rows reproduce without changes after this correction.
+
+### Static credit exposure at and after maturity
+
+The static transaction exposure calculation previously continued converting an unused commitment into EAD after its scheduled maturity. In the independent fixture, $3B funded principal and $2B undrawn commitment with a 40% conversion factor give $3.8B EAD before maturity. At and after maturity static EAD retains the $3B funded balance only. A dated repayment must establish any reduction in that balance. The dynamic ledger continues to record scenario repayments and new balances separately. Explicit commitment cutoffs keep their existing treatment. Data validation, the 48 legacy cases, and 68 report rows reproduce.
