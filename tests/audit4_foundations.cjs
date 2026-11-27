@@ -6,6 +6,12 @@ const transactions = require("../data/transactions.json");
 const curve = { mode: "curve", base: { equity: 10 }, initialGrowth: 0.8, annualDecline: 0.2 };
 assert.equal(engine.financingForecast(curve, 2027).amounts.equity, 18);
 assert.equal(engine.financingForecast(curve, 2028).amounts.equity, 28.8);
+// With a 20 percentage point annual decline, positive growth still
+// increases the amount, zero growth holds it flat, and negative growth reduces it.
+const taper = { ...curve, initialGrowth: 0.2, minimumGrowth: -0.2 };
+assert.equal(engine.financingForecast(taper, 2027).amounts.equity, 12);
+assert.equal(engine.financingForecast(taper, 2028).amounts.equity, 12);
+assert.ok(Math.abs(engine.financingForecast(taper, 2029).amounts.equity - 9.6) < 1e-12);
 assert.equal(engine.financingForecast({ ...curve, curve: "historical" }, 2027).status, "Insufficient Historical Data");
 assert.deepEqual(engine.financingForecast({ mode: "curve", curve: "historical", history: {
   2025: { dataType: "Actual", fullYear: true, amounts: { equity: 20 } },
@@ -289,6 +295,15 @@ assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments),
 assert.equal(usd(oracleFiling.ocf - oracleFiling.capex), -5.396);
 assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments - oracleFiling.capex), -16.759);
 assert.equal(usd(oracleFiling.currentBorrowings + oracleFiling.nonCurrentBorrowings), 125.337);
+const metaHistorical = entities.find(entity => entity.id === "META").financials["2026Q3"];
+assert.equal(usd(metaHistorical.cash + metaHistorical.restrictedCash), 24.354);
+assert.equal(metaHistorical.debt, usd(2.747 + 80.922));
+assert.equal(metaHistorical.fcf, usd((96.873 - 64.088) - (83.055 - 49.113)));
+assert.equal(metaHistorical.operatingLeaseLiability, usd(2.522 + 28.651));
+assert.equal(metaHistorical.offBalanceLeases, 355.73);
+assert.equal(metaHistorical.offBalanceGuarantees, 41.493);
+assert.equal(metaHistorical.rpo, null);
+assert.equal(metaHistorical.undrawnCredit, null);
 const amazonHistorical = entities.find(entity => entity.id === "AMZN").financials["2026Q3"];
 assert.equal(amazonHistorical.cash + amazonHistorical.restrictedCash, 58.714);
 assert.equal(amazonHistorical.shortTermDebt, usd(6.827 + 0.380));
