@@ -120,6 +120,11 @@ async function checkPage(browser, url) {
     const weightedEntity = Object.keys(ledger.simulationOptions.overrides)
       .find(id => ledger.simulationOptions.overrides[id].financing?.quarterWeights?.[1] === 0);
     assert.ok(weightedEntity);
+    const gpuAcquisition = ledger.quarters.find(row => row.quarter === "2027Q1").gpuCashSchedules[weightedEntity];
+    assert.equal(gpuAcquisition.purchasesIncludedInBaseCapex, 0.1);
+    assert.deepEqual(gpuAcquisition.closingCohorts, [{ acquired: "2027Q1", cost: 0.1 }]);
+    const gpuRefresh = ledger.quarters.find(row => row.quarter === "2034Q1").gpuCashSchedules[weightedEntity];
+    assert.equal(Number((gpuRefresh.replacementCapex - gpuRefresh.disposalProceeds).toFixed(4)), gpuRefresh.netReplacementCash);
     const totalCashFinancing = ledger.quarters.filter(row => row.quarter.startsWith("2027"))
       .reduce((sum, row) => sum + row.financingCashSources[weightedEntity].total, 0);
     assert.equal(shownAllFinancing, totalCashFinancing.toFixed(2));

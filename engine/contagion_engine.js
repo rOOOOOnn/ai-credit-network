@@ -1515,6 +1515,7 @@
           leasePrincipal,
           leaseInterestAdjustment,
           gpuPurchases,
+          gpuClosingCohorts: fleetConfig ? closingFleet : null,
           pledgedGpuValues,
           gpuCollateralValue: fleetOriginalCost > 0 ? money(fleetCollateral) : null,
           gpuAccountingLife: fleetConfig?.accountingLife ?? null,

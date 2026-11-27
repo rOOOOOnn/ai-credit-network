@@ -1835,6 +1835,7 @@
           leasePrincipal,
           leaseInterestAdjustment,
           gpuPurchases,
+          gpuClosingCohorts: fleetConfig ? closingFleet : null,
           pledgedGpuValues,
           gpuCollateralValue: fleetOriginalCost > 0 ? money(fleetCollateral) : null,
           gpuAccountingLife: fleetConfig?.accountingLife ?? null,
@@ -10379,8 +10380,19 @@ const I18N = {
             principalCashPaid: company.leasePrincipal,
             incrementalOperatingCashPaid: company.leaseSchedule.ocfCashPayment
           }]));
+        const gpuCashSchedules = Object.fromEntries(Object.entries(row.entities)
+          .filter(([, company]) => company.gpuClosingCohorts !== null && company.gpuClosingCohorts !== undefined)
+          .map(([id, company]) => [id, {
+            closingCohorts: company.gpuClosingCohorts,
+            purchasesIncludedInBaseCapex: company.gpuPurchases,
+            replacementCapex: company.replacementCapex,
+            disposalProceeds: company.disposalProceeds,
+            netReplacementCash: company.netGpuReplacementCashOutflow,
+            collateralValue: company.gpuCollateralValue,
+            pledgedCollateralByFacility: company.pledgedGpuValues
+          }]));
         return [{ quarter, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation,
-          operationalRevenueLedger, operatingCashBridges, financingCashSources, leaseCashSchedules }];
+          operationalRevenueLedger, operatingCashBridges, financingCashSources, leaseCashSchedules, gpuCashSchedules }];
       });
       triggerDownload("audit4_quarterly_credit_ledger.json", JSON.stringify({
         version: state.version,
