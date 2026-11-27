@@ -394,7 +394,7 @@
         if (tx.remainingCommitment != null && !isRevolvingFacility(tx)) return nonnegative(tx.remainingCommitment);
         if (tx.totalCommitment == null || tx.amountDrawn == null) return null;
         const used = isRevolvingFacility(tx)
-          ? principalByFacility[index] + nonnegative(tx.lettersOfCredit) : tx.amountDrawn;
+          ? principalByFacility[index] + nonnegative(tx.lettersOfCredit) + nonnegative(tx.commercialPaperBackstop) : tx.amountDrawn;
         return Math.max(0, tx.totalCommitment - used);
       });
       const undrawnCommitment = undrawnByFacility.includes(null) ? null : undrawnByFacility.length
@@ -1205,12 +1205,13 @@
           remainingCommitment, cumulativeDrawdown, lettersOfCredit: tx.lettersOfCredit ?? null,
           canDraw,
           undrawnCommitment: canDraw
-            ? isRevolver ? money(Math.max(0, nonnegative(tx.totalCommitment) - beginning - nonnegative(tx.lettersOfCredit))) : remainingCommitment
+            ? isRevolver ? money(Math.max(0, nonnegative(tx.totalCommitment) - beginning - nonnegative(tx.lettersOfCredit) - nonnegative(tx.commercialPaperBackstop))) : remainingCommitment
             : 0,
           defaultExposure: previous?.defaultExposure ?? 0,
           defaulted: previous?.defaulted ?? false,
           accruedInterest: 0
         };
+        if (tx.commercialPaperBackstop != null) row.commercialPaperBackstop = tx.commercialPaperBackstop;
         if (tx.lettersOfCreditDataType) row.lettersOfCreditDataType = tx.lettersOfCreditDataType;
         if (tx.originalMaturityQuarter) {
           row.originalMaturityQuarter = tx.originalMaturityQuarter;

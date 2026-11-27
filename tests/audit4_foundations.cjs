@@ -1557,6 +1557,17 @@ assert.equal(vertivFacility("2026Q4").endingOutstanding, 0);
 assert.equal(vertivFacility("2030Q4").undrawnCommitment, 2.484);
 assert.equal(vertivFacility("2031Q1").undrawnCommitment, 0);
 assert.equal(vertivCredit["2031Q2"].entities.VERTIV.undrawnCredit, 0);
+const cegIssuer = entities.find(entity => entity.id === "CEG");
+const cegRcfTimeline = engine.runSimulation([cegIssuer], [], { audit4Contracts: true, forecastThrough: 2031,
+  overrides: { CEG: { ocfMarginBeforeFinancing: 0.9, capex: 0 } } }).timeline;
+const cegRcf = q => cegRcfTimeline[q].financingLedger.CEG_RCF_DISCLOSED;
+assert.equal(cegRcf("2026Q4")?.undrawnCommitment, 4.787);
+assert.equal(cegRcf("2026Q4").lettersOfCredit, 0.121);
+assert.equal(cegRcf("2026Q4").commercialPaperBackstop, 2.092);
+assert.equal(cegRcf("2026Q4").beginningOutstanding, 0);
+assert.equal(cegRcf("2030Q2").undrawnCommitment, 4.787);
+assert.equal(cegRcf("2030Q3").undrawnCommitment, 0);
+assert.equal(cegRcfTimeline["2030Q4"].entities.CEG.undrawnCredit, 0);
 const alphabetEvidence = issuerBalance("GOOGL");
 assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
   alphabetEvidence.hedgeFairValueReduction), 126.118);

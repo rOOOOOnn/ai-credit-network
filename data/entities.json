@@ -3644,6 +3644,7 @@
   },
   {
     "id": "CEG",
+    "audit4Facilities": [{"id":"CEG_RCF_DISCLOSED","type":"Direct Loan","payer":null,"receiver":"CEG","announcedDate":"2026-11-06","startQ":"2026Q1","endQ":"2030Q3","totalCommitment":7,"principalOutstanding":0,"principalAsOfQuarter":"2026Q3","amountDrawn":null,"amountRepaid":null,"remainingCommitment":4.787,"lettersOfCredit":0.121,"commercialPaperBackstop":2.092,"facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1868275/000186827526000119/ceg-20260930.htm","exposureBasis":"Reported corporate revolver net of letters of credit and commercial paper backstop; lender shares unavailable"}],
     "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":4.979,"capex":3.461,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1868275/000186827526000119/ceg-20260930.htm"},"sixMonths":{"ocf":1.553,"capex":2.521,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1868275/000186827526000104/ceg-20260630.htm"}},
     "name": "Constellation Energy Corp.",
     "ticker": "CEG",
