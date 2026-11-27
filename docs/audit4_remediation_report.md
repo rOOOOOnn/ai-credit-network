@@ -1275,3 +1275,7 @@ Core Scientific reports $0.1809B of CapEx funded by CoreWeave in both the six-mo
 ### Replaying downloaded browser scenarios
 
 The end-to-end browser check downloads each page's actual audit ledger and replays it using only the embedded entities, transactions and simulation options. It compares each exported quarter for OpenAI, Anthropic and CoreWeave against the standalone engine, including cash, funding gap, cash runway, distress state and FCF. It also compares the three company summaries, including first default and FCF break-even. This checks export reproducibility alongside the independent numerical regression fixtures and the common-input financing report.
+
+### Quarterly liquidity checks across integrated stresses
+
+The A–G regression now recomputes runway from cash above the minimum and negative FCF, and computes required financing after undrawn credit separately from the gross funding gap. It scans each eligible borrower path for the first modeled default and first nonnegative FCF and checks both dates against the engine summary. The shorter stress table only reports a first default if it occurs by that table's reporting cutoff. Both stress tables retain their published values.

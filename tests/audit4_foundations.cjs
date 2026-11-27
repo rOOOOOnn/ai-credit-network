@@ -990,6 +990,7 @@ const extendedStressReport = process.argv.includes("--extended-stress-markdown")
 const stressCutoff = extendedStressReport ? "2031Q4" : "2028Q4";
 for (const [name, entity, overrides, options] of cases) {
   const result = engine.runSimulation(entities, transactions, { audit4Contracts: true, forecastThrough: 2031, overrides, ...options });
+  const milestones = new Map();
   for (const quarter of Object.values(result.timeline)) {
     if (!quarter.financingLedger) continue;
     for (const row of Object.values(quarter.financingLedger)) {
@@ -1010,11 +1011,26 @@ for (const [name, entity, overrides, options] of cases) {
       assert.ok(Math.abs(state.cash - cash) <= 0.002, `${label} cash: ${state.cash} vs ${cash}`);
       const minimum = overrides[id]?.minCash ?? entities.find(row => row.id === id).defaults?.minCash ?? 1;
       assert.equal(state.fundingGap, usd(Math.max(0, minimum - state.cash)), label);
+      const burn = Math.max(0, state.capex - state.ocf);
+      assert.equal(state.cashRunwayMonths, burn > 0 ? usd(Math.max(0, state.cash - minimum) / (burn / 3)) : null,
+        label + " cash runway");
+      const credit = state.undrawnCredit ?? 0;
+      assert.equal(state.requiredFinancing, usd(Math.max(0, minimum - (state.cash + credit))),
+        label + " financing required after undrawn credit");
+      const summary = milestones.get(id) ?? { defaultQuarter: null, breakEvenQuarter: null };
+      if (state.distressLevel === 3) summary.defaultQuarter ??= quarter.quarter;
+      if (state.ocf >= state.capex) summary.breakEvenQuarter ??= quarter.quarter;
+      milestones.set(id, summary);
     }
+  }
+  for (const [id, summary] of milestones) {
+    assert.deepEqual(result.scenarioSummary[id], summary, name + " " + id + " first forecast milestones");
   }
   assert.ok(result.timeline["2031Q4"]?.financingLedger, name + " full stress horizon");
   const end = result.timeline[stressCutoff].entities[entity];
-  auditedStressResults.push([name, entity, end.cash, end.fcf, end.fundingGap, result.scenarioSummary[entity].defaultQuarter]);
+  const firstDefault = result.scenarioSummary[entity].defaultQuarter;
+  auditedStressResults.push([name, entity, end.cash, end.fcf, end.fundingGap,
+    firstDefault && firstDefault <= stressCutoff ? firstDefault : null]);
 }
 if (extendedStressReport || process.argv.includes("--audited-stress-markdown")) {
   console.log(`| Case | Entity | ${stressCutoff} cash | ${stressCutoff} FCF | Funding gap | First model default |`);
