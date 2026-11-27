@@ -6,17 +6,18 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const report = readFileSync(path.join(root, "docs/audit4_remediation_report.md"), "utf8");
 const replays = [
-  ["replay_audit4_financing.cjs", [], "## Reproducible comparison on the current data"],
-  ["replay_audit4_financing.cjs", ["2031Q4"], "### Companion Audit 4 archive review"],
-  ["replay_audit4_gpu.cjs", [], "### Full-engine 3–7 year GPU sensitivity"],
-  ["replay_audit4_sustainability.cjs", [], "### Financing sustainability across five comparable stresses"]
+  ["scripts/replay_audit4_financing.cjs", [], "## Reproducible comparison on the current data"],
+  ["scripts/replay_audit4_financing.cjs", ["2031Q4"], "### Companion Audit 4 archive review"],
+  ["scripts/replay_audit4_gpu.cjs", [], "### Full-engine 3–7 year GPU sensitivity"],
+  ["scripts/replay_audit4_sustainability.cjs", [], "### Financing sustainability across five comparable stresses"],
+  ["tests/audit4_foundations.cjs", ["--audited-stress-markdown"], "### A–G stress tests on the audited profile"]
 ];
 
 for (const [script, args, heading] of replays) {
-  const actual = execFileSync(process.execPath, [path.join(root, "scripts", script), ...args], {
+  const actual = execFileSync(process.execPath, [path.join(root, script), ...args], {
     cwd: root,
     encoding: "utf8"
-  }).trim().split(/\r?\n/);
+  }).split(/\r?\n/).filter(line => line.startsWith("|"));
   const start = report.indexOf(heading);
   assert.notEqual(start, -1, heading + " missing");
   const table = report.slice(start).match(/^(?:\|[^\r\n]*\r?\n)+/m);

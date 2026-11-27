@@ -758,7 +758,16 @@ for (const [name, entity, overrides, options] of cases) {
   const end = result.timeline["2028Q4"].entities[entity];
   auditedStressResults.push([name, entity, end.cash, end.fcf, end.fundingGap, result.scenarioSummary[entity].defaultQuarter]);
 }
-console.table(auditedStressResults);
+if (process.argv.includes("--audited-stress-markdown")) {
+  console.log("| Case | Entity | 2028Q4 cash | 2028Q4 FCF | Funding gap | First model default |");
+  console.log("| --- | --- | ---: | ---: | ---: | --- |");
+  for (const [name, id, cash, fcf, gap, defaultQuarter] of auditedStressResults) {
+    const company = { OPENAI: "OpenAI", ANTHROPIC: "Anthropic", CRWV: "CoreWeave", ORCL: "Oracle" }[id];
+    console.log("| " + [name, company, cash, fcf, gap, defaultQuarter ?? "—"].join(" | ") + " |");
+  }
+} else {
+  console.table(auditedStressResults);
+}
 const deferralRows = q => interrupted.timeline[q].operationalRevenueLedger.filter(row => row.customer === "CRWV");
 const openingDelay = deferralRows("2026Q4").reduce((sum, row) => sum + row.added, 0);
 assert.equal(usd(openingDelay), crwv("2026Q4").operationalRevDelay);
