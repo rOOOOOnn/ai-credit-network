@@ -149,6 +149,8 @@ assert.equal(purchased.gpuPurchases, 2);
 assert.equal(purchased.capex, 4);
 assert.equal(replaced.replacementCapex, 1);
 assert.equal(replaced.disposalProceeds, 0.25);
+assert.equal(replaced.gpuNetBookValueDisposed, 0.5);
+assert.equal(replaced.gpuDisposalGainLoss, -0.25);
 assert.equal(replaced.gpuCollateralValue, 0.5);
 assert.equal(replaced.fcf, usd(replaced.ocf - replaced.capex));
 console.log("Audit 4 RCF, operational recovery, contract phase and GPU cohort tests passed");
@@ -1233,3 +1235,25 @@ assert.equal(engine.reconcileParentSpvDebt(entities, transactions, "2025Q4")
   .find(row => row.spvId === "SPV_CRWV8").spvFundedDebt, null);
 assert.equal(usd(coreWeaveConsolidation.spvFundedDebt - juneTx26.spvFundedDebt), 1.746);
 assert.equal(engine.computeTransactionEAD(transactions.find(tx => tx.id === "TX26"), "2026Q2").fundedEAD, 2.837);
+
+const spvLimitFixture = [{ id: "SPV_TEST", isSPV: true, financials: {} }];
+const repaidTermFixture = { id: "TEST_TERM", receiver: "SPV_TEST", type: "Direct Loan",
+  totalCommitment: 10, amountDrawn: 8, amountRepaid: 3 };
+const termReconciliation = engine.reconcileParentSpvDebt(spvLimitFixture, [repaidTermFixture])[0];
+assert.equal(termReconciliation.spvFundedDebt, 5);
+assert.equal(termReconciliation.spvUndrawnCommitment, 2);
+
+assert.equal(engine.reconcileParentSpvDebt(spvLimitFixture, [{
+  ...repaidTermFixture, amountDrawn: null, principalOutstanding: 5, principalAsOfQuarter: "2026Q3"
+}])[0].spvUndrawnCommitment, null);
+assert.equal(engine.reconcileParentSpvDebt(spvLimitFixture, [{
+  ...repaidTermFixture, facilityKind: "Revolver", lettersOfCredit: 1
+}])[0].spvUndrawnCommitment, 4);
+
+const gpuSaleWithoutAccountingLife = engine.fleetRefresh(
+  [{ acquired: "2023Q1", cost: 4 }], "2027Q1",
+  { economicLife: 4, replacementRatio: 0.5, residualValue: 0.5 }
+);
+assert.equal(gpuSaleWithoutAccountingLife.disposalProceeds, 1);
+assert.equal(gpuSaleWithoutAccountingLife.netBookValueDisposed, null);
+assert.equal(gpuSaleWithoutAccountingLife.disposalGainLoss, null);

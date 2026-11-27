@@ -690,8 +690,17 @@
       const fundedDebt = principalByFacility.includes(null) ? null : principalByFacility.length
         ? Number(principalByFacility.reduce((sum, principal) => sum + principal, 0).toFixed(3))
         : Number(sFin.fundedDebt ?? sFin.debt ?? 0);
-      const undrawnCommitment = spvDebtTxs.some(t => t.principalOutstanding != null && t.remainingCommitment == null)
-        ? null : Number(Math.max(0, facilityCommitment - fundedDebt).toFixed(3));
+      const undrawnByFacility = spvDebtTxs.map((tx, index) => {
+        if (tx.principalOutstanding != null && compareQuarter(quarter, tx.principalAsOfQuarter) < 0) return null;
+        if (tx.remainingCommitment != null && !isRevolvingFacility(tx)) return nonnegative(tx.remainingCommitment);
+        if (tx.totalCommitment == null || tx.amountDrawn == null) return null;
+        const used = isRevolvingFacility(tx)
+          ? principalByFacility[index] + nonnegative(tx.lettersOfCredit) : tx.amountDrawn;
+        return Math.max(0, tx.totalCommitment - used);
+      });
+      const undrawnCommitment = undrawnByFacility.includes(null) ? null : undrawnByFacility.length
+        ? Number(undrawnByFacility.reduce((sum, remaining) => sum + remaining, 0).toFixed(3))
+        : sFin.undrawnCommitment ?? null;
       const isConsolidated = Boolean(spv.consolidatedInParent || spv.isConsolidatedSubsidiary);
       const parentConsolidatedDebt = pFin.debt !== undefined && pFin.debt !== null ? Number(pFin.debt) : null;
       const parentRecourseDebt = pFin.recourseDebt !== undefined && pFin.recourseDebt !== null ? Number(pFin.recourseDebt) : null;
@@ -1017,6 +1026,8 @@
   function fleetRefresh(cohorts, quarter, config) {
     let replacementCapex = 0;
     let disposalProceeds = 0;
+    let disposedCost = 0;
+    let disposedBookValue = 0;
     const next = [];
     for (const cohort of cohorts) {
       const age = parseQuarterNumber(quarter) - parseQuarterNumber(cohort.acquired);
@@ -1028,11 +1039,21 @@
       const replaced = cost * share;
       const newCost = replaced * Math.max(0, 1 - (config.priceDecline ?? 0));
       replacementCapex += newCost;
+      disposedCost += replaced;
+      if (config.accountingLife > 0) {
+        disposedBookValue += replaced * (1 - Math.min(1, Math.max(0, age) / (4 * config.accountingLife)));
+      }
       disposalProceeds += replaced * Math.min(1, nonnegative(residual));
       if (cost > replaced) next.push({ ...cohort, cost: cost - replaced });
       if (newCost > 0) next.push({ acquired: quarter, cost: newCost });
     }
-    return { cohorts: next, replacementCapex: money(replacementCapex), disposalProceeds: money(disposalProceeds) };
+    return {
+      cohorts: next,
+      replacementCapex: money(replacementCapex),
+      disposalProceeds: money(disposalProceeds),
+      netBookValueDisposed: disposedCost > 0 && !(config.accountingLife > 0) ? null : money(disposedBookValue),
+      disposalGainLoss: disposedCost > 0 && !(config.accountingLife > 0) ? null : money(disposalProceeds - disposedBookValue)
+    };
   }
 
   const ORACLE_LEASE_SCENARIO = [2027, 2028, 2029].map(year => ({
@@ -1844,6 +1865,8 @@
           financingForecast: funding ? { ...funding, fundedDebt: fundedScenarioDebt, remainingCapacity: financingRemaining[e.id], scheduledEquity: scheduledEq, scheduledEquityStatus, fundedRollover, rcfDraw } : null,
           replacementCapex: refresh.replacementCapex,
           disposalProceeds: refresh.disposalProceeds,
+          gpuNetBookValueDisposed: refresh.netBookValueDisposed ?? null,
+          gpuDisposalGainLoss: refresh.disposalGainLoss ?? null,
           netGpuReplacementCashOutflow: money(refresh.replacementCapex - refresh.disposalProceeds),
           gpuFleetAgeYears,
           gpuUtilizationRevenueAdjustment,
@@ -10306,6 +10329,8 @@ const I18N = {
             purchasesIncludedInBaseCapex: company.gpuPurchases,
             replacementCapex: company.replacementCapex,
             disposalProceeds: company.disposalProceeds,
+            netBookValueDisposed: company.gpuNetBookValueDisposed,
+            disposalGainLoss: company.gpuDisposalGainLoss,
             netReplacementCash: company.netGpuReplacementCashOutflow,
             collateralValue: company.gpuCollateralValue,
             pledgedCollateralByFacility: company.pledgedGpuValues
