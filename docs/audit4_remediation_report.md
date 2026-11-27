@@ -562,7 +562,11 @@ CoreWeave identifies exactly three facilities in its September aggregate undrawn
 | DDTL 5.5 nominal headroom ceiling | 2.600 capacity less 1.555 outstanding | 1.045 |
 | TX26 implied minimum | 4.899 less at most 1.045 available from DDTL 5.5 | 3.854 |
 | TX26 nominal headroom ceiling | 8.500 capacity less 4.583 outstanding | 3.917 |
+| TX26 conditional cumulative funding range | At least outstanding principal, at most 8.500 less 3.854 | 4.583 to 4.646 |
+| TX26 conditional cumulative principal repaid range | Cumulative funding less 4.583 outstanding | 0 to 0.063 |
 | TX26 standalone carrying amount arithmetic range | 4.583 principal less zero to 0.080 in combined non-recourse unamortized costs | 4.503 to 4.583 |
+
+Section 2.06 of the executed agreement confirms that each draw reduces commitments dollar for dollar and permits permanent cancellations. Consequently, with unchanged gross facility capacity and no principal uplift, cumulative draws plus separately cancelled commitments plus remaining availability cannot exceed $8.500B. The lower availability bound implies cumulative draws of at most $4.646B. At least $4.583B was funded to support reported outstanding principal. The difference bounds cumulative repayment at $0.063B. Any cancellation or additional availability constraint can tighten the upper bound. These are conditional arithmetic limits at the reported precision. Section 2.07 identifies the agent register as the record required to resolve exact loans and payments. [Executed credit agreement, sections 2.06–2.07](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000129/ex1011.htm).
 
 The availability range assumes amounts use the same September 30 cutoff and that repayments do not create capacity in either delayed-draw term loan. It is a derived boundary on reported availability, with actual future draws still subject to conditions. The $0.080B of unamortized costs is shared across TX26 and other non-recourse financing in the filing. Exact cost allocation, cumulative funding and principal previously repaid remain unavailable. The ledger continues to leave standalone carrying value and available commitment blank. [CoreWeave September 10-Q, Note 10 and Risks Related to Our Indebtedness](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm).
 
