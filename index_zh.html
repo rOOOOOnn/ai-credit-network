@@ -1557,17 +1557,27 @@
         const fleetOriginalCost = openingFleet.reduce((sum, cohort) => sum + nonnegative(cohort.cost), 0);
         const gpuUsageMaintenanceCash = money(fleetOriginalCost * gpuUtilization *
           nonnegative(ov?.gpuRefresh?.annualUsageMaintenanceRate) / 4);
-        const effectiveHaircut = fleetOriginalCost > 0
-          ? 1 - (1 - gpuCollateralHaircut) * fleetCollateral / fleetOriginalCost : gpuCollateralHaircut;
-        if (effectiveHaircut > 0 && gpuDebtTxs.length > 0) {
-          const baseLtv = 0.65;
-          const stressedLtv = baseLtv / Math.max(0.2, 1 - effectiveHaircut);
-          if (stressedLtv > 0.85) {
-            const gpuDrawn = gpuDebtTxs.reduce((s, tx) => s + loanPrincipal(tx), 0);
-            gpuMarginCall = Number((gpuDrawn * 0.12 * effectiveHaircut).toFixed(4));
-            gpuRefiPenalty = Math.max(0.2, 1 - effectiveHaircut * 1.2);
+        const attributedPledges = new Set((ov?.gpuRefresh?.cohorts ?? []).map(cohort => cohort.pledgedTo));
+        const hasAttributedPledge = gpuDebtTxs.some(tx => attributedPledges.has(tx.id));
+        for (const tx of gpuDebtTxs) {
+          const principal = loanPrincipal(tx);
+          if (principal <= 0) continue;
+          let effectiveHaircut = gpuCollateralHaircut;
+          if (attributedPledges.has(tx.id)) {
+            const pledged = openingFleet.filter(cohort => cohort.pledgedTo === tx.id);
+            const pledgedCost = pledged.reduce((sum, cohort) => sum + nonnegative(cohort.cost), 0);
+            const pledgedValue = pledged.reduce((sum, cohort) => sum + valueGpuCohort(cohort), 0);
+            effectiveHaircut = pledgedCost > 0
+              ? 1 - (1 - gpuCollateralHaircut) * pledgedValue / pledgedCost : 1;
+          } else if (!hasAttributedPledge && fleetOriginalCost > 0) {
+            effectiveHaircut = 1 - (1 - gpuCollateralHaircut) * fleetCollateral / fleetOriginalCost;
+          }
+          if (effectiveHaircut > 0 && 0.65 / Math.max(0.2, 1 - effectiveHaircut) > 0.85) {
+            gpuMarginCall += principal * 0.12 * effectiveHaircut;
+            gpuRefiPenalty = Math.min(gpuRefiPenalty, Math.max(0.2, 1 - effectiveHaircut * 1.2));
           }
         }
+        gpuMarginCall = money(gpuMarginCall);
 
         const availFactor = Math.max(0, Math.min(1, ocean.fundingAvailability / 100));
         const secRefiPenalty = secondarySpreadBpsById[e.id] ? Math.max(0.70, 1 - (secondarySpreadBpsById[e.id] / 1000)) : 1.0;

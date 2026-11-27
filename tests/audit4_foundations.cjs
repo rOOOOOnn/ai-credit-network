@@ -558,7 +558,7 @@ assert.equal(usd(physicalReference.fcf - physicalQuarter.fcf), 18);
 const pledgedGpu = engine.runSimulation(entities, transactions, {
   audit4Contracts: true, forcedDefaults: ["CRWV"],
   overrides: { CRWV: { gpuRefresh: {
-    cohorts: [{ acquired: "2024Q4", cost: 4, pledgedTo: "TX27" }, { acquired: "2024Q4", cost: 50 }],
+    cohorts: [{ acquired: "2024Q4", cost: 4, pledgedTo: "TX27" }, { acquired: "2026Q4", cost: 50 }],
     economicLife: 4, residualValue: 0.2
   } } }
 });
@@ -1294,3 +1294,4 @@ assert.equal(soldPledge.timeline["2027Q1"].entities.CRWV.pledgedGpuValues.TX27, 
 const soldPledgeDefault = soldPledge.creditEvents.find(event => event.txId === "TX27");
 assert.equal(soldPledgeDefault.collateralRecovery, 0);
 assert.equal(soldPledgeDefault.recognizedLoss, 4.5);
+assert.equal(pledgedGpu.timeline["2026Q4"].entities.CRWV.gpuMarginCall, 0.48);
