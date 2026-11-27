@@ -1399,6 +1399,19 @@ assert.equal(amazonCredit["2027Q4"].financingLedger.AMZN_RCF_2026.canDraw, false
 assert.equal(amazonCredit["2026Q4"].financingLedger.AMZN_TERM_2026.beginningOutstanding, 17.5);
 assert.equal(amazonCredit["2026Q4"].financingLedger.AMZN_TERM_2026.newDrawdown, 0);
 assert.equal(amazonCredit["2026Q4"].financingLedger.AMZN_TERM_2026.lender, null);
+const alphabetBorrower = entities.find(entity => entity.id === "GOOGL");
+const alphabetCredit = engine.runSimulation([alphabetBorrower], [], {
+  audit4Contracts: true, forecastThrough: 2030,
+  overrides: { GOOGL: { ocfMarginBeforeFinancing: 0.9, capex: 0 } }
+}).timeline;
+for (const [quarter, shortCapacity, longCapacity] of [
+  ["2026Q4", 4, 6], ["2027Q2", 0, 6], ["2030Q1", 0, 6], ["2030Q2", 0, 0]
+]) {
+  const group = alphabetCredit[quarter].financingLedger;
+  assert.equal(group.GOOGL_RCF_2027.undrawnCommitment, shortCapacity);
+  assert.equal(group.GOOGL_RCF_2030.undrawnCommitment, longCapacity);
+  assert.equal(group.GOOGL_RCF_2027.lender, null);
+}
 const amazonEquipment = entities.find(entity => entity.id === "AMZN");
 const equipmentId = "AMZN_EQUIPMENT_DDTL";
 const equipmentBorrower = {
