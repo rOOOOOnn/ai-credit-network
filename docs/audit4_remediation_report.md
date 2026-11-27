@@ -311,7 +311,7 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Continuation | CRWV | Curve | -1.1763 | 3.1763 | 0 | 2028Q4 | — |
 | Remediated | CRWV | Curve | 3.3442 | 0 | 1.5438 | — | — |
 | Continuation | CRWV | Freeze | -31.6668 | 33.6668 | 0 | 2027Q1 | — |
-| Remediated | CRWV | Freeze | -26.0234 | 28.0234 | 0 | 2027Q1 | — |
+| Remediated | CRWV | Freeze | -26.2414 | 28.2414 | 0 | 2027Q1 | — |
 
 OpenAI's manual and curve cash improve while their first default quarters stay in 2028Q2 and 2028Q3. In scenario freeze, cash worsens by $1.9062B and first default stays in 2027Q4. These are whole-profile differences that include changes to counterparties and contagion. Anthropic's higher opening cash and the revised estimated financing proceeds increase its liquidity in all three paths. Scenario freeze still lets the separately modeled closing proceeds enter. CoreWeave's manual and curve no longer trigger default through 2028, while freeze still triggers in 2027Q1. Its opening cash-flow and facility corrections change financial capacity and network outcomes. None of the CoreWeave or OpenAI paths reaches modeled FCF break-even. These comparisons do not isolate individual changes or establish underlying private-company forecast inputs.
 
@@ -332,7 +332,7 @@ Run `node scripts/replay_audit4_gpu.cjs`. Each case assigns the selected company
 | CRWV | 5 | Reference | 2031Q4 | 4.6991 | 0 | -12.5409 | 14.5409 | 2031Q4 |
 | CRWV | 6 | Reference | 2032Q4 | 8.4997 | 0 | -5.7333 | 7.7333 | 2032Q2 |
 | CRWV | 7 | Reference | 2033Q4 | 10.5559 | 0 | -2.2371 | 4.2371 | 2032Q3 |
-| CRWV | 4 | Combined stress | 2030Q4 | -83.7564 | 85.7564 | -138.9683 | 140.9683 | 2027Q1 |
+| CRWV | 4 | Combined stress | 2030Q4 | -83.9787 | 85.9787 | -139.2652 | 141.2652 | 2027Q1 |
 | OPENAI | 3 | Reference | 2029Q4 | 47.3241 | 0 | 27.1594 | 0 | — |
 | OPENAI | 4 | Reference | 2030Q4 | 50.9129 | 0 | 27.9124 | 0 | — |
 | OPENAI | 5 | Reference | 2031Q4 | 52.6629 | 0 | 29.0479 | 0 | — |
@@ -428,7 +428,7 @@ The original A–G tests retained the legacy profile as a regression. The same i
 | --- | --- | ---: | ---: | ---: | --- |
 | A | OpenAI | -64.6984 | -13.3109 | 74.6984 | 2027Q4 |
 | B | Anthropic | 104.3167 | -0.8852 | 0 | — |
-| C | CoreWeave | -35.6765 | -3.2978 | 37.6765 | 2027Q1 |
+| C | CoreWeave | -35.8945 | -3.3009 | 37.8945 | 2027Q1 |
 | D | Oracle | -77.425 | -20.1044 | 87.425 | 2027Q4 |
 | E | CoreWeave | -34.1759 | -3.3918 | 36.1759 | 2027Q1 |
 | F | CoreWeave | -43.9279 | -4.8787 | 45.9279 | 2027Q1 |
@@ -457,15 +457,15 @@ The Base path requests $20B and $18B of annual scenario equity in 2027 and 2028.
 | Entity | Scenario | End cash | OCF | FCF | Quarterly burn | Funding dependency | Available liquidity | Runway (months) | Funding gap | Required financing | Minimum FCF revenue growth | First default | First FCF break-even |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | OPENAI | Base | -5.6028 | -6.9164 | -8.4164 | 8.4164 | 0.5347 | 0 | 0 | 15.6028 | 15.6028 | 1.2709 | 2028Q3 | — |
-| OPENAI | Revenue slowdown | -23.349 | -10.1899 | -11.6899 | 11.6899 | 0.3849 | 0 | 0 | 33.349 | 33.349 | 3.2649 | 2028Q2 | — |
-| OPENAI | Funding taper (downside) | -31.6697 | -6.5973 | -8.0973 | 8.0973 | 0.1852 | 0 | 0 | 41.6697 | 41.6697 | 1.2929 | 2027Q4 | — |
-| OPENAI | Funding freeze | -48.2369 | -6.9802 | -8.4802 | 8.4802 | 0 | 0 | 0 | 58.2369 | 58.2369 | 1.2993 | 2027Q4 | — |
-| OPENAI | Combined severe stress | -61.7018 | -10.5537 | -12.0537 | 12.0537 | 0 | 0 | 0 | 71.7018 | 71.7018 | 3.2675 | 2027Q3 | — |
+| OPENAI | Revenue slowdown | -23.6407 | -12.1642 | -13.6642 | 13.6642 | 0.3293 | 0 | 0 | 33.6407 | 33.6407 | 3.1539 | 2028Q2 | — |
+| OPENAI | Funding taper (downside) | -31.8359 | -6.9537 | -8.4537 | 8.4537 | 0.1774 | 0 | 0 | 41.8359 | 41.8359 | 1.2962 | 2027Q4 | — |
+| OPENAI | Funding freeze | -47.9045 | -6.9927 | -8.4927 | 8.4927 | 0 | 0 | 0 | 57.9045 | 57.9045 | 1.302 | 2027Q4 | — |
+| OPENAI | Combined severe stress | -61.742 | -10.5544 | -12.0544 | 12.0544 | 0 | 0 | 0 | 71.742 | 71.742 | 3.2684 | 2027Q3 | — |
 | ANTHROPIC | Base | 278.9793 | 3.1119 | 2.7119 | 0 | — | 293.9793 | — | 0 | 0 | -0.3639 | — | 2026Q4 |
-| ANTHROPIC | Revenue slowdown | 267.5634 | 0.8795 | 0.4795 | 0 | — | 282.5634 | — | 0 | 0 | -0.1563 | — | 2026Q4 |
-| ANTHROPIC | Funding taper (downside) | 258.8703 | 3.0999 | 2.6999 | 0 | — | 273.8703 | — | 0 | 0 | -0.3623 | — | 2026Q4 |
-| ANTHROPIC | Funding freeze | 240.7619 | 3.088 | 2.688 | 0 | — | 255.7619 | — | 0 | 0 | -0.3607 | — | 2026Q4 |
-| ANTHROPIC | Combined severe stress | 229.3291 | 0.8514 | 0.4514 | 0 | — | 244.3291 | — | 0 | 0 | -0.1522 | — | 2026Q4 |
+| ANTHROPIC | Revenue slowdown | 267.5329 | 0.8803 | 0.4803 | 0 | — | 282.5329 | — | 0 | 0 | -0.1564 | — | 2026Q4 |
+| ANTHROPIC | Funding taper (downside) | 258.8337 | 3.0995 | 2.6995 | 0 | — | 273.8337 | — | 0 | 0 | -0.3623 | — | 2026Q4 |
+| ANTHROPIC | Funding freeze | 240.7253 | 3.0876 | 2.6876 | 0 | — | 255.7253 | — | 0 | 0 | -0.3607 | — | 2026Q4 |
+| ANTHROPIC | Combined severe stress | 229.2987 | 0.8522 | 0.4522 | 0 | — | 244.2987 | — | 0 | 0 | -0.1523 | — | 2026Q4 |
 
 In the OpenAI paths, the modeled funding gap grows from $15.6028B in Base to $41.6697B under the Downside taper and $71.7018B under Combined severe stress. First model default advances from 2028Q3 to 2027Q3 between Base and Combined severe stress. Anthropic's strong opening liquidity and separate IPO proceeds estimate support positive ending cash in all five paths. Under Combined severe stress its quarterly FCF is $0.4514B, versus $2.7119B in Base. That result depends on the opening cash and operating assumptions. The separate no-proceeds sensitivity remains in the report. Minimum revenue growth is a local break-even calculation at existing costs and margins, not an annual growth forecast.
 
@@ -637,7 +637,7 @@ The archive's longer financing comparison was adapted to this branch. Run `node 
 | Remediated | ANTHROPIC | Freeze | 224.3391 | 0 | 146.0041 | — | 2026Q4 |
 | Remediated | CRWV | Manual | -53.5712 | 55.5712 | 0 | 2029Q2 | — |
 | Remediated | CRWV | Curve | -53.5712 | 55.5712 | 0 | 2029Q2 | — |
-| Remediated | CRWV | Freeze | -82.4767 | 84.4767 | 0 | 2027Q1 | — |
+| Remediated | CRWV | Freeze | -82.5222 | 84.5222 | 0 | 2027Q1 | — |
 
 
 ### Anthropic lease commitment independently verified
@@ -935,3 +935,7 @@ SoftBank reports that Vision Fund 2 funded $7.5B at the April closing and $22.5B
 The September 10-Q gives $180.887B face value of long-term borrowings. Subtracting $0.935B of unamortized discount and issuance costs gives $179.952B carrying value. Of that amount, $6.827B is current and $173.125B is noncurrent. The separate $0.380B short-term working-capital borrowing is classified within accrued expenses. Including it gives $180.332B of carrying borrowings, of which $7.207B is current. This bridge excludes lease liabilities and unfunded capacity.
 
 The contractual long-term debt principal-plus-interest buckets are $1.413B for the remainder of 2026, $16.566B in 2027, $19.567B in 2028, $39.185B in 2029, $12.489B in 2030 and $205.034B thereafter, totaling $294.254B. These buckets include interest and cannot be added to the model's principal maturity wall. The $17.5B term loan already drawn in September matures in September 2029 and is included in reported borrowings. It is separate from the conditional equipment borrowing modeled under the $80B supplier facility. A quarter-level principal-only schedule is still needed to allocate all other borrowings across the forecast. [Amazon September 10-Q, Notes 4 and 5](https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm).
+
+### Amazon term principal and replacement revolving maturity
+
+The audit profile now tracks the $17.5B September 2026 term loan as opening funded principal within the existing $181.267B borrower principal anchor. No new cash or debt is created at forecast opening. The lender syndicate exposure is tracked in aggregate and lender shares remain unknown. The term loan is floating rate and uses the model's scenario interest assumptions. A solvent fixture shows $17.5B outstanding through 2029Q2 and repayment of $17.5B in 2029Q3. The $15B revolving facility retains its internal identifier for existing scenarios and uses October 2031, the maturity of the October 2026 replacement. The solvent fixture confirms availability before that maturity and zero drawable capacity at the modeled maturity quarter. The forecast tables were regenerated with unchanged scenario inputs. For example, stress C now shows CoreWeave 2028Q4 cash of negative $35.8945B versus negative $35.6765B before the update, with the same first default quarter. [Amazon September 10-Q, Note 5](https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm).

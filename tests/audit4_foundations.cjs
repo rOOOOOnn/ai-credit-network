@@ -1396,7 +1396,9 @@ for (const [id, principal] of [["GOOGL", 127.485], ["AMZN", 181.267]]) {
 assert.equal(openingScope.AMZN.undrawnCredit + openingScope.AMZN.rcfDraw, 20);
 const amazonCredit = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline;
 assert.equal(amazonCredit["2027Q4"].financingLedger.AMZN_RCF_2026.canDraw, false);
-assert.equal(amazonCredit["2028Q4"].financingLedger.AMZN_RCF_2023.canDraw, false);
+assert.equal(amazonCredit["2026Q4"].financingLedger.AMZN_TERM_2026.beginningOutstanding, 17.5);
+assert.equal(amazonCredit["2026Q4"].financingLedger.AMZN_TERM_2026.newDrawdown, 0);
+assert.equal(amazonCredit["2026Q4"].financingLedger.AMZN_TERM_2026.lender, null);
 const amazonEquipment = entities.find(entity => entity.id === "AMZN");
 const equipmentId = "AMZN_EQUIPMENT_DDTL";
 const equipmentBorrower = {
@@ -1407,6 +1409,12 @@ const equipmentBorrower = {
 const equipmentOptions = { audit4Contracts: true, forecastThrough: 2034,
   overrides: { AMZN: { ocfMarginBeforeFinancing: 0.5, refiSuccess: 0 } } };
 const withoutEquipment = engine.runSimulation([equipmentBorrower], [], equipmentOptions).timeline;
+assert.equal(withoutEquipment["2028Q4"].financingLedger.AMZN_RCF_2023.canDraw, true);
+assert.equal(withoutEquipment["2031Q3"].financingLedger.AMZN_RCF_2023.canDraw, true);
+assert.equal(withoutEquipment["2031Q4"].financingLedger.AMZN_RCF_2023.canDraw, false);
+assert.equal(withoutEquipment["2029Q2"].financingLedger.AMZN_TERM_2026.endingOutstanding, 17.5);
+assert.equal(withoutEquipment["2029Q3"].financingLedger.AMZN_TERM_2026.principalRepayment, 17.5);
+assert.equal(withoutEquipment["2029Q3"].financingLedger.AMZN_TERM_2026.endingOutstanding, 0);
 const withEquipment = engine.runSimulation([equipmentBorrower], [], { ...equipmentOptions,
   overrides: { AMZN: { ...equipmentOptions.overrides.AMZN,
     facilityDrawdowns: { [equipmentId]: { "2026Q4": 10, "2027Q1": 20, "2028Q3": 70, "2028Q4": 10 } }
