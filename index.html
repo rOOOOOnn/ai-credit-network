@@ -1943,12 +1943,17 @@
               commitment, termQuarters: 4, startQuarter: (2027 + index) + "Q2", type: "operating"
             })) : null;
         const leaseStressYears = ov?.disclosedLeaseStressYears;
-        const validLeaseStress = e.id === "ANTHROPIC" ? leaseStressYears === 10
-          : e.id === "CRWV" && [7, 17].includes(leaseStressYears);
-        const leaseStress = useAudit4Contracts && validLeaseStress && e.audit4LeaseDisclosure ? [{
-          commitment: e.audit4LeaseDisclosure.uncommencedUndiscountedPayments,
-          termQuarters: leaseStressYears * 4, startQuarter: "2026Q4", type: "operating"
-        }] : null;
+        const stressStartYears = e.audit4LeaseDisclosure?.scenarioCalendarStartYears;
+        const validLeaseStress = stressStartYears ? [10, 20].includes(leaseStressYears) :
+          e.id === "ANTHROPIC" ? leaseStressYears === 10 : e.id === "CRWV" && [7, 17].includes(leaseStressYears);
+        const leaseStress = useAudit4Contracts && validLeaseStress && e.audit4LeaseDisclosure ? (() => {
+          const [first, last] = stressStartYears ?? [2026, 2026];
+          const phases = last - first + 1;
+          return Array.from({ length: phases }, (_, index) => ({
+            commitment: e.audit4LeaseDisclosure.uncommencedUndiscountedPayments / phases,
+            termQuarters: leaseStressYears * 4, startQuarter: (first + index) + (stressStartYears ? "Q1" : "Q4"), type: "operating"
+          }));
+        })() : null;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
           : disclosedLeaseBuckets ?? leaseStress ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));
         const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);
@@ -3006,6 +3011,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "MSFT",
+    "audit4LeaseDisclosure": {"asOf":"2026-09-30","uncommencedUndiscountedPayments":364.6,"uncommencedFiscalStartYears":[2027,2034],"leaseTermYears":[1,20],"scenarioCalendarStartYears":[2027,2034],"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "audit4HardwareDisclosure": {"assetClass":"Servers and network equipment","accountingUsefulLifeRangeYears":[2,6],"fiscalYearEnd":"2026-06-30","accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"},
     "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q1","periodStart":"2026-07-01","periodEnd":"2026-09-30","calendarBucket":"2026Q3","revenue":92.279,"ocf":58,"capex":39.367,"currentBorrowings":4.391,"nonCurrentBorrowings":31.09,"accountsPayable":42.625,"propertyAndEquipmentInAccountsPayable":26.5,"operatingLeaseLiability":27.477,"financeLeaseLiability":70.973,"financeLeaseDiscountRate":0.045,"financeLeasePaymentBuckets":[{"startQuarter":"2026Q4","quarters":3,"payment":6.006},{"startQuarter":"2027Q3","quarters":4,"payment":8.163},{"startQuarter":"2028Q3","quarters":4,"payment":7.433},{"startQuarter":"2029Q3","quarters":4,"payment":7.323},{"startQuarter":"2030Q3","quarters":4,"payment":7.3}],"financeLeasePaymentsThereafter":59.021,"operatingLeaseCashPaid":1.547,"financeLeaseInterestPaid":0.769,"financeLeasePrincipalPaid":1,"noncashFinanceLeaseAcquisitions":5.192,"uncommencedLeaseCommitment":364.6,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
     "audit4Liquidity": {"asOf":"2026-09-30","cashAndEquivalents":20.281,"currentInvestments":44.228,"knownRestrictedWithinCurrentInvestments":0,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"},
@@ -3163,6 +3169,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "GOOGL",
+    "audit4LeaseDisclosure": {"asOf":"2026-09-30","uncommencedUndiscountedPayments":130.5,"uncommencedStartYears":[2026,2031],"leaseTermYears":[1,26],"scenarioCalendarStartYears":[2027,2031],"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/R13.htm"},
     "audit4BalanceSheetEvidence": {"asOf":"2026-09-30","accountsPayable":21.975,"currentPortionOfLongTermDebt":1.016,"commercialPaperOutstanding":0,"nonCurrentBorrowings":125.102,"borrowingsPrincipal":127.485,"unamortizedDiscountAndIssuanceCosts":1.11,"hedgeFairValueReduction":0.257,"nonCurrentOperatingLeaseLiability":16.815,"propertyAndEquipmentInPayablesAndAccruals":35.921,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm"},
     "audit4HardwareDisclosure": {"assetClass":"Servers and network equipment","accountingUsefulLifeYears":6,"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/goog-20251231.htm"},
     "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":127.149,"capex":131.953,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm"},"sixMonths":{"ocf":84.859,"capex":80.598,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm"}},
@@ -3664,6 +3671,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "META",
+    "audit4LeaseDisclosure": {"asOf":"2026-09-30","uncommencedUndiscountedPayments":355.73,"uncommencedStartYears":[2026,2036],"leaseTermYears":[1,30],"termLowerBoundExclusive":true,"scenarioCalendarStartYears":[2027,2036],"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},
     "audit4BalanceSheetEvidence": {"asOf":"2026-09-30","accountsPayable":19.097,"nonCurrentBorrowings":80.922,"currentPortionOfLongTermDebt":2.747,"borrowingsPrincipal":84,"unamortizedDiscountAndIssuanceCosts":0.331,"annualNotePrincipalMaturities":{"2026Remaining":0,"2027":2.75,"2028":1.5,"2029":1,"2030":5,"thereafter":73.75},"currentOperatingLeaseLiability":2.522,"nonCurrentOperatingLeaseLiability":28.651,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},
     "audit4HardwareDisclosure": {"assetClass":"Servers and network assets","accountingUsefulLifeRangeYears":[5,5.5],"accountingChangeEffective":"2025-01-01","accountingUsefulLifeOfMostAssetsYears":5.5,"reportedServerNetworkDepreciationExpense":13.36,"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/meta-20251231.htm"},
     "audit4CashFlowBridge": {"quarter":"2026Q3","nineMonths":{"ocf":96.873,"capex":83.055,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026066773/meta-20260930.htm"},"sixMonths":{"ocf":64.088,"capex":49.113,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1326801/000162828026050705/meta-20260630.htm"}},
@@ -10247,8 +10255,9 @@ const I18N = {
           ["annual", t("FY2028–31 payments, evenly allocated", "FY2028–31 \u4ed8\u6b3e\u5b63\u5ea6\u5747\u5206")]]);
       leasePreset.dataset.nvidiaLeasePreset = "";
     }
-    if (["ANTHROPIC", "CRWV"].includes(entity.id)) {
-      const terms = entity.id === "ANTHROPIC" ? [10] : [7, 17];
+    if (entity.audit4LeaseDisclosure?.scenarioCalendarStartYears || ["ANTHROPIC", "CRWV"].includes(entity.id)) {
+      const terms = entity.audit4LeaseDisclosure.scenarioCalendarStartYears ? [10, 20] :
+        entity.id === "ANTHROPIC" ? [10] : [7, 17];
       const control = setting(t("Lease stress assumption", "\u79df\u8d41\u538b\u529b\u60c5\u666f\u5047\u8bbe"),
         String(operating.disclosedLeaseStressYears ?? 0),
         value => {
@@ -10271,7 +10280,7 @@ const I18N = {
         [["off", t("Off", "\u5173\u95ed")], ["enabled", t("Use disclosed payment buckets", "\u4f7f\u7528\u62ab\u9732\u7684\u4ed8\u6b3e\u671f\u9650")]]);
       oracleFinance.dataset.oracleCommencedFinance = "";
     }
-    if (["ORCL", "NVDA", "ANTHROPIC", "CRWV"].includes(entity.id)) setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
+    if (["ORCL", "NVDA", "ANTHROPIC", "CRWV", "MSFT", "GOOGL", "META"].includes(entity.id)) setting(t("Lease delay (quarters)", "\u8d77\u79df\u5ef6\u8fdf（\u5b63\u5ea6）"),
       state.overrides[entity.id]?.leaseDelayQuarters ?? 0, value => { settings().leaseDelayQuarters = Math.max(0, Math.trunc(value)); });
     const lastYear = Number(state.simResult.allQuarters.at(-1).slice(0, 4));
     for (let year = 2027; year <= lastYear; year++) {

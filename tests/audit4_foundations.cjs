@@ -1533,3 +1533,15 @@ const oracleLeaseBaseline = engine.runSimulation(entities, transactions, { audit
 assert.equal(oracleCommenced.ocf, oracleLeaseBaseline.ocf);
 assert.equal(oracleCommenced.fcf, oracleLeaseBaseline.fcf);
 assert.equal(usd(oracleLeaseBaseline.cash - oracleCommenced.cash), 0.0798);
+const cloudLeaseStress = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: Object.fromEntries(["MSFT", "GOOGL", "META"].map(id => [id, { disclosedLeaseStressYears: 10 }]))
+});
+for (const [id, commitment, firstPayment] of [["MSFT", 364.6, 364.6 / 8 / 40],
+  ["GOOGL", 130.5, 130.5 / 5 / 40], ["META", 355.73, 355.73 / 10 / 40]]) {
+  const before = cloudLeaseStress.timeline["2026Q4"].entities[id];
+  const first = cloudLeaseStress.timeline["2027Q1"].entities[id];
+  assert.equal(before.leaseSchedule.uncommencedCommitment, commitment);
+  assert.equal(before.incrementalLeasePayment, 0);
+  assert.equal(first.incrementalLeasePayment, usd(firstPayment));
+  assert.equal(first.leaseSchedule.financePrincipal, 0);
+}

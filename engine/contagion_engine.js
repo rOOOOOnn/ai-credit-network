@@ -1623,12 +1623,17 @@
               commitment, termQuarters: 4, startQuarter: (2027 + index) + "Q2", type: "operating"
             })) : null;
         const leaseStressYears = ov?.disclosedLeaseStressYears;
-        const validLeaseStress = e.id === "ANTHROPIC" ? leaseStressYears === 10
-          : e.id === "CRWV" && [7, 17].includes(leaseStressYears);
-        const leaseStress = useAudit4Contracts && validLeaseStress && e.audit4LeaseDisclosure ? [{
-          commitment: e.audit4LeaseDisclosure.uncommencedUndiscountedPayments,
-          termQuarters: leaseStressYears * 4, startQuarter: "2026Q4", type: "operating"
-        }] : null;
+        const stressStartYears = e.audit4LeaseDisclosure?.scenarioCalendarStartYears;
+        const validLeaseStress = stressStartYears ? [10, 20].includes(leaseStressYears) :
+          e.id === "ANTHROPIC" ? leaseStressYears === 10 : e.id === "CRWV" && [7, 17].includes(leaseStressYears);
+        const leaseStress = useAudit4Contracts && validLeaseStress && e.audit4LeaseDisclosure ? (() => {
+          const [first, last] = stressStartYears ?? [2026, 2026];
+          const phases = last - first + 1;
+          return Array.from({ length: phases }, (_, index) => ({
+            commitment: e.audit4LeaseDisclosure.uncommencedUndiscountedPayments / phases,
+            termQuarters: leaseStressYears * 4, startQuarter: (first + index) + (stressStartYears ? "Q1" : "Q4"), type: "operating"
+          }));
+        })() : null;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
           : disclosedLeaseBuckets ?? leaseStress ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));
         const leaseSchedule = incrementalLeaseSchedule(tranches, q, ov?.leaseDelayQuarters ?? 0);

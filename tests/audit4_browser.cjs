@@ -271,6 +271,10 @@ async function checkPage(browser, url) {
       const disclosure = panel.locator("[data-gpu-disclosure]");
       assert.match(await disclosure.innerText(), life);
       assert.match(await disclosure.locator("a").getAttribute("href"), filing);
+      if (["MSFT", "GOOGL", "META"].includes(id)) {
+        await panel.locator("[data-disclosed-lease-stress]").selectOption("10");
+        assert.equal(JSON.parse(await scenario.inputValue()).disclosedLeaseStressYears, 10);
+      }
       if (id === "ORCL") {
         await panel.locator("[data-oracle-commenced-finance]").selectOption("enabled");
         assert.equal(JSON.parse(await scenario.inputValue()).includeOracleCommencedFinanceLease, true);
@@ -317,6 +321,9 @@ async function checkPage(browser, url) {
     const equipmentQuarter = equipmentExport.quarters.find(entry => entry.quarter === "2027Q1");
     const equipmentFacility = equipmentQuarter.financingLedger.AMZN_EQUIPMENT_DDTL;
     assert.equal(equipmentFacility.newDrawdown, 2);
+    assert.equal(equipmentQuarter.leaseCashSchedules.MSFT.incremental.payment, 1.1394);
+    assert.equal(equipmentQuarter.leaseCashSchedules.GOOGL.incremental.payment, 0.6525);
+    assert.equal(equipmentQuarter.leaseCashSchedules.META.incremental.payment, 0.8893);
     assert.equal(equipmentQuarter.financingCashSources.AMZN.contractualTermDraw, 2);
     assert.deepEqual(equipmentFacility.trancheBalances, [
       { drawQuarter: "2027Q1", maturityQuarter: "2032Q1", principal: 2 }
