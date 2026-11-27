@@ -428,13 +428,13 @@ The original A–G tests retained the legacy profile as a regression. The same i
 | --- | --- | ---: | ---: | ---: | --- |
 | A | OpenAI | -64.0448 | -13.2799 | 74.0448 | 2027Q4 |
 | B | Anthropic | 104.8591 | -0.8568 | 0 | — |
-| C | CoreWeave | -35.5456 | -3.2985 | 37.5456 | 2027Q1 |
+| C | CoreWeave | -34.8423 | -3.0978 | 36.8423 | 2027Q1 |
 | D | Oracle | -74.4788 | -20.0705 | 84.4788 | 2027Q4 |
-| E | CoreWeave | -34.1842 | -3.3845 | 36.1842 | 2027Q1 |
-| F | CoreWeave | -43.9584 | -4.9001 | 45.9584 | 2027Q1 |
-| G | CoreWeave | -60.1254 | -5.7019 | 62.1254 | 2026Q4 |
+| E | CoreWeave | -34.1759 | -3.3918 | 36.1759 | 2027Q1 |
+| F | CoreWeave | -43.9279 | -4.8787 | 45.9279 | 2027Q1 |
+| G | CoreWeave | -60.1185 | -5.7043 | 62.1185 | 2026Q4 |
 
-Values are scenario results in USD billions. The cash identity includes loan and lease principal, collateral-related margin, equipment sale proceeds, investment sales and explicit unallocated guarantee payments.
+Values are scenario results in USD billions, reproducible with `node tests/audit4_foundations.cjs` in the final A–G table. The cash identity includes loan and lease principal, collateral-related margin, equipment sale proceeds, investment sales and both project and unallocated guarantee cash payments. The financing source sum is also verified for every eligible company-quarter. The updated CoreWeave values reflect the full audited profile. First default quarters are unchanged from the earlier audited replay.
 
 ### Operational deferred-revenue roll-forward
 
