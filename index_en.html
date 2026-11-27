@@ -815,14 +815,17 @@
     const debt = Math.max(0, st.debt ?? 0);
     const fcf = st.fcf !== null && st.fcf !== undefined ? st.fcf : -((p.capex || 0) * 0.4);
     const rev = Math.max(0.05, st.revenue !== null && st.revenue !== undefined ? st.revenue : 0.5);
-    const gm = Math.max(0.1, p.grossMargin ?? 0.5);
-    const refi = Math.max(0.1, (p.refiSuccess ?? 0.85) * ((ocean?.refiSuccessRate ?? 85) / 100));
+    const gm = Math.max(0.1, (st.auditedFixedCashObligations != null ? st.grossMargin : null) ?? p.grossMargin ?? 0.5);
+    const refi = st.auditedRefinancingFactor ?? Math.max(0.1,
+      (p.refiSuccess ?? 0.85) * ((ocean?.refiSuccessRate ?? 85) / 100));
     const avail = (ocean?.fundingAvailability ?? 100) / 100;
 
     const levScore = Math.min(30, (debt / liq) * 3.8);
     const burnScore = Math.min(25, (fcf < 0 ? Math.abs(fcf) / liq : 0) * 26);
-    const refiScore = Math.min(25, Math.max(0, ((1 - refi) * 30) + ((p.newDebt || 0) / liq) * 10 * (1.2 - avail * 0.5)));
-    const fixedOblig = (st.interestExp || (debt * (p.interestRate || 0.06) / 4)) + (p.debtRepay || 0) + (p.computePay || 0);
+    const debtNeed = st.auditedRefinancingPrincipalDue ?? (p.newDebt || 0);
+    const refiScore = Math.min(25, Math.max(0, ((1 - refi) * 30) + (debtNeed / liq) * 10 * (1.2 - avail * 0.5)));
+    const fixedOblig = st.auditedFixedCashObligations ??
+      ((st.interestExp || (debt * (p.interestRate || 0.06) / 4)) + (p.debtRepay || 0) + (p.computePay || 0));
     const covScore = Math.min(20, (fixedOblig / Math.max(0.15, rev * gm)) * 8);
 
     let marketStress = 0;
@@ -1867,6 +1870,8 @@
           secondaryClosingSpreadBps: secondarySpreadBpsById[e.id] ?? 0,
           secondaryFloatingPrincipal: money(begDebt * floatShare),
           secondaryRefinancingMultiplier: secRefiPenalty,
+          auditedRefinancingFactor: useAudit4Contracts ? refiFactor : null,
+          auditedRefinancingPrincipalDue: useAudit4Contracts ? maturingPrincipal : null,
           inducedCapexCut: 0
         };
       });
@@ -2426,6 +2431,9 @@
           }
           const leaseInterest = (state.recognizedFinanceLease?.interest ?? 0) + (state.leaseSchedule?.financeInterest ?? 0);
           const obligations = (state.principalRepay ?? 0) + (state.interestExp ?? 0) + (state.leasePrincipal ?? 0) + leaseInterest;
+          if (useAudit4Contracts) state.auditedFixedCashObligations = money(obligations +
+            (state.computePay ?? 0) + (state.leaseSchedule?.ocfCashPayment ?? 0) -
+            (state.leaseSchedule?.financeInterest ?? 0));
           const cashBeforeDebtService = state.ocf + (state.interestExp ?? 0) + leaseInterest;
           state.debtServiceCoverage = obligations > 0 ? money(cashBeforeDebtService / obligations) : null;
           const cashUses = burn + (state.principalRepay ?? 0) + (state.leasePrincipal ?? 0) + (state.gpuMarginCall ?? 0) + (state.unallocatedGuaranteeCashPaid ?? 0) + (state.projectGuaranteeCashPaid ?? 0);

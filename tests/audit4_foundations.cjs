@@ -1192,3 +1192,14 @@ assert.deepEqual(tx66Deferred("2027Q2").map(row => [row.recovered, row.ending]),
 assert.deepEqual(tx66Deferred("2027Q3").map(row => [row.recovered, row.cashRecovered, row.ending]),
   [[0.0372, 0.0183, 0], [0.0186, 0.0092, 0]]);
 assert.equal(tx66Deferred("2027Q4").length, 0);
+
+const riskFixture = { cash: 100, debt: 0, fcf: 0, revenue: 10, grossMargin: 0.5,
+  auditedRefinancingPrincipalDue: 0, auditedFixedCashObligations: 4, auditedRefinancingFactor: 1 };
+assert.equal(engine.computeFragilityScore(contractedCashFixture, riskFixture, {}).score, 6);
+assert.equal(engine.computeFragilityScore(contractedCashFixture, {
+  ...riskFixture, auditedRefinancingFactor: 0.5
+}, {}).score, 21);
+assert.equal(engine.computeFragilityScore(contractedCashFixture, {
+  ...riskFixture, auditedFixedCashObligations: 0
+}, {}).score, 4);
+assert.equal(nextPeerSecondary.auditedRefinancingFactor < 1, true);
