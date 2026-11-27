@@ -1417,3 +1417,9 @@ assert.equal(defaultBeforeEquipmentDraw.scenarioSummary.AMZN.defaultQuarter, "20
 assert.equal(defaultBeforeEquipmentDraw.timeline["2027Q1"].financingLedger[equipmentId].newDrawdown, 0);
 assert.equal(defaultBeforeEquipmentDraw.timeline["2027Q1"].financingLedger[equipmentId].borrowerDefaultBlocksDraw, true);
 assert.equal(defaultBeforeEquipmentDraw.timeline["2027Q1"].entities.AMZN.contractualTermDraw, 0);
+const irenEquipmentRows = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline;
+const irenGpu2 = irenEquipmentRows["2026Q4"].financingLedger.IREN_GPU2;
+const irenGpu3 = irenEquipmentRows["2026Q4"].financingLedger.IREN_GPU3;
+assert.deepEqual([irenGpu2.beginningOutstanding, irenGpu2.cumulativeDrawdown, irenGpu2.undrawnCommitment], [0.947, 0.947, 1.5]);
+assert.equal(irenEquipmentRows["2027Q1"].financingLedger.IREN_GPU2.undrawnCommitment, 0);
+assert.deepEqual([irenGpu3.beginningOutstanding, irenGpu3.cumulativeDrawdown, irenGpu3.undrawnCommitment], [0.355, 0.363, 0]);
