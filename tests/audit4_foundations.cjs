@@ -289,6 +289,18 @@ assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments),
 assert.equal(usd(oracleFiling.ocf - oracleFiling.capex), -5.396);
 assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments - oracleFiling.capex), -16.759);
 assert.equal(usd(oracleFiling.currentBorrowings + oracleFiling.nonCurrentBorrowings), 125.337);
+const microsoftHistorical = entities.find(entity => entity.id === "MSFT").financials["2026Q3"];
+assert.equal(microsoftHistorical.cash, 20.281);
+assert.equal(microsoftHistorical.debt, usd(4.391 + 31.09));
+assert.equal(microsoftHistorical.accountsPayable, 42.625);
+assert.equal(microsoftHistorical.fcf, usd(58 - 39.367));
+assert.equal(microsoftHistorical.leaseLiab, usd(27.477 + 70.973));
+assert.equal(microsoftHistorical.offBalanceLeases, 364.6);
+assert.equal(microsoftHistorical.rpo, 683);
+const microsoftOpenAI = entities.find(entity => entity.id === "MSFT").audit4OpenAIRelatedPartyEvidence;
+assert.equal(microsoftOpenAI.accountsReceivable, 7.2);
+assert.equal(microsoftOpenAI.totalInvestmentFundingCommitment - microsoftOpenAI.fundedInvestment, 1);
+assert.equal(microsoftHistorical.undrawnCredit, null);
 const nvidiaFcfSnapshot = entities.find(entity => entity.id === "NVDA").financials["2026Q3"];
 assert.equal(nvidiaFcfSnapshot.ocf, 48.253);
 assert.equal(nvidiaFcfSnapshot.capex, 4.422);
