@@ -289,6 +289,15 @@ assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments),
 assert.equal(usd(oracleFiling.ocf - oracleFiling.capex), -5.396);
 assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments - oracleFiling.capex), -16.759);
 assert.equal(usd(oracleFiling.currentBorrowings + oracleFiling.nonCurrentBorrowings), 125.337);
+const alphabetHistorical = entities.find(entity => entity.id === "GOOGL").financials["2026Q3"];
+assert.equal(alphabetHistorical.cash, 56.334);
+assert.equal(alphabetHistorical.debt, usd(1.016 + 125.102));
+assert.equal(alphabetHistorical.fcf, usd((127.149 - 84.859) - (131.953 - 80.598)));
+assert.equal(alphabetHistorical.leaseLiab, usd(20.508 + 3.705));
+assert.equal(alphabetHistorical.offBalanceLeases, 130.5);
+assert.equal(alphabetHistorical.rpo, 567.7);
+assert.equal(alphabetHistorical.cloudRpo, 560.8);
+assert.equal(alphabetHistorical.offBalanceGuarantees, 22.8);
 const microsoftHistorical = entities.find(entity => entity.id === "MSFT").financials["2026Q3"];
 assert.equal(microsoftHistorical.cash, 20.281);
 assert.equal(microsoftHistorical.debt, usd(4.391 + 31.09));
