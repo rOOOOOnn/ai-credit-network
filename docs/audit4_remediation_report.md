@@ -912,3 +912,16 @@ The archive's TX83 overlaps the separate NVIDIA caps, and its TX26 availability 
 ### Anthropic issuer proceeds from the closing 8-K
 
 Items 3.02 and 8.01 confirm the November 20 closing and distinguish newly issued shares from selling-stockholder shares. At $83 per share, 1,103,351,354 issuer IPO shares imply $91,578,162,382 gross issuer IPO proceeds. The 23,648,646 secondary shares imply $1,962,837,618 of selling-stockholder proceeds, excluded from issuer cash. The 313,253,007 private placement shares at the same price imply $25,999,999,581, with no placement underwriting commission. Gross proceeds attributable to the issuer therefore reconcile to $117,578,161,963 before offering expenses. The filing's approximately $119.5B combined headline also includes the secondary proceeds. Closing is confirmed, while the $117.0B modeled net receipt remains a prospectus estimate and Q4 OCF remains a forecast pending issuer cash-flow disclosures. The existing with-and-without-financing sensitivity remains applicable. [Anthropic closing 8-K](https://www.sec.gov/Archives/edgar/data/2130357/000162828026075973/ant-20261119.htm).
+
+### Alphabet and Amazon recognized lease reconciliation
+
+September 30, 2026 carrying values, USD billions. The current and noncurrent subtotals reconcile independently to the filed operating and finance lease totals.
+
+| Entity | Operating current | Operating noncurrent | Operating total | Finance current | Finance noncurrent | Finance total | Combined |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Alphabet | 3.693 | 16.815 | 20.508 | 1.053 | 2.652 | 3.705 | 24.213 |
+| Amazon | 14.093 | 86.195 | 100.288 | 1.866 | 12.629 | 14.495 | 114.783 |
+
+Alphabet's Q3 lease payments already classified in operating cash flow were $0.998B for operating leases and $0.025B for finance leases. Its $1.110B finance lease principal was a financing outflow. The $0.159B of prepayments for leases expected to be classified as finance leases is disclosed separately. The approximately $6B short-term commitment is also separate from recognized lease liabilities. These classifications keep the incremental lease scenario from subtracting the opening operating cash payments a second time. [Alphabet September 10-Q](https://www.sec.gov/Archives/edgar/data/1652044/000165204426000084/goog-20260930.htm).
+
+Amazon's $139.447B of gross recognized-lease payments less $24.664B imputed interest yields $114.783B carrying value. The $6.827B current portion of long-term borrowings is a separate debt measure. Quarter-level commencement and cash schedules for new projects remain assumptions. [Amazon September 10-Q, Notes 3 and 5](https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm).
