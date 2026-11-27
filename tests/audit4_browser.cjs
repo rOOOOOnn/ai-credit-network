@@ -102,7 +102,8 @@ async function checkPage(browser, url) {
     assert.match(await panel.locator("[data-financing-trend]").innerText(), /Insufficient Historical Data|历史融资数据不足/);
     const historicalSettings = JSON.parse(await scenario.inputValue());
     historicalSettings.financing.history = {
-      2025: { dataType: "Actual", fullYear: true, amounts: { equity: 4 } },
+      2024: { dataType: "Actual", fullYear: true, amounts: { other: 1 } },
+      2025: { dataType: "Actual", fullYear: true, amounts: { equity: 4, other: 0 } },
       2026: { dataType: "Actual", fullYear: true, amounts: { equity: 6 } }
     };
     await scenario.fill(JSON.stringify(historicalSettings));
@@ -112,6 +113,7 @@ async function checkPage(browser, url) {
     assert.equal(await panel.locator('[data-historical-financing="equity-2026"] meter').getAttribute("value"), "6");
     assert.equal(await panel.locator('[data-historical-financing^="debt-"]').count(), 0);
     assert.match(trend, /equity: 2025 = \$4B \/ 2026 = \$6B/);
+    assert.match(trend, /other: 2024 = \$1B \/ 2025 = \$0B \((?:Latest pre-forecast year lacks complete actuals|预测前最近一年缺少完整实际数据)/);
     assert.match(trend, /(?:Insufficient Historical Data|历史融资数据不足): debt/);
     assert.equal(await row.locator("td").nth(7).innerText(), "9.00");
     await panel.locator("select").first().selectOption("manual");
