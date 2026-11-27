@@ -76,6 +76,11 @@ async function checkPage(browser, url) {
     await curveEquity.fill("10");
     await curveEquity.press("Tab");
     assert.equal(await row.locator("td").nth(7).innerText(), "10.00");
+    const initialGrowth = panel.getByLabel(/Initial financing growth|初始融资增速/);
+    await initialGrowth.fill("0.5");
+    await initialGrowth.press("Tab");
+    assert.equal(await row.locator("td").nth(10).innerText(), "50.0%");
+    assert.match(await financeChart.innerText(), /2027 (?:Financing growth|融资增速) 50\.0%/);
 
     await panel.locator("[data-financing-curve]").selectOption("historical");
     assert.match(await panel.locator("[data-financing-trend]").innerText(), /Insufficient Historical Data|历史融资数据不足/);

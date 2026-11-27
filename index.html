@@ -10049,7 +10049,16 @@ const I18N = {
       const previousRevenue = previous?.annualRevenue;
       const annualRevenue = quartersData.every(row => Number.isFinite(row.revenue))
         ? quartersData.reduce((sum, row) => sum + row.revenue, 0) : null;
-      const financingGrowth = previous?.total > 0 ? total / previous.total - 1 : null;
+      const isInitialCurveYear = selectedConfig.mode === "curve" &&
+        selectedConfig.curve !== "historical" && year === (selectedConfig.startYear ?? 2027);
+      const priorFinancing = isInitialCurveYear
+        ? sources.reduce((sum, source) => {
+          const base = projectionConfig.base?.[source];
+          return sum + (Number.isFinite(base) ? Math.max(0, base) : 0);
+        }, 0)
+        : previous?.total;
+      const financingGrowth = planned.status !== "Outside Horizon" && priorFinancing > 0
+        ? total / priorFinancing - 1 : null;
       const revenueGrowth = previousRevenue > 0 && annualRevenue !== null ? annualRevenue / previousRevenue - 1 : null;
       const allFinancing = quartersData.every(row => Number.isFinite(row.totalFinancingCashInflow))
         ? quartersData.reduce((sum, row) => sum + row.totalFinancingCashInflow, 0) : null;
