@@ -298,6 +298,15 @@ assert.equal(oracleSnapshot.leaseLiab, usd(4.027 + 30.594 + 0.749 + 8.436));
 assert.equal(oracleSnapshot.offBalanceLeases, 288);
 const nebius = entities.find(entity => entity.id === "NBIS");
 const nebiusSnapshot = nebius.financials["2026Q3"];
+const nebiusCustomerCash = nebius.audit4CustomerCashEvidence;
+assert.equal(usd(nebiusCustomerCash.deferredRevenueCurrent + nebiusCustomerCash.deferredRevenueNoncurrent), 9.4092);
+assert.equal(usd(nebiusCustomerCash.rpo * nebiusCustomerCash.rpoRecognitionShares[0]), 15.48);
+assert.equal(usd(nebiusSnapshot.ocf - nebiusCustomerCash.quarterDeferredRevenueCashFlowContribution), -3.707);
+assert.equal(usd(nebiusCustomerCash.quarterDeferredRevenueCashFlowContribution +
+  nebiusCustomerCash.quarterReceivablesCashFlowContribution), -0.3278);
+assert.equal(nebiusSnapshot.customerConcentration, 0.33);
+assert.equal(usd(Object.values(nebiusCustomerCash.receivableConcentration).reduce((sum, value) => sum + value, 0)), 0.85);
+assert.equal(nebiusCustomerCash.counterpartyIdentityVerified, false);
 const nebiusFinancingTrend = engine.financingForecast({
   mode: "curve", curve: "historical", startYear: 2027, history: nebius.verifiedFinancingHistory
 }, 2027);
