@@ -190,8 +190,8 @@
   function reportedPrincipalAt(tx, quarter) {
     if (tx.principalOutstanding != null && compareQuarter(quarter, tx.principalAsOfQuarter) >= 0)
       return tx.principalOutstanding;
-    const prior = tx.priorPrincipalObservation;
-    return prior && compareQuarter(quarter, prior.quarter) >= 0 ? prior.principal : null;
+    return tx.priorPrincipalObservations?.find(observation =>
+      compareQuarter(quarter, observation.quarter) >= 0)?.principal ?? null;
   }
 
   function computeTransactionEAD(tx, quarter, options = {}) {
