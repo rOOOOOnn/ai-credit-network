@@ -1359,3 +1359,14 @@ assert.equal(usd(metaScope.debt + metaScope.principalRepay + metaScope.nonCashDe
 const metaEvidence = issuerBalance("META");
 assert.equal(usd(metaEvidence.nonCurrentBorrowings + metaEvidence.currentPortionOfLongTermDebt + metaEvidence.unamortizedDiscountAndIssuanceCosts), 84);
 assert.equal(usd(Object.values(metaEvidence.annualNotePrincipalMaturities).reduce((sum, principal) => sum + principal, 0)), 84);
+const alphabetEvidence = issuerBalance("GOOGL");
+assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
+  alphabetEvidence.hedgeFairValueReduction), 126.118);
+const amazonEvidence = issuerBalance("AMZN");
+assert.equal(usd(amazonEvidence.longTermBorrowingsFaceValue - amazonEvidence.unamortizedDiscountAndIssuanceCosts), 179.952);
+assert.equal(usd(amazonEvidence.longTermBorrowingsFaceValue + amazonEvidence.workingCapitalBorrowings), 181.267);
+const openingScope = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline["2026Q4"].entities;
+for (const [id, principal] of [["GOOGL", 127.485], ["AMZN", 181.267]]) {
+  const row = openingScope[id];
+  assert.equal(usd(row.debt + row.principalRepay + row.nonCashDebtConversion - row.newDebt - row.rcfDraw), principal);
+}
