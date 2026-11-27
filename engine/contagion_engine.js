@@ -1212,6 +1212,9 @@
           accruedInterest: 0
         };
         if (tx.commercialPaperBackstop != null) row.commercialPaperBackstop = tx.commercialPaperBackstop;
+        if (tx.issuer) row.issuer = tx.issuer;
+        if (tx.maturityDate) row.maturityDate = tx.maturityDate;
+        if (tx.principalSchedule) row.principalSchedule = { ...tx.principalSchedule };
         if (tx.principalRepaymentRequiresSchedule) row.principalRepaymentRequiresSchedule = true;
         if (tx.lettersOfCreditDataType) row.lettersOfCreditDataType = tx.lettersOfCreditDataType;
         if (tx.originalMaturityQuarter) {

@@ -1093,3 +1093,21 @@ The audited opening balance now tracks $4.385B face principal, consisting of $3.
 ### Core Scientific contractual principal timing
 
 The three notes now carry a schedule-required flag. A generic corporate repayment assumption no longer reduces these instruments before an explicit scheduled principal payment or maturity. The correction keeps all $4.385B outstanding in the initial quarter, removing the earlier $0.050B inferred repayment. Core Scientific Finance I's secured indenture requires the first semiannual installment to follow both rent commencement and credit abatement. The first payment date remains unknown. If the user supplies an explicit installment, the initial rate yields $3.3B × 11.50% ÷ 2 = $0.18975B. The audit test places that amount in 2027Q2 as a scenario, rounds repayment to $0.1898B, and reconciles closing secured principal to $3.1102B without reducing the two convertibles. The revised report tables reflect the corrected opening treatment. The CoreWeave lease fixture still reconciles the same four-quarter cash deferral, while its immediate and delayed closing cash levels reflect the revised network behavior. [Core Scientific secured note indenture](https://www.sec.gov/Archives/edgar/data/1839341/000119312526208905/d47435dex41.htm).
+
+### Extended A–G stress replay
+
+The supplied archive runs its integrated stresses through 2031Q4. The audited branch adopts that horizon with its own reconciled inputs and retains the existing 2028Q4 comparison. Cash, financing sources, FCF, principal and funding gaps are independently reconciled across eligible company-quarters through the extended cutoff. Values below are scenario outputs in USD billions. Anthropic's positive closing cash alongside negative quarterly FCF reflects opening liquidity and modeled financing inputs, including the unverified IPO proceeds sensitivity discussed above.
+
+| Case | Entity | 2031Q4 cash | 2031Q4 FCF | Funding gap | First model default |
+| --- | --- | ---: | ---: | ---: | --- |
+| A | OpenAI | -245.8359 | -15.8321 | 255.8359 | 2027Q4 |
+| B | Anthropic | 57.0278 | -5.4577 | 0 | — |
+| C | CoreWeave | -107.0212 | -6.6273 | 109.0212 | 2027Q1 |
+| D | Oracle | -294.8222 | -20.9639 | 304.8222 | 2027Q4 |
+| E | CoreWeave | -89.5535 | -7.0773 | 91.5535 | 2027Q1 |
+| F | CoreWeave | -120.2857 | -7.2469 | 122.2857 | 2027Q1 |
+| G | CoreWeave | -145.4853 | -7.0643 | 147.4853 | 2026Q4 |
+
+### Downloadable Core Scientific debt terms
+
+The browser download now carries the legal issuer, maturity and secured-note amortization terms. All three pages check the consolidated borrower, funded principal and the $0.18975B contractual installment calculation before rounding. The first installment date is left unknown pending confirmation of rent commencement and abatement of revenue credits. The export adds terms without introducing cash payments.

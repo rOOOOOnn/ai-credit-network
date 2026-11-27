@@ -774,8 +774,10 @@ const secondProjectEvent = contracts.creditEvents.find(event => event.txId === "
 assert.deepEqual(secondProjectEvent.projectCalls, [{ projectIndex: 1, amount: 2.9167 }]);
 assert.equal(secondProjectEvent.recognizedLoss, 2.9167);
 const auditedStressResults = [];
+const extendedStressReport = process.argv.includes("--extended-stress-markdown");
+const stressCutoff = extendedStressReport ? "2031Q4" : "2028Q4";
 for (const [name, entity, overrides, options] of cases) {
-  const result = engine.runSimulation(entities, transactions, { audit4Contracts: true, overrides, ...options });
+  const result = engine.runSimulation(entities, transactions, { audit4Contracts: true, forecastThrough: 2031, overrides, ...options });
   for (const quarter of Object.values(result.timeline)) {
     if (!quarter.financingLedger) continue;
     for (const row of Object.values(quarter.financingLedger)) {
@@ -798,11 +800,12 @@ for (const [name, entity, overrides, options] of cases) {
       assert.equal(state.fundingGap, usd(Math.max(0, minimum - state.cash)), label);
     }
   }
-  const end = result.timeline["2028Q4"].entities[entity];
+  assert.ok(result.timeline["2031Q4"]?.financingLedger, name + " full stress horizon");
+  const end = result.timeline[stressCutoff].entities[entity];
   auditedStressResults.push([name, entity, end.cash, end.fcf, end.fundingGap, result.scenarioSummary[entity].defaultQuarter]);
 }
-if (process.argv.includes("--audited-stress-markdown")) {
-  console.log("| Case | Entity | 2028Q4 cash | 2028Q4 FCF | Funding gap | First model default |");
+if (extendedStressReport || process.argv.includes("--audited-stress-markdown")) {
+  console.log(`| Case | Entity | ${stressCutoff} cash | ${stressCutoff} FCF | Funding gap | First model default |`);
   console.log("| --- | --- | ---: | ---: | ---: | --- |");
   for (const [name, id, cash, fcf, gap, defaultQuarter] of auditedStressResults) {
     const company = { OPENAI: "OpenAI", ANTHROPIC: "Anthropic", CRWV: "CoreWeave", ORCL: "Oracle" }[id];

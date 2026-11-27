@@ -341,6 +341,13 @@ async function checkPage(browser, url) {
     await page.locator("#dlAuditLedgerJson").click();
     const equipmentExport = JSON.parse(await fs.readFile(await (await equipmentDownload).path(), "utf8"));
     const openingCreditLedger = equipmentExport.quarters[0].financingLedger;
+    const securedNotes = openingCreditLedger.CORZ_SECURED_2031;
+    assert.equal(securedNotes?.issuer, "Core Scientific Finance I LLC");
+    assert.equal(securedNotes.borrower, "CORZ");
+    assert.equal(securedNotes.maturityDate, "2031-05-15");
+    assert.equal(securedNotes.principalSchedule.firstInstallmentDate, null);
+    assert.equal(Number((securedNotes.principalSchedule.originalPrincipal * securedNotes.principalSchedule.annualRate / securedNotes.principalSchedule.paymentsPerYear).toFixed(5)), 0.18975);
+    assert.equal(securedNotes.beginningOutstanding, 3.3);
     const restatedAnthropic = openingCreditLedger.ANTHROPIC_RCF_RESTATED;
     assert.equal(restatedAnthropic.lettersOfCredit, 0.205);
     assert.equal(restatedAnthropic.undrawnCommitment, 14.795);
