@@ -149,6 +149,14 @@ async function checkPage(browser, url) {
     assert.ok(Array.isArray(firstQuarter.operationalRevenueLedger));
     assert.equal(typeof firstQuarter.operatingCashBridges.CRWV.endingOCF, "number");
     assert.ok(Array.isArray(firstQuarter.contagionEvents));
+    const oracleLiquidity = firstQuarter.liquiditySchedules.ORCL;
+    const borrowable = oracleLiquidity.undrawnCredit;
+    assert.equal(oracleLiquidity.fundingGap, Number(Math.max(0,
+      oracleLiquidity.minimumOperatingCash - oracleLiquidity.endingCash).toFixed(4)));
+    assert.equal(oracleLiquidity.requiredFinancing, Number(Math.max(0,
+      oracleLiquidity.minimumOperatingCash - oracleLiquidity.endingCash - borrowable).toFixed(4)));
+    assert.equal(ledger.scenarioSummary.ORCL.defaultQuarter,
+      ledger.quarters.find(row => row.liquiditySchedules.ORCL.distressLevel === 3)?.quarter ?? null);
     const oracleCredit = firstQuarter.secondaryCreditSchedules.ORCL;
     assert.equal(oracleCredit.openingSpreadBps, 0);
     assert.equal(oracleCredit.refinancingMultiplier, 1);

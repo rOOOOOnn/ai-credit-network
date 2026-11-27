@@ -10298,13 +10298,39 @@ const I18N = {
             refinancingMultiplier: company.secondaryRefinancingMultiplier,
             incrementalInterest: company.secondaryFinancingHit
           }]));
+        const liquiditySchedules = Object.fromEntries(Object.entries(row.entities)
+          .filter(([, company]) => !company.insufficientData && Number.isFinite(company.cash))
+          .map(([id, company]) => [id, {
+            beginningCash: company.begCash,
+            endingCash: company.cash,
+            minimumOperatingCash: company.minCash,
+            undrawnCredit: company.undrawnCredit,
+            availableLiquidity: company.availableLiquidity,
+            fundingGap: company.fundingGap,
+            requiredFinancing: company.requiredFinancing,
+            requiredRevenue: company.requiredRevenue,
+            minimumFcfRevenueGrowth: company.minimumRequiredRevenueGrowth,
+            monthlyCashBurn: company.monthlyCashBurn,
+            quarterlyCashBurn: company.quarterlyCashBurn,
+            cashRunwayMonths: company.cashRunwayMonths,
+            financingDependency: company.financingDependency,
+            debtServiceCoverage: company.debtServiceCoverage,
+            refinancingFactor: company.auditedRefinancingFactor,
+            maturingPrincipal: company.auditedRefinancingPrincipalDue,
+            fixedCashObligations: company.auditedFixedCashObligations,
+            fragilityScore: company.fragilityScore,
+            fragilityDrivers: company.fragilityDrivers,
+            distressLevel: company.distressLevel,
+            defaultCause: company.defaultCause
+          }]));
         return [{ quarter, financingLedger, refinancingOriginations, guaranteeLedger, debtReconciliation,
           operationalRevenueLedger, operatingCashBridges, financingCashSources, leaseCashSchedules, gpuCashSchedules,
-          contagionEvents: row.contagionLog, secondaryCreditSchedules }];
+          contagionEvents: row.contagionLog, secondaryCreditSchedules, liquiditySchedules }];
       });
       triggerDownload("audit4_quarterly_credit_ledger.json", JSON.stringify({
         version: state.version,
         currency: "USD billions",
+        scenarioSummary: state.simResult.scenarioSummary,
         simulationOptions: {
           audit4Contracts: true, forecastThrough: Number(quarters.at(-1).quarter.slice(0, 4)),
           ocean: state.ocean, overrides: state.overrides, forcedDefaults: [...state.forcedDefaults],
