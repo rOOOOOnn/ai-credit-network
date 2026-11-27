@@ -1239,6 +1239,13 @@
       row.remainingGuaranteeLiability = money(Math.max(0, row.effectiveExposure - row.calledGuarantee));
     }
     const totalCalled = previouslyCalled ? rows.reduce((sum, row) => sum + row.calledGuarantee, 0) : called;
+    if (previouslyCalled) {
+      const remainingByProject = Object.fromEntries(rows.map(row => [row.projectIndex, row.remainingGuaranteeLiability]));
+      const remainingBudget = Math.min(Math.max(0, maximum - totalCalled),
+        Object.values(remainingByProject).reduce((sum, value) => sum + value, 0));
+      const allocation = allocateFunding(remainingByProject, remainingBudget);
+      for (const row of rows) row.remainingGuaranteeLiability = allocation[row.projectIndex];
+    }
     const remaining = previouslyCalled ? rows.reduce((sum, row) => sum + row.remainingGuaranteeLiability, 0) : Math.max(0, effective - called);
     return { disclosedMaximum: maximum, effectiveExposure: money(effective),
       contingentExposure: money(Object.values(contingent).reduce((sum, value) => sum + value, 0)),
@@ -2462,7 +2469,7 @@
                     project.calledThisQuarter = allocation[project.projectIndex];
                     if (!project.calledThisQuarter) continue;
                     project.calledGuarantee = sbEnergyCalls[project.projectIndex] = project.calledThisQuarter;
-                    project.remainingGuaranteeLiability = money(project.effectiveExposure - project.calledGuarantee);
+                    project.remainingGuaranteeLiability = money(project.remainingGuaranteeLiability - project.calledThisQuarter);
                   }
                   scenario.remainingGuaranteeLiability = money(scenario.projects.reduce((sum, row) =>
                     sum + row.remainingGuaranteeLiability, 0));

@@ -1521,3 +1521,5 @@ assert.deepEqual(sharedGuaranteeCap.projects.map(project => project.contingentEx
 assert.equal(delayedCallFirst.guaranteeLedger.TX11.cashSettlementPending, 3);
 assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettlementPending, 0);
 assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettledCumulative, 3);
+assert.equal(cappedProjectQ2.remainingGuaranteeLiability, 0);
+assert.equal(cappedProjectQ2.projects[1].remainingGuaranteeLiability, 0);
