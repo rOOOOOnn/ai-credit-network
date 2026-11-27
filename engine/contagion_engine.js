@@ -1235,9 +1235,32 @@
         const effectiveRate = blendedRate(floatShare);
         const disclosedCoupon = tx => useAudit4Contracts && Number.isFinite(tx?.reportedCashCoupon)
           ? tx.reportedCashCoupon : null;
+        const modeledInstallments = new Map();
+        for (const tx of myDebtTxs) {
+          const monthsAtOpening = tx.amortizationRemainingMonthsAtOpening;
+          const coupon = disclosedCoupon(tx);
+          const row = financingLedger[tx.id];
+          if (!useAudit4Contracts || !monthsAtOpening || coupon == null || !row || row.defaulted) continue;
+          const remainingMonths = monthsAtOpening - 3 * (parseQuarterNumber(q) - parseQuarterNumber(QUARTER_PARTIAL));
+          if (remainingMonths <= 0) continue;
+          const monthlyRate = coupon / 12;
+          const opening = row.beginningOutstanding;
+          const payment = monthlyRate > 0 ? opening * monthlyRate / (1 - (1 + monthlyRate) ** -remainingMonths)
+            : opening / remainingMonths;
+          let balance = opening;
+          let interest = 0;
+          for (let month = 0; month < Math.min(3, remainingMonths); month++) {
+            const monthlyInterest = balance * monthlyRate;
+            interest += monthlyInterest;
+            balance = Math.max(0, balance + monthlyInterest - payment);
+          }
+          modeledInstallments.set(tx.id, { remainingMonths, principal: money(opening - balance), interest });
+        }
         const disclosedCouponAdjustment = myDebtTxs.reduce((sum, tx) => {
           const coupon = disclosedCoupon(tx);
-          return coupon === null ? sum : sum + loanPrincipal(tx) * (coupon - blendedRate(floatingShare(tx))) / 4;
+          if (coupon === null) return sum;
+          const interest = modeledInstallments.get(tx.id)?.interest ?? loanPrincipal(tx) * coupon / 4;
+          return sum + interest - loanPrincipal(tx) * blendedRate(floatingShare(tx)) / 4;
         }, 0);
         const interestPaid = money(begDebt * effectiveRate / 4 + disclosedCouponAdjustment);
         const secondaryIntAdd = secondarySpreadBpsById[e.id]
@@ -1315,7 +1338,8 @@
         const scheduledFacilityRepayments = Object.fromEntries((facilities ?? []).map(row => {
           const tx = transactions.find(item => item.id === row.txId);
           const requested = tx.endQ === q ? row.beginningOutstanding :
-            (maturityByFacility[tx.id] ?? 0) + nonnegative(options.facilityRepayments?.[tx.id]?.[q]);
+            (maturityByFacility[tx.id] ?? 0) + (options.facilityRepayments?.[tx.id]?.[q] == null
+              ? modeledInstallments.get(tx.id)?.principal ?? 0 : nonnegative(options.facilityRepayments[tx.id][q]));
           return [row.txId, row.defaulted ? 0 : Math.min(row.beginningOutstanding - row.nonCashConversion, requested)];
         }));
         const explicitRepayments = (facilities ?? []).reduce((sum, row) => {
@@ -1326,7 +1350,7 @@
         const namedOpening = (facilities ?? []).reduce((sum, row) => sum + row.beginningOutstanding, 0);
         const unidentifiedOpening = Math.max(0, begDebt - namedOpening);
         const performingPrincipal = (facilities ?? []).reduce((sum, row) => row.defaulted ? sum :
-          sum + (row.trancheBalances ? 0 : Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledFacilityRepayments[row.txId])), 0);
+          sum + (row.trancheBalances || modeledInstallments.has(row.txId) ? 0 : Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledFacilityRepayments[row.txId])), 0);
         const genericRepayment = useAudit4Contracts && facilities?.length
           ? Math.min(p.debtRepay ?? 0, unidentifiedOpening + performingPrincipal) : p.debtRepay ?? 0;
         const principalRepay = money(Math.min(Math.max(0, begDebt - nonCashDebtConversion),
@@ -1337,7 +1361,10 @@
           const instrumentShare = useAudit4Contracts && tx ? floatingShare(tx) : floatShare;
           row.modeledFloatingPrincipal = money(row.beginningOutstanding * instrumentShare);
           const coupon = disclosedCoupon(tx);
-          row.accruedInterest = money(row.beginningOutstanding * (coupon ?? blendedRate(instrumentShare)) / 4);
+          const installment = modeledInstallments.get(row.txId);
+          row.accruedInterest = money(installment?.interest ?? row.beginningOutstanding * (coupon ?? blendedRate(instrumentShare)) / 4);
+          if (installment) row.amortization = { basis: "Modeled equal monthly payments",
+            openingRemainingMonths: installment.remainingMonths, quarterlyScheduledPrincipal: installment.principal };
           if (coupon !== null) row.reportedCashCoupon = coupon;
           row.principalRepayment = money(Math.min(scheduledFacilityRepayments[row.txId], repaymentRoom));
           repaymentRoom = money(repaymentRoom - row.principalRepayment);
@@ -1356,7 +1383,7 @@
 
         if (useAudit4Contracts && repaymentRoom > 0 && facilities?.length) {
           const namedBudget = money(Math.max(0, repaymentRoom - unidentifiedOpening));
-          const eligible = facilities.filter(row => !row.defaulted && !row.trancheBalances && row.endingOutstanding > 0);
+          const eligible = facilities.filter(row => !row.defaulted && !row.trancheBalances && !modeledInstallments.has(row.txId) && row.endingOutstanding > 0);
           const inferredRepayments = allocateFunding(Object.fromEntries(eligible.map(row =>
             [row.txId, row.endingOutstanding])), namedBudget);
           for (const row of eligible) {

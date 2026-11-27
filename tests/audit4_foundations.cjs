@@ -1050,7 +1050,7 @@ for (const [id, opening, funded, remaining] of [
     facility.lender], [opening, funded, remaining, null]);
 }
 assert.equal(irenOpening.openingFiscalCashFlowDisclosure.borrowingsPrincipal, 10.041);
-assert.equal(liquid.timeline["2026Q4"].debtReconciliation.IREN.namedTermPrincipal, 9.991);
+assert.equal(liquid.timeline["2026Q4"].debtReconciliation.IREN.namedTermPrincipal, usd(9.991 - 0.0267));
 const irenNamedOpening = Object.values(irenGpuFacilities).filter(facility => facility.borrower === "IREN")
   .reduce((sum, facility) => sum + facility.beginningOutstanding, 0);
 assert.equal(usd(irenNamedOpening), 10.027);
@@ -1424,7 +1424,7 @@ assert.deepEqual([irenGpu2.beginningOutstanding, irenGpu2.cumulativeDrawdown, ir
 assert.equal(irenEquipmentRows["2027Q1"].financingLedger.IREN_GPU2.undrawnCommitment, 0);
 assert.deepEqual([irenGpu3.beginningOutstanding, irenGpu3.cumulativeDrawdown, irenGpu3.undrawnCommitment], [0.355, 0.363, 0]);
 assert.equal(irenGpu2.accruedInterest, usd(0.947 * 0.09 / 4));
-assert.equal(irenGpu3.accruedInterest, usd(0.355 * 0.0951 / 4));
+assert.equal(irenGpu3.accruedInterest, 0.0082);
 const irenWithGenericRates = entities.map(entity => entity.id === "IREN" ? {
   ...entity, audit4Facilities: entity.audit4Facilities.map(facility => ({ ...facility, reportedCashCoupon: undefined }))
 } : entity);
@@ -1432,5 +1432,16 @@ const irenGenericInterest = engine.runSimulation(irenWithGenericRates, transacti
   .timeline["2026Q4"].entities.IREN.interestExp;
 const irenDisclosedInterest = irenEquipmentRows["2026Q4"].entities.IREN.interestExp;
 assert.equal(usd(irenDisclosedInterest - irenGenericInterest),
-  usd((0.947 * (0.09 - 0.085) + 0.355 * (0.0951 - 0.085)) / 4));
+  usd(0.947 * (0.09 - 0.085) / 4 + 0.00822937497845 - 0.355 * 0.085 / 4));
 assert.equal(irenEquipmentRows["2026Q4"].entities.IREN.operatingCashBridge.interestPaid, irenDisclosedInterest);
+assert.equal(irenGpu3.principalRepayment, 0.0267);
+assert.equal(irenGpu3.endingOutstanding, 0.3283);
+const irenAmortizationFixture = entities.find(entity => entity.id === "IREN");
+const irenSolvent = engine.runSimulation([{
+  ...irenAmortizationFixture, audit4Liquidity: { asOf: "2026-09-30", cashAndEquivalents: 1000 },
+  defaults: { ...irenAmortizationFixture.defaults, debtRepay: 0, capex: 0, refiSuccess: 0 }
+}], [], { audit4Contracts: true, forecastThrough: 2029, overrides: { IREN: { ocfMarginBeforeFinancing: 0.5 } } }).timeline;
+const irenFinal = irenSolvent["2029Q3"].financingLedger.IREN_GPU3;
+assert.equal(irenFinal.amortization.openingRemainingMonths, 2);
+assert.equal(irenFinal.principalRepayment, irenFinal.beginningOutstanding);
+assert.equal(irenFinal.endingOutstanding, 0);
