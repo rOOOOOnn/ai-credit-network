@@ -159,6 +159,8 @@ async function checkPage(browser, url) {
     assert.match(await anthropicLease.innerText(), /451\.20 \(2026-09-30\)/);
     assert.match(await anthropicLease.innerText(), /2\.810 \/ 1\.674/);
     assert.match(await anthropicLease.locator("a").getAttribute("href"), /anthropicpbc-424b4\.htm$/);
+    await panel.locator("[data-disclosed-lease-stress]").selectOption("10");
+    assert.equal(JSON.parse(await scenario.inputValue()).disclosedLeaseStressYears, 10);
     for (const [id, life, filing] of [
       ["MSFT", /2–6/, /msft-20260630\.htm$/],
       ["AMZN", /5.*(?:subset|\u90e8\u5206)/, /amzn-20251231\.htm$/],

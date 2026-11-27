@@ -1152,3 +1152,11 @@ for (const [quarter, payment, ocf, fcf, cash] of [
 }
 assert.equal(usd(Object.values(nvidiaLeaseStress).reduce((sum, quarter) =>
   sum + (quarter.entities.NVDA.incrementalLeasePayment ?? 0), 0)), 11);
+
+const leasePresetRun = engine.runSimulation(entities, transactions, { audit4Contracts: true, overrides: {
+  ANTHROPIC: { disclosedLeaseStressYears: 10, leaseDelayQuarters: 4 },
+  CRWV: { disclosedLeaseStressYears: 7 }
+} }).timeline;
+assert.equal(leasePresetRun["2026Q4"].entities.ANTHROPIC.incrementalLeasePayment, 0);
+assert.equal(leasePresetRun["2027Q4"].entities.ANTHROPIC.incrementalLeasePayment, 11.28);
+assert.equal(leasePresetRun["2026Q4"].entities.CRWV.incrementalLeasePayment, 1.6929);
