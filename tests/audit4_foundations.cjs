@@ -308,6 +308,27 @@ assert.equal(usd(nebiusFinancing.convertibleIssuance.series.reduce((sum, series)
 assert.equal(usd(nebiusFinancing.convertibleIssuance.grossProceeds - nebiusFinancing.convertibleIssuance.costs), 5.6781);
 assert.equal(nebiusFinancing.subsequentSecuredCredit.commitment, 3.5);
 assert.equal(nebiusFinancing.subsequentSecuredCredit.drawn, null);
+const nebiusLeaseRun = (years, leaseDelayQuarters = 0) => engine.runSimulation([nebius], [], {
+  audit4Contracts: true, forecastThrough: 2040,
+  overrides: { NBIS: { disclosedLeaseStressYears: years, leaseDelayQuarters } }
+}).timeline;
+const nebiusLeaseBase = nebiusLeaseRun(0);
+const nebiusLeaseStress = nebiusLeaseRun(12);
+const nebiusLeaseDelayed = nebiusLeaseRun(12, 1);
+const firstNebiusRent = usd(13.2426 / 4 / 48);
+const nebiusRentOpening = nebiusLeaseStress["2026Q4"].entities.NBIS;
+assert.equal(nebiusRentOpening.leaseSchedule.payment, firstNebiusRent);
+assert.equal(nebiusRentOpening.leaseSchedule.financePrincipal, 0);
+assert.equal(usd(nebiusLeaseBase["2026Q4"].entities.NBIS.ocf - nebiusRentOpening.ocf), firstNebiusRent);
+assert.equal(usd(nebiusLeaseBase["2026Q4"].entities.NBIS.fcf - nebiusRentOpening.fcf), firstNebiusRent);
+assert.equal(nebiusLeaseDelayed["2026Q4"].entities.NBIS.leaseSchedule.payment, 0);
+assert.equal(nebiusLeaseDelayed["2027Q1"].entities.NBIS.leaseSchedule.payment, firstNebiusRent);
+const shorterNebiusLease = nebiusLeaseRun(8);
+assert.equal(shorterNebiusLease["2037Q3"].entities.NBIS.leaseSchedule.payment, usd(13.2426 / 4 / 32));
+assert.equal(shorterNebiusLease["2037Q4"].entities.NBIS.leaseSchedule.payment, 0);
+const finalNebiusTranche = [{ commitment: 13.2426 / 4, termQuarters: 48, startQuarter: "2029Q4", type: "operating" }];
+assert.equal(engine.incrementalLeaseSchedule(finalNebiusTranche, "2041Q3").payment, firstNebiusRent);
+assert.equal(engine.incrementalLeaseSchedule(finalNebiusTranche, "2041Q4").payment, 0);
 const nebiusLedger = engine.runSimulation([nebius], [], { audit4Contracts: true }).timeline["2026Q4"];
 assert.equal(nebiusLedger.debtReconciliation.NBIS.namedTermPrincipal, 16.478);
 assert.equal(nebiusLedger.financingLedger.NBIS_FEB30.beginningOutstanding, 3.795);

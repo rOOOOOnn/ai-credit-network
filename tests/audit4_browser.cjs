@@ -262,6 +262,13 @@ async function checkPage(browser, url) {
     assert.match(await anthropicLease.locator("a").getAttribute("href"), /anthropicpbc-424b4\.htm$/);
     await panel.locator("[data-disclosed-lease-stress]").selectOption("10");
     assert.equal(JSON.parse(await scenario.inputValue()).disclosedLeaseStressYears, 10);
+    await page.locator('[data-network-entity="NBIS"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    const nebiusLease = panel.locator("[data-lease-disclosure]");
+    assert.match(await nebiusLease.innerText(), /13[.]24/);
+    await panel.locator("[data-disclosed-lease-stress]").selectOption("12");
+    assert.equal(JSON.parse(await scenario.inputValue()).disclosedLeaseStressYears, 12);
     for (const [id, life, filing] of [
       ["MSFT", /2–6/, /msft-20260630\.htm$/],
       ["AMZN", /5.*(?:subset|\u90e8\u5206)/, /amzn-20251231\.htm$/],

@@ -1658,7 +1658,8 @@
             })) : null;
         const leaseStressYears = ov?.disclosedLeaseStressYears;
         const stressStartYears = e.audit4LeaseDisclosure?.scenarioCalendarStartYears;
-        const validLeaseStress = stressStartYears ? [10, 20].includes(leaseStressYears) :
+        const validLeaseStress = stressStartYears
+          ? (e.audit4LeaseDisclosure.scenarioTermYears ?? [10, 20]).includes(leaseStressYears) :
           e.id === "ANTHROPIC" ? leaseStressYears === 10 : e.id === "CRWV" && [7, 17].includes(leaseStressYears);
         const leaseStress = useAudit4Contracts && validLeaseStress && e.audit4LeaseDisclosure ? (() => {
           const [first, last] = stressStartYears ?? [2026, 2026];
@@ -1667,7 +1668,7 @@
           const phaseCommitment = e.audit4LeaseDisclosure.uncommencedUndiscountedPayments / phases;
           const annualDiscountRate = nonnegative(ov?.disclosedLeaseFinanceRate ?? 0.05);
           return Array.from({ length: phases }, (_, index) => {
-            const phase = { termQuarters: leaseStressYears * 4, startQuarter: (first + index) + (stressStartYears ? "Q1" : "Q4") };
+            const phase = { termQuarters: leaseStressYears * 4, startQuarter: (first + index) + ("Q" + (e.audit4LeaseDisclosure.scenarioStartQuarterOfYear ?? (stressStartYears ? 1 : 4))) };
             return [
               { ...phase, commitment: phaseCommitment * (1 - financeShare), type: "operating" },
               { ...phase, commitment: phaseCommitment * financeShare, type: "finance", annualDiscountRate }
