@@ -1423,3 +1423,14 @@ const irenGpu3 = irenEquipmentRows["2026Q4"].financingLedger.IREN_GPU3;
 assert.deepEqual([irenGpu2.beginningOutstanding, irenGpu2.cumulativeDrawdown, irenGpu2.undrawnCommitment], [0.947, 0.947, 1.5]);
 assert.equal(irenEquipmentRows["2027Q1"].financingLedger.IREN_GPU2.undrawnCommitment, 0);
 assert.deepEqual([irenGpu3.beginningOutstanding, irenGpu3.cumulativeDrawdown, irenGpu3.undrawnCommitment], [0.355, 0.363, 0]);
+assert.equal(irenGpu2.accruedInterest, usd(0.947 * 0.09 / 4));
+assert.equal(irenGpu3.accruedInterest, usd(0.355 * 0.0951 / 4));
+const irenWithGenericRates = entities.map(entity => entity.id === "IREN" ? {
+  ...entity, audit4Facilities: entity.audit4Facilities.map(facility => ({ ...facility, reportedCashCoupon: undefined }))
+} : entity);
+const irenGenericInterest = engine.runSimulation(irenWithGenericRates, transactions, { audit4Contracts: true })
+  .timeline["2026Q4"].entities.IREN.interestExp;
+const irenDisclosedInterest = irenEquipmentRows["2026Q4"].entities.IREN.interestExp;
+assert.equal(usd(irenDisclosedInterest - irenGenericInterest),
+  usd((0.947 * (0.09 - 0.085) + 0.355 * (0.0951 - 0.085)) / 4));
+assert.equal(irenEquipmentRows["2026Q4"].entities.IREN.operatingCashBridge.interestPaid, irenDisclosedInterest);

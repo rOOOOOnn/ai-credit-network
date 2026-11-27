@@ -1553,7 +1553,13 @@
         const tightening = ((ocean.creditTighteningBps ?? 0) + (secondarySpreadBpsById[e.id] || 0)) / 10000;
         const blendedRate = share => (1 - share) * baseFixedRate + share * Math.max(0.01, oceanBaseRate + tightening);
         const effectiveRate = blendedRate(floatShare);
-        const interestPaid = Number(((begDebt * effectiveRate) / 4).toFixed(4));
+        const disclosedCoupon = tx => useAudit4Contracts && Number.isFinite(tx?.reportedCashCoupon)
+          ? tx.reportedCashCoupon : null;
+        const disclosedCouponAdjustment = myDebtTxs.reduce((sum, tx) => {
+          const coupon = disclosedCoupon(tx);
+          return coupon === null ? sum : sum + loanPrincipal(tx) * (coupon - blendedRate(floatingShare(tx))) / 4;
+        }, 0);
+        const interestPaid = money(begDebt * effectiveRate / 4 + disclosedCouponAdjustment);
         const secondaryIntAdd = secondarySpreadBpsById[e.id]
           ? Number(((begDebt * floatShare * (secondarySpreadBpsById[e.id] / 10000)) / 4).toFixed(4))
           : 0;
@@ -1650,7 +1656,9 @@
           const tx = myDebtTxs.find(item => item.id === row.txId);
           const instrumentShare = useAudit4Contracts && tx ? floatingShare(tx) : floatShare;
           row.modeledFloatingPrincipal = money(row.beginningOutstanding * instrumentShare);
-          row.accruedInterest = money(row.beginningOutstanding * blendedRate(instrumentShare) / 4);
+          const coupon = disclosedCoupon(tx);
+          row.accruedInterest = money(row.beginningOutstanding * (coupon ?? blendedRate(instrumentShare)) / 4);
+          if (coupon !== null) row.reportedCashCoupon = coupon;
           row.principalRepayment = money(Math.min(scheduledFacilityRepayments[row.txId], repaymentRoom));
           repaymentRoom = money(repaymentRoom - row.principalRepayment);
           row.endingOutstanding = money(row.beginningOutstanding - row.nonCashConversion - row.principalRepayment);
