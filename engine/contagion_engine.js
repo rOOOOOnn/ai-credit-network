@@ -1012,6 +1012,8 @@
     const useAudit4Contracts = options.audit4Contracts === true;
     if (useAudit4Contracts) {
       const disclosedFacilities = entities.flatMap(entity => entity.audit4Facilities ?? []);
+      const supersededFacilities = new Set(disclosedFacilities.flatMap(facility => facility.supersedesFacilityIds ?? []));
+      transactions = transactions.filter(tx => !supersededFacilities.has(tx.id));
       transactions = [...transactions, ...disclosedFacilities.filter(facility => !transactions.some(tx => tx.id === facility.id))];
     }
     transactions = transactions.map(tx => {

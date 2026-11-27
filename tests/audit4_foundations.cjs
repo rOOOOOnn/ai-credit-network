@@ -1034,6 +1034,18 @@ for (const [run, quarter] of [[immediateCall, "2028Q1"], [delayedCall, "2028Q3"]
   assert.equal(usd(baseline.cash - actual.cash), 3);
 }
 
+const anthropicRcfProfile = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline["2026Q4"];
+const anthropicRcf = anthropicRcfProfile.financingLedger.ANTHROPIC_RCF_RESTATED;
+assert.equal(anthropicRcf?.undrawnCommitment, 14.795);
+assert.equal(anthropicRcf.endingOutstanding, 0);
+assert.equal(anthropicRcf.lender, null);
+assert.equal(anthropicRcfProfile.entities.ANTHROPIC.undrawnCredit, 14.795);
+assert.equal(anthropicRcfProfile.financingLedger.TX17A, undefined);
+assert.equal(anthropicRcfProfile.financingLedger.TX17B, undefined);
+const restatedRcf = entities.find(entity => entity.id === "ANTHROPIC").audit4Facilities[0];
+assert.equal(restatedRcf.maturityDate, "2031-09-04");
+assert.equal(engine.computeTransactionEAD(restatedRcf, "2031Q2").undrawnCommitment, 14.795);
+assert.equal(engine.computeTransactionEAD(restatedRcf, "2031Q3").undrawnCommitment, 0);
 const anthropicLease = entities.find(row => row.id === "ANTHROPIC").audit4LeaseDisclosure;
 assert.deepEqual([anthropicLease.uncommencedUndiscountedPayments, anthropicLease.uncommencedStartYears,
   anthropicLease.uncommencedWeightedAverageTermYears], [451.2, [2026, 2028], 10]);

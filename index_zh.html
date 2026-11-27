@@ -1332,6 +1332,8 @@
     const useAudit4Contracts = options.audit4Contracts === true;
     if (useAudit4Contracts) {
       const disclosedFacilities = entities.flatMap(entity => entity.audit4Facilities ?? []);
+      const supersededFacilities = new Set(disclosedFacilities.flatMap(facility => facility.supersedesFacilityIds ?? []));
+      transactions = transactions.filter(tx => !supersededFacilities.has(tx.id));
       transactions = [...transactions, ...disclosedFacilities.filter(facility => !transactions.some(tx => tx.id === facility.id))];
     }
     transactions = transactions.map(tx => {
@@ -4010,6 +4012,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "ANTHROPIC",
+    "audit4Facilities": [{"id":"ANTHROPIC_RCF_RESTATED","type":"Direct Loan","payer":null,"receiver":"ANTHROPIC","announcedDate":"2026-11-18","startQ":"2026Q3","endQ":"2031Q3","maturityDate":"2031-09-04","totalCommitment":15,"principalOutstanding":0,"principalAsOfQuarter":"2026Q3","amountDrawn":null,"amountRepaid":null,"remainingCommitment":14.795,"lettersOfCredit":0.205,"facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","supersedesFacilityIds":["TX17A","TX17B"],"sourceUrl":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm","exposureBasis":"Reported restated revolving commitment net of standby letters of credit; lender shares and earlier springing maturity inputs unavailable"}],
     "audit4LeaseDisclosure": {"asOf":"2026-09-30","uncommencedUndiscountedPayments":451.2,"uncommencedStartYears":[2026,2028],"uncommencedWeightedAverageTermYears":10,"postCutoffSeparateCommitments":105.7,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm","fiscalBuckets":["2026 remaining","2027","2028","2029","2030","Thereafter"],"operatingPayments":[0.057,0.303,0.462,0.445,0.466,2.491],"financePayments":[0.121,0.438,0.422,0.406,0.39,0.173],"operatingImputedInterest":1.414,"financeImputedInterest":0.276,"operatingLeaseLiability":2.81,"financeLeaseLiability":1.674,"separatePurchaseCommitments":[5.053,28.424,43.473,46.901,44.214,145.754]},
     "verifiedFinancingHistory": {
       "2023": {"dataType":"Actual","fullYear":true,"amounts":{"equity":0.448,"debt":1.750,"other":0.122},"sourceUrl":"https://www.sec.gov/Archives/edgar/data/2130357/000162828026074944/anthropicpbc-424b4.htm"},
