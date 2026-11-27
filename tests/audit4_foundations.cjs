@@ -1454,3 +1454,31 @@ assert.equal(coreWeaveFleetEvidence.deployedUnitsLowerBoundExclusive, 250000);
 assert.equal(coreWeaveFleetEvidence.asOf, "2024-12-31");
 assert.equal(coreWeaveFleetEvidence.majorityGeneration, "NVIDIA Hopper");
 assert.equal(coreWeaveFleetEvidence.unitsByModel, null);
+const countedGpuRefresh = engine.fleetRefresh([
+  { acquired: "2023Q1", quantity: 10000, unitCostUsd: 40000, generation: "Hopper" }
+], "2027Q1", { economicLife: 4, replacementRatio: 0.5, repurposeShare: 0.2, residualValue: 0.25,
+  replacementUnitCostUsd: 50000, replacementGeneration: "Blackwell" });
+assert.equal(countedGpuRefresh.replacementCapex, 0.25);
+assert.equal(countedGpuRefresh.disposalProceeds, 0.04);
+assert.deepEqual(countedGpuRefresh.cohorts.map(c => [c.quantity, c.cost, c.generation, c.lowTier === true]),
+  [[5000, 0.2, "Hopper", false], [1000, 0.04, "Hopper", true], [5000, 0.25, "Blackwell", false]]);
+const quantityForecast = engine.runSimulation([refreshFixture], [], { audit4Contracts: true,
+  overrides: { [refreshFixture.id]: { gpuRefresh: {
+    cohorts: [{ acquired: "2022Q4", quantity: 10000, unitCostUsd: 40000, generation: "Hopper" }],
+    economicLife: 4, replacementRatio: 0.5, repurposeShare: 0.2, residualValue: 0.25,
+    replacementUnitCostUsd: 50000, replacementGeneration: "Blackwell"
+  } } }
+}).timeline["2026Q4"].entities[refreshFixture.id];
+const quantityReference = engine.runSimulation([refreshFixture], [], { audit4Contracts: true })
+  .timeline["2026Q4"].entities[refreshFixture.id];
+assert.equal(usd(quantityReference.fcf - quantityForecast.fcf), 0.25);
+assert.equal(usd(quantityReference.cash - quantityForecast.cash), 0.21);
+const quantityAcquisition = engine.runSimulation([refreshFixture], [], { audit4Contracts: true,
+  overrides: { [refreshFixture.id]: { capex: 0.3, gpuRefresh: { gpuPurchasesByQuarter: {
+    "2026Q4": { quantity: 10000, unitCostUsd: 40000, generation: "Hopper" }
+  } } } }
+}).timeline["2026Q4"].entities[refreshFixture.id];
+assert.equal(quantityAcquisition.gpuPurchases, 0.3);
+assert.deepEqual(quantityAcquisition.gpuClosingCohorts, [
+  { acquired: "2026Q4", cost: 0.3, quantity: 7500, unitCostUsd: 40000, generation: "Hopper" }
+]);

@@ -1048,6 +1048,15 @@
     return Object.fromEntries(entries.map(({ source, whole }) => [source, whole / 10000]));
   }
 
+  function hasGpuUnitBasis(cohort) {
+    return Number.isSafeInteger(cohort.quantity) && cohort.quantity > 0 &&
+      Number.isFinite(cohort.unitCostUsd) && cohort.unitCostUsd >= 0;
+  }
+
+  function gpuCohortCost(cohort) {
+    return hasGpuUnitBasis(cohort) ? cohort.quantity * cohort.unitCostUsd / 1e9 : nonnegative(cohort.cost);
+  }
+
   function fleetRefresh(cohorts, quarter, config) {
     let replacementCapex = 0;
     let disposalProceeds = 0;
@@ -1056,24 +1065,41 @@
     const next = [];
     for (const cohort of cohorts) {
       const age = parseQuarterNumber(quarter) - parseQuarterNumber(cohort.acquired);
-      const cost = nonnegative(cohort.cost);
+      const counted = hasGpuUnitBasis(cohort);
+      const cost = gpuCohortCost(cohort);
       const physicallyRetired = config.physicalLife != null && age >= 4 * config.physicalLife;
       const eligible = !cohort.lowTier && age >= 4 * (config.economicLife ?? 5);
       const share = physicallyRetired ? 1 : eligible ? Math.min(1, nonnegative(config.replacementRatio ?? 0.25)) : 0;
       const residual = physicallyRetired ? config.physicalResidualValue ?? 0 : config.residualValue;
-      const replaced = cost * share;
-      const repurposed = physicallyRetired ? 0 : replaced * Math.min(1, nonnegative(config.repurposeShare));
+      const retainedShare = physicallyRetired ? 0 : Math.min(1, nonnegative(config.repurposeShare));
+      const replacedUnits = counted ? Math.floor(cohort.quantity * share) : null;
+      const repurposedUnits = counted ? Math.floor(replacedUnits * retainedShare) : null;
+      const replaced = counted ? replacedUnits * cohort.unitCostUsd / 1e9 : cost * share;
+      const repurposed = counted ? repurposedUnits * cohort.unitCostUsd / 1e9 : replaced * retainedShare;
       const disposed = replaced - repurposed;
-      const newCost = cohort.lowTier ? 0 : replaced * Math.max(0, 1 - (config.priceDecline ?? 0));
+      const priceFactor = Math.max(0, 1 - (config.priceDecline ?? 0));
+      const newUnitCost = counted ? nonnegative(config.replacementUnitCostUsd ?? cohort.unitCostUsd * priceFactor) : null;
+      const newCost = cohort.lowTier ? 0 : counted ? replacedUnits * newUnitCost / 1e9 : replaced * priceFactor;
       replacementCapex += newCost;
       disposedCost += disposed;
       if (config.accountingLife > 0) {
         disposedBookValue += disposed * (1 - Math.min(1, Math.max(0, age) / (4 * config.accountingLife)));
       }
       disposalProceeds += disposed * Math.min(1, nonnegative(residual));
-      if (cost > replaced) next.push({ ...cohort, cost: cost - replaced });
-      if (repurposed > 0) next.push({ ...cohort, cost: repurposed, lowTier: true });
-      if (newCost > 0) next.push({ acquired: quarter, cost: newCost });
+      if (counted) {
+        if (cohort.quantity > replacedUnits) next.push({
+          ...cohort, quantity: cohort.quantity - replacedUnits, cost: cost - replaced
+        });
+        if (repurposedUnits > 0) next.push({ ...cohort, quantity: repurposedUnits, cost: repurposed, lowTier: true });
+        if (!cohort.lowTier && replacedUnits > 0) next.push({
+          acquired: quarter, cost: newCost, quantity: replacedUnits, unitCostUsd: newUnitCost,
+          generation: config.replacementGeneration ?? cohort.generation
+        });
+      } else {
+        if (cost > replaced) next.push({ ...cohort, cost: cost - replaced });
+        if (repurposed > 0) next.push({ ...cohort, cost: repurposed, lowTier: true });
+        if (newCost > 0) next.push({ acquired: quarter, cost: newCost });
+      }
     }
     return {
       cohorts: next,
@@ -1356,9 +1382,10 @@
       for (const override of Object.values(options.overrides ?? {})) {
         const refresh = override.gpuRefresh;
         if (!refresh) continue;
-        const acquired = (refresh.cohorts ?? []).filter(cohort => cohort.cost > 0).map(cohort => cohort.acquired);
+        const acquired = (refresh.cohorts ?? []).filter(cohort => gpuCohortCost(cohort) > 0).map(cohort => cohort.acquired);
         const purchases = Object.entries(refresh.gpuPurchasesByQuarter ?? {})
-          .filter(([, amount]) => amount > 0).map(([quarter]) => quarter);
+          .filter(([, purchase]) => (typeof purchase === "object" && purchase != null
+            ? gpuCohortCost(purchase) : nonnegative(purchase)) > 0).map(([quarter]) => quarter);
         for (const quarter of [...acquired, ...purchases]) {
           const start = parseQuarterNumber(quarter);
           if (start >= 0) lastYear = Math.max(lastYear, Math.floor((start + Math.ceil(4 * Math.min(refresh.economicLife ?? 5, refresh.physicalLife ?? Infinity))) / 4));
@@ -1603,10 +1630,10 @@
             ? Math.min(1, nonnegative(ov.gpuRefresh.physicalResidualValue))
             : (1 - (1 - residual) * Math.min(1, age / life)) * gpuUtilization *
               Math.min(1, nonnegative(cohort.marketValueFactor ?? 1));
-          return nonnegative(cohort.cost) * valuation;
+          return gpuCohortCost(cohort) * valuation;
         };
         const fleetCollateral = openingFleet.reduce((sum, cohort) => sum + valueGpuCohort(cohort), 0);
-        const fleetOriginalCost = openingFleet.reduce((sum, cohort) => sum + nonnegative(cohort.cost), 0);
+        const fleetOriginalCost = openingFleet.reduce((sum, cohort) => sum + gpuCohortCost(cohort), 0);
         const gpuUsageMaintenanceCash = money(fleetOriginalCost * gpuUtilization *
           nonnegative(ov?.gpuRefresh?.annualUsageMaintenanceRate) / 4);
         const attributedPledges = new Set((ov?.gpuRefresh?.cohorts ?? []).map(cohort => cohort.pledgedTo));
@@ -1619,7 +1646,7 @@
           if (attributedPledges.has(tx.id)) {
             basis = "AttributedPledge";
             const pledged = openingFleet.filter(cohort => cohort.pledgedTo === tx.id);
-            const pledgedCost = pledged.reduce((sum, cohort) => sum + nonnegative(cohort.cost), 0);
+            const pledgedCost = pledged.reduce((sum, cohort) => sum + gpuCohortCost(cohort), 0);
             const pledgedValue = pledged.reduce((sum, cohort) => sum + valueGpuCohort(cohort), 0);
             effectiveHaircut = pledgedCost > 0
               ? 1 - (1 - gpuCollateralHaircut) * pledgedValue / pledgedCost : 1;
@@ -1810,10 +1837,18 @@
           ? fleetRefresh(fleets[e.id] ?? fleetConfig.cohorts ?? [], q, fleetConfig)
           : { replacementCapex: 0, disposalProceeds: 0 };
         const baseCapex = money(nonnegative(p.capex) * (1 + Math.max(-1, p.capexGrowth ?? 0)) ** stepIdx);
-        const gpuPurchases = Math.min(baseCapex, nonnegative(fleetConfig?.gpuPurchasesByQuarter?.[q]));
+        const purchase = fleetConfig?.gpuPurchasesByQuarter?.[q];
+        const countedPurchase = purchase && hasGpuUnitBasis(purchase) && purchase.unitCostUsd > 0;
+        const purchaseUnits = countedPurchase
+          ? Math.min(purchase.quantity, Math.floor((baseCapex * 1e9 + 1e-6) / purchase.unitCostUsd)) : 0;
+        const gpuPurchases = countedPurchase ? purchaseUnits * purchase.unitCostUsd / 1e9
+          : Math.min(baseCapex, nonnegative(purchase));
         if (fleetConfig) {
           fleets[e.id] = [...refresh.cohorts];
-          if (gpuPurchases > 0) fleets[e.id].push({ acquired: q, cost: gpuPurchases });
+          if (gpuPurchases > 0) fleets[e.id].push(countedPurchase
+            ? { acquired: q, cost: gpuPurchases, quantity: purchaseUnits, unitCostUsd: purchase.unitCostUsd,
+                generation: purchase.generation }
+            : { acquired: q, cost: gpuPurchases });
         }
         const closingFleet = fleets[e.id] ?? [];
         const pledgedGpuValues = Object.fromEntries((fleetConfig?.cohorts ?? [])

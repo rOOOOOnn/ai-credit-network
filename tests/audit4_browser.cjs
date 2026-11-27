@@ -116,7 +116,7 @@ async function checkPage(browser, url) {
     await panel.locator("button").click();
     assert.match(await panel.locator("[data-lease-result]").innerText(), /2\.50 \/ 2\.00 \/ 0\.00/);
     const gpuSettings = JSON.parse(await scenario.inputValue());
-    gpuSettings.gpuRefresh = { economicLife: 7, replacementRatio: 0.5, residualValue: 0.2, gpuPurchasesByQuarter: { "2027Q1": 0.1 } };
+    gpuSettings.gpuRefresh = { economicLife: 7, replacementRatio: 0.5, residualValue: 0.2, gpuPurchasesByQuarter: { "2027Q1": { quantity: 1000, unitCostUsd: 100000, generation: "Fixture" } } };
     await scenario.fill(JSON.stringify(gpuSettings));
     await panel.locator("button").click();
     assert.equal(await panel.locator("tbody tr").last().locator("td").first().innerText(), "2034");
@@ -157,14 +157,14 @@ async function checkPage(browser, url) {
     assert.ok(weightedEntity);
     const gpuAcquisition = ledger.quarters.find(row => row.quarter === "2027Q1").gpuCashSchedules[weightedEntity];
     assert.equal(gpuAcquisition.purchasesIncludedInBaseCapex, 0.1);
-    assert.deepEqual(gpuAcquisition.closingCohorts, [{ acquired: "2027Q1", cost: 0.1 }]);
+    assert.deepEqual(gpuAcquisition.closingCohorts, [{ acquired: "2027Q1", cost: 0.1, quantity: 1000, unitCostUsd: 100000, generation: "Fixture" }]);
     const gpuRefresh = ledger.quarters.find(row => row.quarter === "2034Q1").gpuCashSchedules[weightedEntity];
     assert.equal(gpuRefresh.replacementCapex, 0.05);
     assert.equal(gpuRefresh.disposalProceeds, 0.005);
     assert.deepEqual(gpuRefresh.closingCohorts, [
-      { acquired: "2027Q1", cost: 0.05 },
-      { acquired: "2027Q1", cost: 0.025, lowTier: true },
-      { acquired: "2034Q1", cost: 0.05 }
+      { acquired: "2027Q1", cost: 0.05, quantity: 500, unitCostUsd: 100000, generation: "Fixture" },
+      { acquired: "2027Q1", cost: 0.025, quantity: 250, unitCostUsd: 100000, generation: "Fixture", lowTier: true },
+      { acquired: "2034Q1", cost: 0.05, quantity: 500, unitCostUsd: 100000, generation: "Fixture" }
     ]);
     assert.equal(Number((gpuRefresh.replacementCapex - gpuRefresh.disposalProceeds).toFixed(4)), gpuRefresh.netReplacementCash);
     const totalCashFinancing = ledger.quarters.filter(row => row.quarter.startsWith("2027"))
