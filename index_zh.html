@@ -9839,6 +9839,7 @@ const I18N = {
       quarterWeights:[1,1,1,1],base:{equity:10},curve:"linear",initialGrowth:0.8,annualDecline:0.2,minimumGrowth:0,horizon:6};
     const text = panel.querySelector("textarea");
     text.value = JSON.stringify({financing:config ?? example,
+      facilityDrawdowns:state.overrides[entity.id]?.facilityDrawdowns ?? {},
       gpuRefresh:state.overrides[entity.id]?.gpuRefresh ?? {economicLife:5,replacementRatio:0.25,residualValue:0.2,cohorts:[]},
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
       incrementalLeaseTranches:state.overrides[entity.id]?.incrementalLeaseTranches ?? null,
@@ -9996,6 +9997,21 @@ const I18N = {
       }
     }
     const operating = state.overrides[entity.id] ?? {};
+    const equipment = entity.audit4BalanceSheetEvidence;
+    if (equipment?.equipmentFacilityMaximum > 0) {
+      const facility = entity.audit4Facilities.find(row => row.id === "AMZN_EQUIPMENT_DDTL");
+      if (facility) {
+        for (const quarter of state.simResult.allQuarters.filter(quarter =>
+          quarter >= equipment.equipmentFacilityFirstDrawQuarter && quarter <= equipment.equipmentFacilityLastDrawQuarter)) {
+          const label = quarter + " " + t("Eligible equipment draw assumption ($B)", "\u5408\u683c\u8bbe\u5907\u63d0\u6b3e\u5047\u8bbe\uff08\u5341\u4ebf\u7f8e\u5143\uff09");
+          const control = setting(label, operating.facilityDrawdowns?.[facility.id]?.[quarter] ?? 0, value => {
+            const drawdowns = settings().facilityDrawdowns ??= {};
+            (drawdowns[facility.id] ??= {})[quarter] = Math.max(0, Math.min(facility.totalCommitment, value));
+          });
+          control.dataset.equipmentDraw = quarter;
+        }
+      }
+    }
     setting(t("OCF margin before interest and incremental costs", "\u5229\u606f\u548c\u589e\u91cf\u6210\u672c\u524d\u7684\u7ecf\u8425\u73b0\u91d1\u6d41\u5229\u6da6\u7387"),
       operating.ocfMarginBeforeFinancing, value => { settings().ocfMarginBeforeFinancing = value; }, undefined, true);
     setting(t("Base CapEx growth per quarter", "\u57fa\u7840\u8d44\u672c\u5f00\u652f\u5b63\u5ea6\u589e\u901f"),
@@ -10244,6 +10260,7 @@ const I18N = {
         if (!["manual","curve"].includes(data.financing?.mode)) throw new Error("Expected manual or curve mode");
         const settings = state.overrides[panel.dataset.entity] ??= {};
         settings.financing = data.financing;
+        settings.facilityDrawdowns = data.facilityDrawdowns;
         settings.gpuRefresh = data.gpuRefresh;
         settings.includeScheduledEquity = data.includeScheduledEquity;
         settings.leaseDelayQuarters = data.leaseDelayQuarters;

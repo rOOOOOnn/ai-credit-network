@@ -271,6 +271,24 @@ async function checkPage(browser, url) {
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
     await panel.locator("[data-nvidia-lease-preset]").selectOption("annual");
     assert.equal(JSON.parse(await scenario.inputValue()).includeNvidiaLeaseBuckets, true);
+    await page.locator('[data-network-entity="AMZN"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    const equipmentDraw = panel.locator('[data-equipment-draw="2027Q1"]');
+    await equipmentDraw.fill("2");
+    await equipmentDraw.press("Tab");
+    assert.equal(JSON.parse(await scenario.inputValue()).facilityDrawdowns.AMZN_EQUIPMENT_DDTL["2027Q1"], 2);
+    await page.locator("#openDataModalBtn").click();
+    const equipmentDownload = page.waitForEvent("download");
+    await page.locator("#dlAuditLedgerJson").click();
+    const equipmentExport = JSON.parse(await fs.readFile(await (await equipmentDownload).path(), "utf8"));
+    const equipmentQuarter = equipmentExport.quarters.find(entry => entry.quarter === "2027Q1");
+    const equipmentFacility = equipmentQuarter.financingLedger.AMZN_EQUIPMENT_DDTL;
+    assert.equal(equipmentFacility.newDrawdown, 2);
+    assert.equal(equipmentQuarter.financingCashSources.AMZN.contractualTermDraw, 2);
+    assert.deepEqual(equipmentFacility.trancheBalances, [
+      { drawQuarter: "2027Q1", maturityQuarter: "2032Q1", principal: 2 }
+    ]);
     assert.deepEqual(errors, []);
     console.log("Browser interaction passed:", url.split("/").at(-1));
   } finally {
