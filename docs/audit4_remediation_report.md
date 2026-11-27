@@ -1279,3 +1279,7 @@ The end-to-end browser check downloads each page's actual audit ledger and repla
 ### Quarterly liquidity checks across integrated stresses
 
 The A–G regression now recomputes runway from cash above the minimum and negative FCF, and computes required financing after undrawn credit separately from the gross funding gap. It scans each eligible borrower path for the first modeled default and first nonnegative FCF and checks both dates against the engine summary. The shorter stress table only reports a first default if it occurs by that table's reporting cutoff. Both stress tables retain their published values.
+
+### Field-level evidence in the coverage matrix
+
+The generated historical matrix now includes the interest input, separately reported gross interest expense and operating lease liability. Fields can link directly to their own source and state their measurement basis. For example, AMD's $4.75B scenario revolver availability links to the separate facility disclosure and identifies the full letter-of-credit reserve assumption. Core Scientific's $0.068B legacy interest assumption and $0.054066B reported gross interest expense appear in separate columns. The report regression checks both distinctions. These additions describe historical coverage and do not recalibrate the forecast.

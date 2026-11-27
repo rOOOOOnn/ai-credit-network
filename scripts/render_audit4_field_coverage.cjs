@@ -6,7 +6,9 @@ const fields = [
   ["Revenue", "revenue"], ["OCF", "ocf"], ["FCF", "fcf"], ["CapEx", "capex"],
   ["Cash", "cash"], ["Debt", "debt"], ["Current debt", "shortTermDebt"],
   ["Noncurrent debt", "longTermDebt"], ["Payables", "accountsPayable"],
-  ["Lease liabilities", "leaseLiab"], ["Uncommenced leases", "offBalanceLeases"],
+  ["Lease liabilities", "leaseLiab"], ["Operating lease liability", "operatingLeaseLiability"],
+  ["Uncommenced leases", "offBalanceLeases"], ["Interest input", "interestExp"],
+  ["Reported gross interest expense", "reportedGrossInterestExpense"],
   ["Debt maturities", "debtMaturity"], ["RPO", "rpo"],
   ["Customer concentration", "customerConcentration"], ["GPU purchases", "gpuPurchases"],
   ["GPU fleet age", "gpuFleetAge"], ["Replacement CapEx", "replacementCapex"],
@@ -18,7 +20,7 @@ function renderFieldCoverage(rows) {
   const row = cells => "| " + cells.join(" | ") + " |";
   const titles = ["# Audit 4 historical field coverage", "",
     "Cells show the latest historical snapshot in USD billions, except customer concentration (a fraction) and GPU fleet age (years).",
-    "Each populated cell shows its repository classification. An em dash means the snapshot field is absent or null.",
+    "Each populated cell shows its repository classification. A source link within a cell applies to that field. An em dash means the snapshot field is absent or null.",
     "The source column identifies the row's source pointer or a general entity pointer. Presence of a value or source pointer does not certify the underlying disclosure.",
     "Forecast-side disclosures, source verification and scope limitations are tracked in the [entity source register](audit4_entity_source_register.md) and [audit report](audit4_remediation_report.md).",
     "To regenerate, run `node scripts/render_audit4_field_coverage.cjs`.", ""];
@@ -34,7 +36,9 @@ function renderFieldCoverage(rows) {
       const classification = record[key + "DataType"] ?? record.dataType ?? "Unclassified";
       const display = typeof value === "object" ? "Structured" : String(value).replaceAll("|", "\\|");
       const basis = record[key + "Basis"];
-      return display + " · " + classification + (basis ? " (" + basis + ")" : "");
+      const fieldSource = record[key + "SourceUrl"];
+      return display + " · " + classification + (basis ? " (" + basis.replaceAll("|", "\\|") + ")" : "") +
+        (fieldSource?.startsWith("https://") ? " [Source](" + fieldSource + ")" : "");
     });
     return row([entity.id, quarter ?? "—", record?.disclosedDate ?? "—", source, ...cells]);
   });

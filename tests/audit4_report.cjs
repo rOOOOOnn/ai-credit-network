@@ -56,4 +56,7 @@ const { renderFieldCoverage } = require("../scripts/render_audit4_field_coverage
 const fieldCoverage = readFileSync(path.join(root, "docs/audit4_field_coverage.md"), "utf8");
 assert.equal(fieldCoverage.replace(/\r\n/g, "\n"), renderFieldCoverage(entities),
   "Regenerate the historical field coverage matrix after updating entity data");
+const coverageRow = id => fieldCoverage.split(/\r?\n/).find(row => row.startsWith("| " + id + " |"));
+assert.match(coverageRow("AMD"), /4\.75 · Assumption \(Reserves the full letter-of-credit sublimit; actual usage unavailable\) \[Source\]\(https:\/\/[^)]+amd-20260926\.htm\)/);
+assert.match(coverageRow("CORZ"), /0\.068 · Assumption \(Legacy quarterly model input\) \| 0\.054066 · Actual/);
 console.log("Historical field coverage matrix matches repository snapshots");
