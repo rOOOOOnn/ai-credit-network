@@ -1203,3 +1203,13 @@ assert.equal(engine.computeFragilityScore(contractedCashFixture, {
   ...riskFixture, auditedFixedCashObligations: 0
 }, {}).score, 4);
 assert.equal(nextPeerSecondary.auditedRefinancingFactor < 1, true);
+
+const bufferFixture = { ...riskFixture, auditedFixedCashObligations: 0, minCash: 20 };
+const farFromFloor = engine.computeFragilityScore(contractedCashFixture, { ...bufferFixture, cash: 40 }, {});
+const nearFloor = engine.computeFragilityScore(contractedCashFixture, { ...bufferFixture, cash: 25 }, {});
+const belowFloor = engine.computeFragilityScore(contractedCashFixture, {
+  ...bufferFixture, cash: 19, distressLevel: 1
+}, {});
+assert.equal(farFromFloor.score, 4);
+assert.deepEqual(nearFloor, { score: 6, drivers: ["Low Operating Cash Buffer"] });
+assert.deepEqual(belowFloor, { score: 8, drivers: ["Low Operating Cash Buffer"] });

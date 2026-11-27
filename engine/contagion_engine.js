@@ -532,9 +532,15 @@
     else if (st.distressLevel === 2) distressBoost = 18;
     else if (st.distressLevel === 1) distressBoost = 8;
 
-    const score = Math.round(Math.min(100, Math.max(4, levScore + burnScore + refiScore + covScore + marketStress + distressBoost)));
+    const minimumCash = st.minCash ?? 0;
+    const bufferStress = st.auditedFixedCashObligations != null && !st.distressLevel && minimumCash > 0
+      ? 8 * Math.max(0, Math.min(1, 2 - cash / minimumCash)) : 0;
+    const score = Math.round(Math.min(100, Math.max(4,
+      levScore + burnScore + refiScore + covScore + marketStress + distressBoost + bufferStress)));
     const drivers = [];
     if (levScore >= 14) drivers.push("High Leverage");
+    if (bufferStress > 0 || (st.auditedFixedCashObligations != null && st.distressLevel === 1 && cash < minimumCash))
+      drivers.push("Low Operating Cash Buffer");
     if (burnScore >= 10) drivers.push("Cash Burn / CapEx");
     if (refiScore >= 10) drivers.push("Refinancing Dependency");
     if (covScore >= 10) drivers.push("Fixed Obligation Load");

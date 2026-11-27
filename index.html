@@ -852,9 +852,15 @@
     else if (st.distressLevel === 2) distressBoost = 18;
     else if (st.distressLevel === 1) distressBoost = 8;
 
-    const score = Math.round(Math.min(100, Math.max(4, levScore + burnScore + refiScore + covScore + marketStress + distressBoost)));
+    const minimumCash = st.minCash ?? 0;
+    const bufferStress = st.auditedFixedCashObligations != null && !st.distressLevel && minimumCash > 0
+      ? 8 * Math.max(0, Math.min(1, 2 - cash / minimumCash)) : 0;
+    const score = Math.round(Math.min(100, Math.max(4,
+      levScore + burnScore + refiScore + covScore + marketStress + distressBoost + bufferStress)));
     const drivers = [];
     if (levScore >= 14) drivers.push("High Leverage");
+    if (bufferStress > 0 || (st.auditedFixedCashObligations != null && st.distressLevel === 1 && cash < minimumCash))
+      drivers.push("Low Operating Cash Buffer");
     if (burnScore >= 10) drivers.push("Cash Burn / CapEx");
     if (refiScore >= 10) drivers.push("Refinancing Dependency");
     if (covScore >= 10) drivers.push("Fixed Obligation Load");
@@ -8992,6 +8998,7 @@ const I18N = {
     },
     driversMap: {
       "High Leverage": "高杠杆",
+      "Low Operating Cash Buffer": "\u8fd0\u8425\u73b0\u91d1\u7f13\u51b2\u4e0d\u8db3",
       "Cash Burn / CapEx": "高烧钱与资本开支",
       "Refinancing Dependency": "高度依赖再融资",
       "Fixed Obligation Load": "刚性债务与合同负担",
@@ -9141,6 +9148,7 @@ const I18N = {
     },
     driversMap: {
       "High Leverage": "High Leverage",
+      "Low Operating Cash Buffer": "Low Operating Cash Buffer",
       "Cash Burn / CapEx": "Cash Burn / CapEx",
       "Refinancing Dependency": "Refinancing Dependency",
       "Fixed Obligation Load": "Fixed Obligation Load",
