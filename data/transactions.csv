@@ -5,7 +5,7 @@ TX03,OPENAI,ORCL,Cloud Computing Purchase,Commercial,Cloud Computing,300.0,0.0,0
 TX07,SOFTBANK,OPENAI,Equity Investment,Financial,,40.0,40.0,0.0,,0.0,Actual,2025-03-31,2025Q2,2025Q4,https://group.softbank/en/news/press/20251231
 TX08,NVDA,OPENAI,Equity Investment,Financial,,30.0,30.0,0.0,,0.0,Actual,2026-02-20,2026Q1,2026Q2,https://www.thestar.com.my/tech/tech-news/2026/02/20/nvidia-openai-near-30-billion-investment-in-place-of-unfinished-100-billion-deal-ft-reports
 TX09,AMZN,OPENAI,Equity Investment,Financial,,50.0,50.0,0.0,,0.0,Actual,2026-02-27,2026Q1,2026Q3,https://www.habtoorresearch.com/programmes/ai-infrastructure-spending/
-TX11,NVDA,OPENAI,Loan Guarantee,Financial,,105.0,0,0.0,,0.0,Committed,2026-08-01,2028Q1,2035Q4,https://www.stocktitan.net/sec-filings/NVDA/8-k-nvidia-corp-reports-material-event-1b8846aa7232.html
+TX11,NVDA,OPENAI,Loan Guarantee,Financial,,105.0,0,0.0,,0.0,Committed,2026-08-17,2028Q1,2035Q4,https://www.stocktitan.net/sec-filings/NVDA/8-k-nvidia-corp-reports-material-event-1b8846aa7232.html
 TX13,ANTHROPIC,AMZN,Take-or-Pay Contract,Commercial,Take-or-Pay,110.0,,0.0,,3.5,Committed,2026-05-01,2026Q2,2036Q2,https://fortune.com/2026/11/19/anthropic-ipo-amazon-google-stake-windfall-nonvoting/
 TX15,ANTHROPIC,GOOGL,Take-or-Pay Contract,Commercial,Take-or-Pay,121.3,,0.0,,4.5,Committed,2026-04-24,2026Q2,2033Q3,https://fortune.com/2026/11/19/anthropic-ipo-amazon-google-stake-windfall-nonvoting/
 TX16,NVDA,ANTHROPIC,Equity Investment,Financial,,10.0,10.0,0.0,,0.0,Actual,2025-11-01,2026Q3,2026Q4,https://eu.36kr.com/en/p/4077339293242504

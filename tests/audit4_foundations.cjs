@@ -1328,3 +1328,8 @@ const cycleHistory = engine.financingForecast({ mode: "curve", curve: "historica
   2026: { dataType: "Actual", fullYear: true, amounts: { equity: 4 } }
 } }, 2027);
 assert.equal(cycleHistory.amounts.equity, 4);
+const tx11Delivery = transactions.find(tx => tx.id === "TX11").audit4GuaranteeTerms.disclosedDeliveryOutlook;
+assert.equal(tx11Delivery.firstCoveredBuildingNvidiaFiscalYear, 2029);
+assert.deepEqual(tx11Delivery.buildingGroups.map(group => [group.capacityMwIt, group.expectedFullOperationYear, group.withinInitialGuarantee]),
+  [[4248, 2031, true], [3776, 2032, false]]);
+assert.equal(tx11Delivery.siteLevelQuarterDatesAvailable, false);
