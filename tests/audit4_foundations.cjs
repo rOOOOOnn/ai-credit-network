@@ -289,6 +289,14 @@ assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments),
 assert.equal(usd(oracleFiling.ocf - oracleFiling.capex), -5.396);
 assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments - oracleFiling.capex), -16.759);
 assert.equal(usd(oracleFiling.currentBorrowings + oracleFiling.nonCurrentBorrowings), 125.337);
+const amazonHistorical = entities.find(entity => entity.id === "AMZN").financials["2026Q3"];
+assert.equal(amazonHistorical.cash + amazonHistorical.restrictedCash, 58.714);
+assert.equal(amazonHistorical.shortTermDebt, usd(6.827 + 0.380));
+assert.equal(amazonHistorical.debt, usd(7.207 + 173.125));
+assert.equal(amazonHistorical.fcf, usd(42.422 - 77.259));
+assert.equal(amazonHistorical.leaseLiab, usd(100.288 + 14.495));
+assert.equal(amazonHistorical.offBalanceLeases, usd(2.590 + 12.448 + 11.477 + 12.193 + 11.385 + 114.829));
+assert.equal(amazonHistorical.undrawnCredit, 20);
 const alphabetHistorical = entities.find(entity => entity.id === "GOOGL").financials["2026Q3"];
 assert.equal(alphabetHistorical.cash, 56.334);
 assert.equal(alphabetHistorical.debt, usd(1.016 + 125.102));
@@ -1155,7 +1163,8 @@ for (const [termQuarters, payment, ocf, fcf, cash, requiredRevenue] of [
 }
 
 const preAmazonRevolverEntities = entities.map(entity => entity.id === "AMZN"
-  ? { ...entity, audit4Facilities: [] } : entity);
+  ? { ...entity, audit4Facilities: [], financials: { ...entity.financials,
+      "2026Q3": { ...entity.financials["2026Q3"], undrawnCredit: entity.legacyForecastOpening.undrawnCredit } } } : entity);
 const delayedCoreWeaveLease = engine.runSimulation(preAmazonRevolverEntities, transactions, { audit4Contracts: true, overrides: {
   CRWV: { leaseDelayQuarters: 4, incrementalLeaseTranches: [{ type: "operating", startQuarter: "2026Q4",
     termQuarters: 28, commitment: coreWeaveLeases.uncommencedUndiscountedPayments }] }

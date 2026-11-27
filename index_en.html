@@ -1394,7 +1394,7 @@
       const bridge = useAudit4Contracts ? e.audit4CashFlowBridge : null;
       const quarterlyCash = auditCashFlowObservation(bridge);
       const q3 = existingQ3 && quarterlyCash
-        ? { ...existingQ3, ocf: quarterlyCash.ocf }
+        ? { ...existingQ3, ocf: quarterlyCash.ocf, ...e.audit4ForecastCalibration }
         : existingQ3;
       const p = e.defaults || {};
       const hasCashAndRev = Boolean(q3 && q3.cash !== null && q3.cash !== undefined && q3.revenue !== null && q3.revenue !== undefined);
@@ -1630,7 +1630,8 @@
           e.audit4BalanceSheetEvidence?.asOf === "2026-09-30" ? e.audit4BalanceSheetEvidence.borrowingsPrincipal : null;
         const begDebt = legacyOpening?.debt ?? verifiedOpeningPrincipal ?? (fiscalOpening ? money(fiscalOpening.borrowingsPrincipal ?? (fiscalOpening.currentBorrowings + fiscalOpening.nonCurrentBorrowings))
           : disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0));
-        const priorQuarterRevenue = fiscalOpening?.revenue ?? legacyOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
+        const auditedOpeningRevenue = useAudit4Contracts && q === QUARTER_PARTIAL ? e.audit4ForecastCalibration?.revenue : null;
+        const priorQuarterRevenue = fiscalOpening?.revenue ?? auditedOpeningRevenue ?? legacyOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const prevRev = Math.max(0, priorQuarterRevenue - (prev.gpuUtilizationRevenueAdjustment ?? 0));
         const facilities = facilityByBorrower[e.id];
         const revolvers = facilities?.filter(row => row.isRevolver);
@@ -3455,6 +3456,8 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "AMZN",
+    "audit4ForecastCalibration": {"revenue":201.9,"interestExp":1.95,"dataType":"Assumption"},
+    "legacyForecastOpening": {"revenue":201.9,"cash":114.2,"debt":180.3,"ocf":42.08,"interestExp":1.95,"undrawnCredit":80,"dataType":"Assumption"},
     "audit4Facilities": [{"id":"AMZN_RCF_2023","type":"Direct Loan","payer":null,"receiver":"AMZN","announcedDate":"2026-10-29","startQ":"2026Q4","endQ":"2031Q4","totalCommitment":15,"principalOutstanding":0,"principalAsOfQuarter":"2026Q4","amountDrawn":null,"amountRepaid":null,"remainingCommitment":15,"facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm","exposureBasis":"Reported revolving commitment, opening draw assumed zero at replacement for the forecast; lender shares unavailable"},{"id":"AMZN_RCF_2026","type":"Direct Loan","payer":null,"receiver":"AMZN","announcedDate":"2026-10-29","startQ":"2026Q4","endQ":"2027Q4","totalCommitment":5,"principalOutstanding":0,"principalAsOfQuarter":"2026Q4","amountDrawn":null,"amountRepaid":null,"remainingCommitment":5,"facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm","exposureBasis":"Reported revolving commitment, opening draw assumed zero at replacement for the forecast; lender shares unavailable"},{"id":"AMZN_TERM_2026","type":"Direct Loan","payer":null,"receiver":"AMZN","announcedDate":"2026-10-29","startQ":"2026Q3","endQ":"2029Q3","totalCommitment":17.5,"amountDrawn":17.5,"amountRepaid":0,"remainingCommitment":0,"facilityKind":"Term","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm","exposureBasis":"Reported September term loan principal and September 2029 maturity; lender shares unavailable"},{"id":"AMZN_EQUIPMENT_DDTL","type":"Equipment Financing","payer":null,"receiver":"AMZN","announcedDate":"2026-10-29","startQ":"2027Q1","commitmentTerminationDate":"2028-09-30","drawTenorQuarters":20,"drawEligibilityRequired":true,"totalCommitment":80,"amountDrawn":0,"amountRepaid":0,"remainingCommitment":80,"lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm","exposureBasis":"Conditional equipment financing; scenario draws require eligible purchases and pricing"}],
     "audit4BalanceSheetEvidence": {"asOf":"2026-09-30","accountsPayable":158.715,"currentPortionOfLongTermDebt":6.827,"nonCurrentBorrowings":173.125,"longTermBorrowingsFaceValue":180.887,"workingCapitalBorrowings":0.38,"borrowingsPrincipal":181.267,"unamortizedDiscountAndIssuanceCosts":0.935,"commercialPaperOutstanding":0,"unsecuredRevolverCommitment":20,"unsecuredRevolverOutstanding":0,"equipmentFacilityMaximum":80,"equipmentFacilityFirstDrawQuarter":"2027Q1","equipmentFacilityLastDrawQuarter":"2028Q3","nonCurrentLeaseLiabilities":98.824,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"},
     "audit4HardwareDisclosure": {"assetClass":"Subset of servers and networking equipment","accountingUsefulLifeYears":5,"priorAccountingUsefulLifeYears":6,"accountingLifeAppliesToSubset":true,"accountingChangeEffective":"2025-01-01","incrementalDepreciationExpense":1.4,"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1018724/000101872426000004/amzn-20251231.htm"},
@@ -3565,30 +3568,32 @@ const INITIAL_ENTITIES = [
         "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000002/amzn-20251231xex991.htm"
       },
       "2026Q3": {
-        "revenue": 201.9,
-        "cash": 114.2,
-        "debt": 180.3,
-        "ocf": 42.08,
-        "capex": 77.3,
-        "fcf": -35.22,
-        "ar": null,
+        "revenue": 201.944,
+        "cash": 55.783,
+        "debt": 180.332,
+        "ocf": 42.422,
+        "capex": 77.259,
+        "fcf": -34.837,
+        "ar": 52.6,
         "rpo": 578,
-        "leaseLiab": null,
-        "interestExp": 1.95,
-        "undrawnCredit": 80,
+        "leaseLiab": 114.783,
+        "interestExp": 1.691,
+        "undrawnCredit": 20,
         "dataType": "Actual",
         "disclosedDate": "2026-10-29",
         "fiscalPeriod": "2026Q3",
         "calendarPeriod": "2026Q3",
         "periodStart": "2026-07-01",
         "periodEnd": "2026-09-30",
-        "restrictedCash": null,
-        "shortTermDebt": null,
-        "longTermDebt": 180.3,
+        "restrictedCash": 2.931,
+        "shortTermDebt": 7.207,
+        "longTermDebt": 173.125,
         "debtMaturity": null,
-        "accountsPayable": null,
+        "accountsPayable": 158.715,
         "offBalanceGuarantees": 0,
-        "revenueGrowth": null
+        "revenueGrowth": null,
+        "offBalanceLeases": 164.922,
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"
       }
     },
     "defaults": {

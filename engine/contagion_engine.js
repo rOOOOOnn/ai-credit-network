@@ -1077,7 +1077,7 @@
       const bridge = useAudit4Contracts ? e.audit4CashFlowBridge : null;
       const quarterlyCash = auditCashFlowObservation(bridge);
       const q3 = existingQ3 && quarterlyCash
-        ? { ...existingQ3, ocf: quarterlyCash.ocf }
+        ? { ...existingQ3, ocf: quarterlyCash.ocf, ...e.audit4ForecastCalibration }
         : existingQ3;
       const p = e.defaults || {};
       const hasCashAndRev = Boolean(q3 && q3.cash !== null && q3.cash !== undefined && q3.revenue !== null && q3.revenue !== undefined);
@@ -1313,7 +1313,8 @@
           e.audit4BalanceSheetEvidence?.asOf === "2026-09-30" ? e.audit4BalanceSheetEvidence.borrowingsPrincipal : null;
         const begDebt = legacyOpening?.debt ?? verifiedOpeningPrincipal ?? (fiscalOpening ? money(fiscalOpening.borrowingsPrincipal ?? (fiscalOpening.currentBorrowings + fiscalOpening.nonCurrentBorrowings))
           : disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0));
-        const priorQuarterRevenue = fiscalOpening?.revenue ?? legacyOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
+        const auditedOpeningRevenue = useAudit4Contracts && q === QUARTER_PARTIAL ? e.audit4ForecastCalibration?.revenue : null;
+        const priorQuarterRevenue = fiscalOpening?.revenue ?? auditedOpeningRevenue ?? legacyOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const prevRev = Math.max(0, priorQuarterRevenue - (prev.gpuUtilizationRevenueAdjustment ?? 0));
         const facilities = facilityByBorrower[e.id];
         const revolvers = facilities?.filter(row => row.isRevolver);
