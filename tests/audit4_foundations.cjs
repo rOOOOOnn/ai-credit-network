@@ -943,7 +943,9 @@ for (const [termQuarters, payment, ocf, fcf, cash, requiredRevenue] of [
   assert.equal(usd(stress.fcf + payment), -3.0415);
 }
 
-const delayedCoreWeaveLease = engine.runSimulation(entities, transactions, { audit4Contracts: true, overrides: {
+const preAmazonRevolverEntities = entities.map(entity => entity.id === "AMZN"
+  ? { ...entity, audit4Facilities: [] } : entity);
+const delayedCoreWeaveLease = engine.runSimulation(preAmazonRevolverEntities, transactions, { audit4Contracts: true, overrides: {
   CRWV: { leaseDelayQuarters: 4, incrementalLeaseTranches: [{ type: "operating", startQuarter: "2026Q4",
     termQuarters: 28, commitment: coreWeaveLeases.uncommencedUndiscountedPayments }] }
 } }).timeline;
@@ -1069,8 +1071,8 @@ const q4Tranche = openAiTranches.find(tranche => tranche.date === "2026-10-01");
 const openAiFreezeOptions = { audit4Contracts: true, overrides: {
   OPENAI: { financing: { mode: "manual", capacity: 0, annual: {} } }
 } };
-const trancheExcluded = engine.runSimulation(entities, transactions, openAiFreezeOptions);
-const trancheIncluded = engine.runSimulation(entities.map(row => row.id === "OPENAI" ? {
+const trancheExcluded = engine.runSimulation(preAmazonRevolverEntities, transactions, openAiFreezeOptions);
+const trancheIncluded = engine.runSimulation(preAmazonRevolverEntities.map(row => row.id === "OPENAI" ? {
   ...row, scheduledEquityInflows: { ...row.scheduledEquityInflows, "2026Q4": q4Tranche.amount }
 } : row), transactions, openAiFreezeOptions);
 assert.deepEqual([trancheExcluded.timeline["2026Q4"].entities.OPENAI.cash,
@@ -1151,7 +1153,7 @@ assert.equal(nvidiaLeases.uncommencedLeasePayments.reduce((sum, payment) => sum 
 assert.equal(nvidiaLeases.separateCloudServicePayments.reduce((sum, payment) => sum + payment, 0), 28);
 assert.equal(nvidiaLeases.uncommencedLeasePayments.at(-1), 63);
 
-const nvidiaLeaseStress = engine.runSimulation(entities, transactions, {
+const nvidiaLeaseStress = engine.runSimulation(preAmazonRevolverEntities, transactions, {
   audit4Contracts: true, forecastThrough: 2031, overrides: { NVDA: { includeNvidiaLeaseBuckets: true } }
 }).timeline;
 for (const [quarter, payment, ocf, fcf, cash] of [
@@ -1370,3 +1372,7 @@ for (const [id, principal] of [["GOOGL", 127.485], ["AMZN", 181.267]]) {
   const row = openingScope[id];
   assert.equal(usd(row.debt + row.principalRepay + row.nonCashDebtConversion - row.newDebt - row.rcfDraw), principal);
 }
+assert.equal(openingScope.AMZN.undrawnCredit + openingScope.AMZN.rcfDraw, 20);
+const amazonCredit = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline;
+assert.equal(amazonCredit["2027Q4"].financingLedger.AMZN_RCF_2026.canDraw, false);
+assert.equal(amazonCredit["2028Q4"].financingLedger.AMZN_RCF_2023.canDraw, false);
