@@ -1439,6 +1439,24 @@ assert.equal(usd(broadcom.ocf - broadcom.capex), 13.665);
 assert.equal(broadcom.fcf, 13.665);
 assert.equal(usd(broadcom.shortTermDebt + broadcom.longTermDebt), broadcom.debt);
 assert.equal(broadcom.debt, 59.419);
+for (const [borrowerId, facilityId, available, lastOpenQuarter, maturityQuarter] of [
+  ["AMD", "AMD_RCF_2026", 4.75, "2031Q1", "2031Q2"],
+  ["AVGO", "AVGO_RCF_2025", 7, "2029Q4", "2030Q1"]
+]) {
+  const borrower = entities.find(entity => entity.id === borrowerId);
+  const facility = borrower.audit4Facilities?.find(row => row.id === facilityId);
+  assert.ok(facility, facilityId);
+  const credit = engine.runSimulation([borrower], [], { audit4Contracts: true, forecastThrough: 2032,
+    overrides: { [borrowerId]: { ocfMarginBeforeFinancing: 0.9, capex: 0 } } }).timeline;
+  const opening = credit["2026Q4"].financingLedger[facilityId];
+  assert.equal(opening.undrawnCommitment, available);
+  assert.equal(opening.lettersOfCreditDataType, "Assumption");
+  assert.equal(opening.endingOutstanding, 0);
+  assert.equal(opening.lender, null);
+  assert.equal(credit[lastOpenQuarter].financingLedger[facilityId].undrawnCommitment, available);
+  assert.equal(credit[maturityQuarter].financingLedger[facilityId].undrawnCommitment, 0);
+  assert.equal(credit["2032Q1"].financingLedger[facilityId].undrawnCommitment, 0);
+}
 const alphabetEvidence = issuerBalance("GOOGL");
 assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
   alphabetEvidence.hedgeFairValueReduction), 126.118);

@@ -1429,6 +1429,7 @@
   },
   {
     "id": "AVGO",
+    "audit4Facilities": [{"id":"AVGO_RCF_2025","type":"Direct Loan","payer":null,"receiver":"AVGO","announcedDate":"2025-01-13","startQ":"2025Q1","endQ":"2030Q1","maturityDate":"2030-01-13","totalCommitment":7.5,"principalOutstanding":0,"principalAsOfQuarter":"2026Q3","amountDrawn":null,"amountRepaid":null,"remainingCommitment":7,"lettersOfCredit":0.5,"lettersOfCreditDataType":"Assumption","facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm","exposureBasis":"Reported commitment and zero funded balance. Scenario conservatively reserves the full letter-of-credit sublimit; actual usage and lender shares unavailable."}],
     "name": "Broadcom Inc.",
     "ticker": "AVGO",
     "cik": "0001730168",
@@ -1519,6 +1520,7 @@
   },
   {
     "id": "AMD",
+    "audit4Facilities": [{"id":"AMD_RCF_2026","type":"Direct Loan","payer":null,"receiver":"AMD","announcedDate":"2026-05-14","startQ":"2026Q2","endQ":"2031Q2","maturityDate":"2031-05-14","totalCommitment":5,"principalOutstanding":0,"principalAsOfQuarter":"2026Q3","amountDrawn":null,"amountRepaid":null,"remainingCommitment":4.75,"lettersOfCredit":0.25,"lettersOfCreditDataType":"Assumption","facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/2488/000000248826000191/amd-20260926.htm","exposureBasis":"Reported commitment and zero funded balance. Scenario conservatively reserves the full letter-of-credit sublimit; actual usage and lender shares unavailable."}],
     "name": "AMD, Inc.",
     "ticker": "AMD",
     "cik": "0000002488",

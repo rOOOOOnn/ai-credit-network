@@ -1211,6 +1211,7 @@
           defaulted: previous?.defaulted ?? false,
           accruedInterest: 0
         };
+        if (tx.lettersOfCreditDataType) row.lettersOfCreditDataType = tx.lettersOfCreditDataType;
         if (tx.originalMaturityQuarter) {
           row.originalMaturityQuarter = tx.originalMaturityQuarter;
           row.maturityQuarter = tx.endQ;
