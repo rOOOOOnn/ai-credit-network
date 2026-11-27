@@ -1481,6 +1481,17 @@ assert.equal(micronCredit["2029Q4"].financingLedger.MU_RCF_DISCLOSED.undrawnComm
 assert.equal(micronCredit["2030Q1"].financingLedger.MU_RCF_DISCLOSED.undrawnCommitment, 0);
 assert.equal(micronCredit["2030Q2"].financingLedger.MU_RCF_DISCLOSED.undrawnCommitment, 0);
 assert.equal(micronCredit["2030Q2"].entities.MU.undrawnCredit, 0);
+const hpeIssuer = entities.find(entity => entity.id === "HPE");
+const hpeCredit = engine.runSimulation([hpeIssuer], [], { audit4Contracts: true, forecastThrough: 2030,
+  overrides: { HPE: { ocfMarginBeforeFinancing: 0.9, capex: 0 } } }).timeline;
+const hpeFacility = q => hpeCredit[q].financingLedger.HPE_RCF_DISCLOSED;
+assert.equal(hpeFacility("2026Q4")?.undrawnCommitment, 5.25);
+assert.equal(hpeFacility("2026Q4").endingOutstanding, 0);
+assert.equal(hpeFacility("2026Q4").lender, null);
+assert.equal(hpeFacility("2029Q2").undrawnCommitment, 5.25);
+assert.equal(hpeFacility("2029Q3").undrawnCommitment, 0);
+assert.equal(hpeFacility("2029Q4").undrawnCommitment, 0);
+assert.equal(hpeCredit["2029Q4"].entities.HPE.undrawnCredit, 0);
 const alphabetEvidence = issuerBalance("GOOGL");
 assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
   alphabetEvidence.hedgeFairValueReduction), 126.118);

@@ -1886,6 +1886,7 @@
   },
   {
     "id": "HPE",
+    "audit4Facilities": [{"id":"HPE_RCF_DISCLOSED","type":"Direct Loan","payer":null,"receiver":"HPE","announcedDate":"2026-09-03","startQ":"2024Q3","endQ":"2029Q3","totalCommitment":5.25,"principalOutstanding":0,"principalAsOfQuarter":"2026Q3","amountDrawn":null,"amountRepaid":null,"remainingCommitment":5.25,"facilityKind":"Revolver","lenderAllocationVerified":false,"isFloatingRate":true,"networkLayer":"Financial","sourceUrl":"https://www.sec.gov/Archives/edgar/data/1645590/000164559026000080/hpe-20260731.htm","exposureBasis":"Reported revolving commitment and zero funded principal; commercial paper and revolver share a $5.75B ceiling; lender allocations unavailable"}],
     "name": "Hewlett Packard Enterprise",
     "ticker": "HPE",
     "cik": "0001645590",
