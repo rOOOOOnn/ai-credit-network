@@ -1449,3 +1449,8 @@ const irenFleetEvidence = irenAmortizationFixture.audit4HardwareDisclosure.fleet
 assert.equal(irenFleetEvidence.installedOrOrderedUnits, 150000);
 assert.equal(irenFleetEvidence.installedOnlyUnits, null);
 assert.equal(irenFleetEvidence.unitsByModel, null);
+const coreWeaveFleetEvidence = entities.find(entity => entity.id === "CRWV").audit4HardwareDisclosure.fleetDisclosures;
+assert.equal(coreWeaveFleetEvidence.deployedUnitsLowerBoundExclusive, 250000);
+assert.equal(coreWeaveFleetEvidence.asOf, "2024-12-31");
+assert.equal(coreWeaveFleetEvidence.majorityGeneration, "NVIDIA Hopper");
+assert.equal(coreWeaveFleetEvidence.unitsByModel, null);

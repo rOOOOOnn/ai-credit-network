@@ -228,7 +228,9 @@ async function checkPage(browser, url) {
     assert.match(await coreWeaveLease.innerText(), /18\.697 \/ 0\.649/);
     const hardwareDisclosure = panel.locator("[data-gpu-disclosure]");
     assert.match(await hardwareDisclosure.innerText(), /6/);
-    assert.match(await hardwareDisclosure.locator("a").getAttribute("href"), /crwv-20251231\.htm$/);
+    assert.match(await hardwareDisclosure.locator("a").first().getAttribute("href"), /crwv-20251231\.htm$/);
+    assert.match(await hardwareDisclosure.innerText(), /250,000 \(2024-12-31\)/);
+    assert.match(await hardwareDisclosure.locator("a").last().getAttribute("href"), /d899798ds1\.htm$/);
     assert.equal(await panel.locator('[data-gpu-setting="economicLife"]').inputValue(), "5");
     await page.locator('[data-network-entity="ANTHROPIC"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
