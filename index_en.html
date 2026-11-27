@@ -1387,7 +1387,7 @@
     const hasCoreFinancials = {};
     entities.forEach(e => {
       const fiscal = useAudit4Contracts ? e.audit4FiscalCashFlow : null;
-      const originalQ3 = e.financials?.["2026Q3"];
+      const originalQ3 = (!useAudit4Contracts ? e.legacyForecastOpening : null) ?? e.financials?.["2026Q3"];
       const existingQ3 = fiscal?.calendarBucket === "2026Q3" && (originalQ3 || e.audit4Liquidity)
         ? { ...originalQ3, cash: e.audit4Liquidity?.cashAndEquivalents ?? originalQ3?.cash, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;
@@ -1623,13 +1623,14 @@
         const eligibleInvestments = liquidityOpening ? Math.max(0,
           liquidityOpening.currentInvestments - liquidityOpening.knownRestrictedWithinCurrentInvestments) : 0;
         const investmentSale = money(eligibleInvestments * Math.min(1, nonnegative(ov?.openingInvestmentSaleFraction)));
-        const begCash = liquidityOpening ? liquidityOpening.cashAndEquivalents : disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
+        const legacyOpening = !useAudit4Contracts && q === QUARTER_PARTIAL ? e.legacyForecastOpening : null;
+        const begCash = legacyOpening?.cash ?? (liquidityOpening ? liquidityOpening.cashAndEquivalents : disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0)));
         const fiscalOpening = useAudit4Contracts && q === QUARTER_PARTIAL ? e.audit4FiscalCashFlow : null;
         const verifiedOpeningPrincipal = useAudit4Contracts && q === QUARTER_PARTIAL &&
           e.audit4BalanceSheetEvidence?.asOf === "2026-09-30" ? e.audit4BalanceSheetEvidence.borrowingsPrincipal : null;
         const begDebt = verifiedOpeningPrincipal ?? (fiscalOpening ? money(fiscalOpening.borrowingsPrincipal ?? (fiscalOpening.currentBorrowings + fiscalOpening.nonCurrentBorrowings))
           : disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0));
-        const priorQuarterRevenue = fiscalOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
+        const priorQuarterRevenue = fiscalOpening?.revenue ?? legacyOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const prevRev = Math.max(0, priorQuarterRevenue - (prev.gpuUtilizationRevenueAdjustment ?? 0));
         const facilities = facilityByBorrower[e.id];
         const revolvers = facilities?.filter(row => row.isRevolver);
@@ -3573,6 +3574,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "ORCL",
+    "legacyForecastOpening": {"cash":36.37,"revenue":17.16,"ocf":6.8,"interestExp":1.65,"dataType":"Assumption"},
     "audit4HardwareDisclosure": {"assetClass":"Computer, network, machinery and equipment, primarily servers and networking equipment","accountingUsefulLifeYears":6,"accountingSourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
     "audit4FiscalCashFlow": {"fiscalPeriod":"FY2027Q1","periodStart":"2026-06-01","periodEnd":"2026-08-31","calendarBucket":"2026Q3","revenue":19.345,"ocf":23.103,"financingComponentPrepayments":11.363,"capex":28.499,"currentBorrowings":7.625,"nonCurrentBorrowings":117.712,"operatingLeaseLiability":34.621,"financeLeaseLiability":9.185,"financeLeaseRateProxy":0.057,"financeLeaseRateSourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526277521/orcl-20260531.htm","commencedLeaseMaturities":{"fiscalYears":["FY2027 remaining","FY2028","FY2029","FY2030","FY2031","FY2032","Thereafter"],"operatingPayments":[3.219,4.135,4.097,4.109,4.089,4.030,24.371],"financePayments":[0.620,0.852,0.923,0.947,0.971,0.996,9.886],"operatingImputedInterest":13.429,"financeImputedInterest":6.010},"reportedLeaseCashPaid":{"operating":0.950,"finance":0.186},"noncashFinanceLeaseAcquisitions":1.539,"uncommencedLeaseCommitment":288,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
     "audit4Liquidity": {"asOf":"2026-08-31","cashAndEquivalents":36.369,"currentInvestments":0.708,"knownRestrictedWithinCurrentInvestments":0,"restrictedCashSeparate":2.565,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm"},
@@ -3681,16 +3683,16 @@ const INITIAL_ENTITIES = [
         "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000119312525314207/orcl-ex99_1.htm"
       },
       "2026Q3": {
-        "revenue": 17.16,
-        "cash": 36.37,
+        "revenue": 19.345,
+        "cash": 36.369,
         "debt": 125.337,
-        "ocf": 6.8,
-        "capex": 18.92,
-        "fcf": -12.12,
-        "ar": 11.39,
+        "ocf": 23.103,
+        "capex": 28.499,
+        "fcf": -5.396,
+        "ar": 11.394,
         "rpo": 664,
         "leaseLiab": 43.806,
-        "interestExp": 1.65,
+        "interestExp": 1.428,
         "undrawnCredit": 6,
         "dataType": "Actual",
         "disclosedDate": "2026-09-10",

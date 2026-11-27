@@ -295,11 +295,11 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |
 | --- | --- | --- | ---: | ---: | ---: | --- | --- |
 | Continuation | OPENAI | Manual | -15.5228 | 25.5228 | 0 | 2028Q2 | — |
-| Remediated | OPENAI | Manual | -18.1923 | 28.1923 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Manual | -19.9139 | 29.9139 | 0 | 2028Q2 | — |
 | Continuation | OPENAI | Curve | -15.5178 | 25.5178 | 0 | 2028Q3 | — |
-| Remediated | OPENAI | Curve | -18.1923 | 28.1923 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Curve | -19.9139 | 29.9139 | 0 | 2028Q2 | — |
 | Continuation | OPENAI | Freeze | -46.1816 | 56.1816 | 0 | 2027Q4 | — |
-| Remediated | OPENAI | Freeze | -48.0878 | 58.0878 | 0 | 2027Q4 | — |
+| Remediated | OPENAI | Freeze | -48.1969 | 58.1969 | 0 | 2027Q4 | — |
 | Continuation | ANTHROPIC | Manual | 201.8728 | 0 | — | — | 2026Q4 |
 | Remediated | ANTHROPIC | Manual | 270.9793 | 0 | — | — | 2026Q4 |
 | Continuation | ANTHROPIC | Curve | 201.8728 | 0 | — | — | 2026Q4 |
@@ -345,12 +345,12 @@ Run `node scripts/replay_audit4_gpu.cjs`. Each case assigns the selected company
 | ANTHROPIC | 6 | Reference | 2032Q4 | 239.6562 | 0 | 202.3778 | 0 | — |
 | ANTHROPIC | 7 | Reference | 2033Q4 | 239.6562 | 0 | 204.1278 | 0 | — |
 | ANTHROPIC | 4 | Combined stress | 2030Q4 | 209.8234 | 0 | 164.3694 | 0 | — |
-| ORCL | 3 | Reference | 2029Q4 | 18.9658 | 0 | 26.7006 | 0 | — |
-| ORCL | 4 | Reference | 2030Q4 | 22.5546 | 0 | 27.4536 | 0 | — |
-| ORCL | 5 | Reference | 2031Q4 | 24.3046 | 0 | 28.5891 | 0 | — |
-| ORCL | 6 | Reference | 2032Q4 | 24.3046 | 0 | 32.1779 | 0 | — |
-| ORCL | 7 | Reference | 2033Q4 | 24.3046 | 0 | 33.9279 | 0 | — |
-| ORCL | 4 | Combined stress | 2030Q4 | -162.6078 | 172.6078 | -297.6099 | 307.6099 | 2027Q3 |
+| ORCL | 3 | Reference | 2029Q4 | 15.1918 | 0 | 21.1506 | 0 | — |
+| ORCL | 4 | Reference | 2030Q4 | 18.7806 | 0 | 21.9036 | 0 | — |
+| ORCL | 5 | Reference | 2031Q4 | 20.5306 | 0 | 23.0391 | 0 | — |
+| ORCL | 6 | Reference | 2032Q4 | 20.5306 | 0 | 26.6279 | 0 | — |
+| ORCL | 7 | Reference | 2033Q4 | 20.5306 | 0 | 28.3779 | 0 | — |
+| ORCL | 4 | Combined stress | 2030Q4 | -166.3818 | 176.3818 | -303.1599 | 313.1599 | 2027Q3 |
 
 At the first eligible quarter, the reference scenario allocates $2.25B to replacement CapEx and $0.50B to resale proceeds, for a $1.75B investing cash outflow. Shortening life from six to four years advances this first outflow from 2032Q4 to 2030Q4. At 2030Q4 it reduces CoreWeave modeled cash by $9.3286B and produces a $2.8289B gap versus zero. By 2032Q4 the four-year gap is $18.8652B versus $7.7333B in the six-year reference. That full-model difference includes collateral and refinancing effects that can precede replacement. In the other three profiles the same 2030Q4 cash difference is $1.75B and no reference funding gap opens. The combined stress has multiple simultaneous changes. It does not isolate the effects of lower replacement prices, residual values or financing.
 
@@ -426,10 +426,10 @@ The original A–G tests retained the legacy profile as a regression. The same i
 
 | Case | Entity | 2028Q4 cash | 2028Q4 FCF | Funding gap | First model default |
 | --- | --- | ---: | ---: | ---: | --- |
-| A | OpenAI | -64.6984 | -13.3109 | 74.6984 | 2027Q4 |
+| A | OpenAI | -64.7952 | -13.6483 | 74.7952 | 2027Q4 |
 | B | Anthropic | 104.3167 | -0.8852 | 0 | — |
 | C | CoreWeave | -35.8641 | -3.3004 | 37.8641 | 2027Q1 |
-| D | Oracle | -77.425 | -20.1044 | 87.425 | 2027Q4 |
+| D | Oracle | -79.438 | -20.3264 | 89.438 | 2027Q4 |
 | E | CoreWeave | -34.1454 | -3.3912 | 36.1454 | 2027Q1 |
 | F | CoreWeave | -43.8987 | -4.8786 | 45.8987 | 2027Q1 |
 | G | CoreWeave | -60.1128 | -5.7082 | 62.1128 | 2026Q4 |
@@ -456,11 +456,11 @@ The Base path requests $20B and $18B of annual scenario equity in 2027 and 2028.
 
 | Entity | Scenario | End cash | OCF | FCF | Quarterly burn | Funding dependency | Available liquidity | Runway (months) | Funding gap | Required financing | Minimum FCF revenue growth | First default | First FCF break-even |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| OPENAI | Base | -10.1923 | -6.8415 | -8.3415 | 8.3415 | 0.5395 | 0 | 0 | 20.1923 | 20.1923 | 1.26 | 2028Q2 | — |
+| OPENAI | Base | -11.9139 | -8.5631 | -10.0631 | 10.0631 | 0.4472 | 0 | 0 | 21.9139 | 21.9139 | 1.26 | 2028Q2 | — |
 | OPENAI | Revenue slowdown | -27.8492 | -10.1107 | -11.6107 | 11.6107 | 0.3876 | 0 | 0 | 37.8492 | 37.8492 | 3.2438 | 2028Q1 | — |
 | OPENAI | Funding taper (downside) | -31.8359 | -6.9537 | -8.4537 | 8.4537 | 0.1774 | 0 | 0 | 41.8359 | 41.8359 | 1.2962 | 2027Q4 | — |
 | OPENAI | Funding freeze | -47.9045 | -6.9927 | -8.4927 | 8.4927 | 0 | 0 | 0 | 57.9045 | 57.9045 | 1.302 | 2027Q4 | — |
-| OPENAI | Combined severe stress | -61.742 | -10.5544 | -12.0544 | 12.0544 | 0 | 0 | 0 | 71.742 | 71.742 | 3.2684 | 2027Q3 | — |
+| OPENAI | Combined severe stress | -61.8371 | -10.5534 | -12.0534 | 12.0534 | 0 | 0 | 0 | 71.8371 | 71.8371 | 3.2672 | 2027Q3 | — |
 | ANTHROPIC | Base | 278.9793 | 3.1119 | 2.7119 | 0 | — | 293.7743 | — | 0 | 0 | -0.3639 | — | 2026Q4 |
 | ANTHROPIC | Revenue slowdown | 267.5329 | 0.8803 | 0.4803 | 0 | — | 282.3279 | — | 0 | 0 | -0.1564 | — | 2026Q4 |
 | ANTHROPIC | Funding taper (downside) | 258.8337 | 3.0995 | 2.6995 | 0 | — | 273.6287 | — | 0 | 0 | -0.3623 | — | 2026Q4 |
@@ -629,9 +629,9 @@ The archive's longer financing comparison was adapted to this branch. Run `node 
 
 | Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |
 | --- | --- | --- | ---: | ---: | ---: | --- | --- |
-| Remediated | OPENAI | Manual | -134.4555 | 144.4555 | 0 | 2028Q2 | — |
-| Remediated | OPENAI | Curve | -134.4555 | 144.4555 | 0 | 2028Q2 | — |
-| Remediated | OPENAI | Freeze | -163.4441 | 173.4441 | 0 | 2027Q4 | — |
+| Remediated | OPENAI | Manual | -134.578 | 144.578 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Curve | -134.578 | 144.578 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Freeze | -163.6096 | 173.6096 | 0 | 2027Q4 | — |
 | Remediated | ANTHROPIC | Manual | 254.3391 | 0 | 166.2506 | — | 2026Q4 |
 | Remediated | ANTHROPIC | Curve | 254.3391 | 0 | 166.2506 | — | 2026Q4 |
 | Remediated | ANTHROPIC | Freeze | 224.3391 | 0 | 146.0041 | — | 2026Q4 |
@@ -1100,12 +1100,12 @@ The supplied archive runs its integrated stresses through 2031Q4. The audited br
 
 | Case | Entity | 2031Q4 cash | 2031Q4 FCF | Funding gap | First model default |
 | --- | --- | ---: | ---: | ---: | --- |
-| A | OpenAI | -245.8359 | -15.8321 | 255.8359 | 2027Q4 |
+| A | OpenAI | -245.8912 | -15.8315 | 255.8912 | 2027Q4 |
 | B | Anthropic | 57.0278 | -5.4577 | 0 | — |
 | C | CoreWeave | -107.0212 | -6.6273 | 109.0212 | 2027Q1 |
-| D | Oracle | -294.8222 | -20.9639 | 304.8222 | 2027Q4 |
+| D | Oracle | -299.4992 | -21.1859 | 309.4992 | 2027Q4 |
 | E | CoreWeave | -89.5535 | -7.0773 | 91.5535 | 2027Q1 |
-| F | CoreWeave | -120.2857 | -7.2469 | 122.2857 | 2027Q1 |
+| F | CoreWeave | -120.3959 | -7.2469 | 122.3959 | 2027Q1 |
 | G | CoreWeave | -145.4832 | -7.0643 | 147.4832 | 2026Q4 |
 
 ### Downloadable Core Scientific debt terms
@@ -1127,3 +1127,8 @@ Tests reconcile draws to borrower balances and check the maturity boundary. All 
 ### Oracle historical borrowing and lease balances
 
 The August historical snapshot now records $7.625B current borrowings and $117.712B noncurrent borrowings, totaling $125.337B. Accounts payable are $11.063B and restricted cash is $2.6B. Total commenced lease liabilities are $43.806B, comprising $34.621B operating and $9.185B finance leases. A separate $288B field captures uncommenced commitments. The historical fiscal period begins June 1. The fiscal cash-flow bridge continues to supply the audited forecast, and this balance-sheet correction left the 75 published audit scenario rows unchanged. Site-level commencement and quarterly principal and interest allocation remain unavailable. [Oracle August 10-Q, balance sheet and Note 6](https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm).
+
+
+### Oracle historical cash flow and forecast calibration
+
+The June to August historical display now reports $19.345B revenue, $23.103B operating cash flow and $28.499B cash CapEx, which yields negative $5.396B FCF. The $11.363B increase in financing-component customer prepayments is already included in reported OCF. Removing it for forecast calibration yields $11.740B. The historical interest expense is $1.428B. Calibrating the audited path with that expense changes some network cash outcomes, including Oracle and OpenAI. The three historical cash-flow fields and the opening calibration are checked separately. The old projection inputs are explicitly marked as assumptions and used only for the legacy forecast profile so the inherited stress cases retain their original thresholds and coverage. [Oracle August 10-Q](https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm).

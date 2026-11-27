@@ -1070,7 +1070,7 @@
     const hasCoreFinancials = {};
     entities.forEach(e => {
       const fiscal = useAudit4Contracts ? e.audit4FiscalCashFlow : null;
-      const originalQ3 = e.financials?.["2026Q3"];
+      const originalQ3 = (!useAudit4Contracts ? e.legacyForecastOpening : null) ?? e.financials?.["2026Q3"];
       const existingQ3 = fiscal?.calendarBucket === "2026Q3" && (originalQ3 || e.audit4Liquidity)
         ? { ...originalQ3, cash: e.audit4Liquidity?.cashAndEquivalents ?? originalQ3?.cash, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;
@@ -1306,13 +1306,14 @@
         const eligibleInvestments = liquidityOpening ? Math.max(0,
           liquidityOpening.currentInvestments - liquidityOpening.knownRestrictedWithinCurrentInvestments) : 0;
         const investmentSale = money(eligibleInvestments * Math.min(1, nonnegative(ov?.openingInvestmentSaleFraction)));
-        const begCash = liquidityOpening ? liquidityOpening.cashAndEquivalents : disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0));
+        const legacyOpening = !useAudit4Contracts && q === QUARTER_PARTIAL ? e.legacyForecastOpening : null;
+        const begCash = legacyOpening?.cash ?? (liquidityOpening ? liquidityOpening.cashAndEquivalents : disclosedOpening ? disclosedOpening.cashAtQ3 : prev.cash !== null && prev.cash !== undefined ? prev.cash : (ov && ov.cash !== undefined ? Number(ov.cash) : (p.minCash ? p.minCash * 2 : 1.0)));
         const fiscalOpening = useAudit4Contracts && q === QUARTER_PARTIAL ? e.audit4FiscalCashFlow : null;
         const verifiedOpeningPrincipal = useAudit4Contracts && q === QUARTER_PARTIAL &&
           e.audit4BalanceSheetEvidence?.asOf === "2026-09-30" ? e.audit4BalanceSheetEvidence.borrowingsPrincipal : null;
         const begDebt = verifiedOpeningPrincipal ?? (fiscalOpening ? money(fiscalOpening.borrowingsPrincipal ?? (fiscalOpening.currentBorrowings + fiscalOpening.nonCurrentBorrowings))
           : disclosedOpening ? disclosedOpening.principalAtQ3 : prev.debt !== null && prev.debt !== undefined ? prev.debt : (ov && ov.debt !== undefined ? Number(ov.debt) : 0));
-        const priorQuarterRevenue = fiscalOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
+        const priorQuarterRevenue = fiscalOpening?.revenue ?? legacyOpening?.revenue ?? prev.operationalBaselineRevenue ?? (prev.revenue !== null && prev.revenue !== undefined ? prev.revenue : (ov && ov.revenue !== undefined ? Number(ov.revenue) : Math.max(0.2, (p.opex || 0.2) * 1.6)));
         const prevRev = Math.max(0, priorQuarterRevenue - (prev.gpuUtilizationRevenueAdjustment ?? 0));
         const facilities = facilityByBorrower[e.id];
         const revolvers = facilities?.filter(row => row.isRevolver);
