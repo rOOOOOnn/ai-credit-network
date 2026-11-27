@@ -1629,10 +1629,16 @@
         const leaseStress = useAudit4Contracts && validLeaseStress && e.audit4LeaseDisclosure ? (() => {
           const [first, last] = stressStartYears ?? [2026, 2026];
           const phases = last - first + 1;
-          return Array.from({ length: phases }, (_, index) => ({
-            commitment: e.audit4LeaseDisclosure.uncommencedUndiscountedPayments / phases,
-            termQuarters: leaseStressYears * 4, startQuarter: (first + index) + (stressStartYears ? "Q1" : "Q4"), type: "operating"
-          }));
+          const financeShare = Math.min(1, nonnegative(ov?.disclosedLeaseFinanceShare));
+          const phaseCommitment = e.audit4LeaseDisclosure.uncommencedUndiscountedPayments / phases;
+          const annualDiscountRate = nonnegative(ov?.disclosedLeaseFinanceRate ?? 0.05);
+          return Array.from({ length: phases }, (_, index) => {
+            const phase = { termQuarters: leaseStressYears * 4, startQuarter: (first + index) + (stressStartYears ? "Q1" : "Q4") };
+            return [
+              { ...phase, commitment: phaseCommitment * (1 - financeShare), type: "operating" },
+              { ...phase, commitment: phaseCommitment * financeShare, type: "finance", annualDiscountRate }
+            ].filter(tranche => tranche.commitment > 0);
+          }).flat();
         })() : null;
         const tranches = ov?.incrementalLeaseTranches ?? (legacyLease ? [legacyLease]
           : disclosedLeaseBuckets ?? leaseStress ?? (useAudit4Contracts && e.id === "ORCL" ? ORACLE_LEASE_SCENARIO : []));

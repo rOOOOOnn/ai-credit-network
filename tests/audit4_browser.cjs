@@ -274,6 +274,14 @@ async function checkPage(browser, url) {
       if (["MSFT", "GOOGL", "META"].includes(id)) {
         await panel.locator("[data-disclosed-lease-stress]").selectOption("10");
         assert.equal(JSON.parse(await scenario.inputValue()).disclosedLeaseStressYears, 10);
+        if (id === "GOOGL") {
+          const share = panel.locator("[data-disclosed-lease-finance-share]");
+          await share.fill("0.5");
+          await share.press("Tab");
+          const rate = panel.locator("[data-disclosed-lease-finance-rate]");
+          await rate.fill("0");
+          await rate.press("Tab");
+        }
       }
       if (id === "ORCL") {
         await panel.locator("[data-oracle-commenced-finance]").selectOption("enabled");
@@ -323,6 +331,8 @@ async function checkPage(browser, url) {
     assert.equal(equipmentFacility.newDrawdown, 2);
     assert.equal(equipmentQuarter.leaseCashSchedules.MSFT.incremental.payment, 1.1394);
     assert.equal(equipmentQuarter.leaseCashSchedules.GOOGL.incremental.payment, 0.6525);
+    assert.equal(equipmentQuarter.leaseCashSchedules.GOOGL.incremental.financePrincipal, 0.3263);
+    assert.equal(equipmentQuarter.leaseCashSchedules.GOOGL.incremental.ocfCashPayment, 0.3262);
     assert.equal(equipmentQuarter.leaseCashSchedules.META.incremental.payment, 0.8893);
     assert.equal(equipmentQuarter.financingCashSources.AMZN.contractualTermDraw, 2);
     assert.deepEqual(equipmentFacility.trancheBalances, [

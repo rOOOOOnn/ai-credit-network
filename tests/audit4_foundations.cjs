@@ -1545,3 +1545,18 @@ for (const [id, commitment, firstPayment] of [["MSFT", 364.6, 364.6 / 8 / 40],
   assert.equal(first.incrementalLeasePayment, usd(firstPayment));
   assert.equal(first.leaseSchedule.financePrincipal, 0);
 }
+const mixedCloudStress = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { GOOGL: { disclosedLeaseStressYears: 10, disclosedLeaseFinanceShare: 0.5, disclosedLeaseFinanceRate: 0, leaseDelayQuarters: 1 } }
+});
+const mixedCloudBefore = mixedCloudStress.timeline["2027Q1"].entities.GOOGL.leaseSchedule;
+const mixedCloudFirst = mixedCloudStress.timeline["2027Q2"].entities.GOOGL.leaseSchedule;
+assert.equal(mixedCloudBefore.uncommencedCommitment, 130.5);
+assert.equal(mixedCloudBefore.classifiedFinanceLiability, 0);
+assert.deepEqual([mixedCloudFirst.payment, mixedCloudFirst.ocfCashPayment, mixedCloudFirst.financePrincipal,
+  mixedCloudFirst.financeInterest, mixedCloudFirst.classifiedFinanceLiability], [0.6525, 0.3262, 0.3263, 0, 12.7238]);
+const operatingCloud = engine.runSimulation(entities, transactions, { audit4Contracts: true,
+  overrides: { GOOGL: { disclosedLeaseStressYears: 10, leaseDelayQuarters: 1 } }
+}).timeline["2027Q2"].entities.GOOGL;
+const mixedCloud = mixedCloudStress.timeline["2027Q2"].entities.GOOGL;
+assert.equal(usd(mixedCloud.ocf - operatingCloud.ocf), 0.3263);
+assert.equal(mixedCloud.cash, operatingCloud.cash);
