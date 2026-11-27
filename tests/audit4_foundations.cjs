@@ -1577,3 +1577,11 @@ const phaseFour = phasedRecovery["2027Q4"].entities.CRWV;
 assert.deepEqual([phaseThree.operationalRecoveryRevenue, phaseThree.operationalRecoveryCash], [0.0279, 0.0138]);
 assert.deepEqual([phaseFour.operationalRecoveryRevenue, phaseFour.operationalRecoveryCash], [0.0279, 0.0137]);
 assert.deepEqual(phasedRecovery["2027Q3"].operationalRecoverySchedule.CRWV["2027Q4"], { revenue: 0.0279, cash: 0.0137 });
+const fixedPeer = engine.runSimulation(entities, [...transactions, {
+  ...instrument, id: "ORCL-fixed-scenario", receiver: "ORCL", amountDrawn: 5, remainingCommitment: 0, isFloatingRate: false
+}], { audit4Contracts: true, forcedDefaults: ["CRWV"] }).timeline;
+const fixedSpreadEvent = fixedPeer["2026Q4"].contagionLog.find(row => row.layer === "L4_SECONDARY" && row.to === "ORCL");
+assert.equal(fixedSpreadEvent?.impactB, 0);
+assert.equal(fixedSpreadEvent.spreadWideningBps, 100);
+assert.equal(fixedSpreadEvent.floatingPrincipal, 0);
+assert.equal(fixedPeer["2027Q1"].entities.ORCL.secondaryRefinancingMultiplier, 0.95);

@@ -2318,6 +2318,8 @@
                   if (useAudit4Contracts) pst.interestExp = money(pst.interestExp + quarterlySpreadCost);
                   applyCashDelta(peer.id, -quarterlySpreadCost, 0);
                   evaluateDistress(peer.id);
+                }
+                if (quarterlySpreadCost > 0 || (useAudit4Contracts && spreadWideningBps > 0)) {
                   contagionLog.push({
                     hop: Math.min(5, hop + 1),
                     layer: "L4_SECONDARY",
@@ -2325,7 +2327,8 @@
                     to: peer.id,
                     txId: "L4_SPREAD",
                     channel: `L4 Secondary Contagion: Peer Credit Spread Widening (+${spreadWideningBps} bps)`,
-                    impactB: quarterlySpreadCost
+                    impactB: quarterlySpreadCost,
+                    spreadWideningBps, floatingPrincipal: exposedPrincipal
                   });
                 }
               }
