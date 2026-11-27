@@ -683,6 +683,8 @@ const tx26Stress = engine.runSimulation(entities, transactions, { audit4Contract
 const tx26Credit = tx26Stress.creditEvents.find(event => event.txId === "TX26");
 assert.equal(tx26Credit.fundedEAD, 4.583);
 assert.equal(tx26Credit.lender, null);
+assert.equal(tx26Credit.undrawnCommitment, null);
+assert.equal(tx26Credit.exposureCoverage, "FundedOnly");
 const mixedRateQuarter = liquid.timeline["2026Q4"];
 const mixedRateFacility = mixedRateQuarter.financingLedger.TX26;
 const mixedFloatingShare = 2.2 / (2.2 + 2.4);
@@ -1276,4 +1278,5 @@ assert.equal(engine.computeTransactionEAD(tx26Cutoff, "2027Q2").undrawnCommitmen
 const expiredTx26 = engine.computeTransactionEAD(tx26Cutoff, "2027Q3");
 assert.equal(expiredTx26.undrawnCommitment, 0);
 assert.equal(expiredTx26.fundedEAD, 4.583);
+assert.equal(expiredTx26.exposureCoverage, "FundedAndUndrawn");
 assert.equal(termResult.timeline["2027Q3"].financingLedger.TX26.canDraw, false);

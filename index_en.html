@@ -553,15 +553,16 @@
       let undrawnCommitment = 0;
       let undrawnEAD = 0;
       let eadBasis = "";
+      let principalKnown = tx.amountDrawn != null;
 
       if (tx.principalOutstanding != null) {
         const reportedPrincipal = reportedPrincipalAt(tx, quarter);
-        const knownPrincipal = reportedPrincipal !== null;
+        principalKnown = reportedPrincipal !== null;
         fundedEAD = nonnegative(reportedPrincipal);
         undrawnCommitment = compareQuarter(quarter, tx.principalAsOfQuarter) >= 0
           ? tx.remainingCommitment ?? null : null;
         undrawnEAD = nonnegative(undrawnCommitment) * ccf;
-        eadBasis = knownPrincipal ? "Reported principal; availability may be unknown" : "Principal unavailable as of quarter";
+        eadBasis = principalKnown ? "Reported principal; availability may be unknown" : "Principal unavailable as of quarter";
       } else if (tx.amountDrawn === 0) {
         // Strict P0-3: amountDrawn === 0 MUST NEVER substitute totalCommitment into fundedEAD
         fundedEAD = 0;
@@ -594,7 +595,9 @@
       return {
         txId: tx.id, quarter, isActive: true,
         fundedEAD, undrawnCommitment, ccf, undrawnEAD, guaranteeEAD: 0,
-        totalEAD, lgd: txLgd, pd: txPd, expectedLoss, creditLossAtDefault, eadBasis
+        totalEAD, lgd: txLgd, pd: txPd, expectedLoss, creditLossAtDefault, eadBasis,
+        exposureCoverage: !principalKnown ? "PrincipalUnavailable" :
+          undrawnCommitment == null ? "FundedOnly" : "FundedAndUndrawn"
       };
     }
 
@@ -2236,6 +2239,8 @@
                   type: tx.type,
                   fundedEAD: eadInfo.fundedEAD,
                   undrawnEAD: eadInfo.undrawnEAD,
+                  undrawnCommitment: eadInfo.undrawnCommitment,
+                  exposureCoverage: eadInfo.exposureCoverage,
                   guaranteeEAD: 0,
                   totalEAD: eadInfo.totalEAD,
                   lgd: eadInfo.lgd,

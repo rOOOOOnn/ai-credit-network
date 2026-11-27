@@ -796,3 +796,7 @@ The browser regression edits the retention share on each standalone page and dow
 ### TX26 contractual draw cutoff
 
 CoreWeave's September 10-Q identifies June 30, 2027 as the DDTL 4.0 commitment termination date, distinct from its March 2032 loan maturity. TX26 now applies that cutoff in the financing ledger, transaction exposure and parent/SPV reconciliation. Q2 2027 availability remains unknown. From Q3 2027, undrawn exposure is zero under the disclosed terms and funded lender exposure continues to follow principal. The transaction regression checks the date boundary and $4.583B in opening reported principal on the static exposure path. Exact cumulative funding and repayments remain unverified. [CoreWeave 10-Q, Note 10](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/R16.htm).
+
+### Coverage of lender default exposure
+
+The exported default event records undrawn commitment and exposure coverage. For TX26 in the draw window, the default fixture reports $4.583B of funded exposure and a null commitment. The reported exposure covers funded principal only. After the disclosed cutoff, the undrawn commitment is a known zero. If principal itself is unavailable, the coverage field identifies that gap. This metadata leaves the existing modeled credit loss calculation intact.
