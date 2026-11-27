@@ -1080,10 +1080,14 @@ assert.deepEqual([wardCountyDisclosure.maximumFaceAmount, wardCountyDisclosure.c
 assert.equal(nvidiaGuaranteeDisclosure.categories.reduce((sum, row) => sum + row.maximum, 0), 118);
 
 const openAiTranches = entities.find(row => row.id === "OPENAI").reportedFinancingTranches;
-assert.equal(openAiTranches.filter(tranche => tranche.investor === "SoftBank Vision Fund 2")
+assert.equal(openAiTranches.filter(tranche => tranche.investor === "SoftBank Vision Fund 2"
+  && tranche.roundCommitmentReference === "OpenAI March 2026 round")
   .reduce((total, tranche) => total + tranche.amount, 0), 30);
 assert.equal(openAiTranches.filter(tranche => tranche.investor === "Amazon")
   .reduce((total, tranche) => total + tranche.amount, 0), 50);
+const openAi2025 = openAiTranches.filter(tranche => tranche.roundCommitmentReference === "OpenAI March 2025 round");
+assert.deepEqual(openAi2025.map(row => [row.date ?? row.quarter, row.amount]), [["2025Q2", 7.5], ["2025-12-26", 22.5]]);
+assert.equal(openAi2025.reduce((sum, row) => sum + row.amount, 0), 30);
 const q4Tranche = openAiTranches.find(tranche => tranche.date === "2026-10-01");
 const openAiFreezeOptions = { audit4Contracts: true, overrides: {
   OPENAI: { financing: { mode: "manual", capacity: 0, annual: {} } }
