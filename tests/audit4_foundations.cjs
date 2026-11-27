@@ -1424,6 +1424,14 @@ assert.equal(usd(metaScope.debt + metaScope.principalRepay + metaScope.nonCashDe
 const metaEvidence = issuerBalance("META");
 assert.equal(usd(metaEvidence.nonCurrentBorrowings + metaEvidence.currentPortionOfLongTermDebt + metaEvidence.unamortizedDiscountAndIssuanceCosts), 84);
 assert.equal(usd(Object.values(metaEvidence.annualNotePrincipalMaturities).reduce((sum, principal) => sum + principal, 0)), 84);
+const amd = entities.find(entity => entity.id === "AMD").financials["2026Q3"];
+assert.deepEqual([amd.periodEnd, amd.cash, amd.accountsPayable, amd.rpo], ["2026-09-26", 7.404, 7.756, 0.246]);
+assert.equal(usd(amd.ocf - amd.capex), amd.fcf);
+assert.equal(amd.fcf, 0.554);
+assert.equal(usd(amd.shortTermDebt + amd.longTermDebt), amd.debt);
+assert.equal(amd.leaseLiab, 2.132);
+assert.equal(amd.undrawnCredit, 4.75);
+assert.equal(amd.undrawnCreditDataType, "Assumption");
 const broadcom = entities.find(entity => entity.id === "AVGO").financials["2026Q3"];
 assert.equal(broadcom.periodEnd, "2026-08-02");
 assert.deepEqual([broadcom.revenue, broadcom.cash, broadcom.accountsPayable, broadcom.rpo], [29.591, 23.975, 4, 179.2]);
