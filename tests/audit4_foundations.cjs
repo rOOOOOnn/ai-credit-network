@@ -1464,6 +1464,16 @@ for (const [borrowerId, facilityId, available, lastOpenQuarter, maturityQuarter]
   assert.equal(credit[maturityQuarter].financingLedger[facilityId].undrawnCommitment, 0);
   assert.equal(credit["2032Q1"].financingLedger[facilityId].undrawnCommitment, 0);
 }
+const micronIssuer = entities.find(entity => entity.id === "MU");
+const micronCredit = engine.runSimulation([micronIssuer], [], { audit4Contracts: true, forecastThrough: 2031,
+  overrides: { MU: { ocfMarginBeforeFinancing: 0.9, capex: 0 } } }).timeline;
+assert.equal(micronCredit["2026Q4"].financingLedger.MU_RCF_DISCLOSED?.undrawnCommitment, 2);
+assert.equal(micronCredit["2026Q4"].financingLedger.MU_RCF_DISCLOSED.endingOutstanding, 0);
+assert.equal(micronCredit["2026Q4"].financingLedger.MU_RCF_DISCLOSED.lender, null);
+assert.equal(micronCredit["2029Q4"].financingLedger.MU_RCF_DISCLOSED.undrawnCommitment, 2);
+assert.equal(micronCredit["2030Q1"].financingLedger.MU_RCF_DISCLOSED.undrawnCommitment, 0);
+assert.equal(micronCredit["2030Q2"].financingLedger.MU_RCF_DISCLOSED.undrawnCommitment, 0);
+assert.equal(micronCredit["2030Q2"].entities.MU.undrawnCredit, 0);
 const alphabetEvidence = issuerBalance("GOOGL");
 assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
   alphabetEvidence.hedgeFairValueReduction), 126.118);
