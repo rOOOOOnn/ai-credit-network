@@ -33,7 +33,8 @@ function renderFieldCoverage(rows) {
       if (value == null) return "—";
       const classification = record[key + "DataType"] ?? record.dataType ?? "Unclassified";
       const display = typeof value === "object" ? "Structured" : String(value).replaceAll("|", "\\|");
-      return display + " · " + classification;
+      const basis = record[key + "Basis"];
+      return display + " · " + classification + (basis ? " (" + basis + ")" : "");
     });
     return row([entity.id, quarter ?? "—", record?.disclosedDate ?? "—", source, ...cells]);
   });

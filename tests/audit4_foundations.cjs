@@ -289,6 +289,13 @@ assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments),
 assert.equal(usd(oracleFiling.ocf - oracleFiling.capex), -5.396);
 assert.equal(usd(oracleFiling.ocf - oracleFiling.financingComponentPrepayments - oracleFiling.capex), -16.759);
 assert.equal(usd(oracleFiling.currentBorrowings + oracleFiling.nonCurrentBorrowings), 125.337);
+const nvidiaFcfSnapshot = entities.find(entity => entity.id === "NVDA").financials["2026Q3"];
+assert.equal(nvidiaFcfSnapshot.ocf, 48.253);
+assert.equal(nvidiaFcfSnapshot.capex, 4.422);
+assert.equal(nvidiaFcfSnapshot.assetFinancingPrincipalPayments, 0.054);
+assert.equal(nvidiaFcfSnapshot.fcf, usd(48.253 - 4.422 - 0.054));
+assert.equal(nvidiaFcfSnapshot.periodStart, "2026-07-27");
+assert.equal(nvidiaFcfSnapshot.periodEnd, "2026-10-25");
 const oracleSnapshot = entities.find(entity => entity.id === "ORCL").financials["2026Q3"];
 assert.equal(oracleSnapshot.accountsPayable, 11.063);
 assert.equal(oracleSnapshot.shortTermDebt, 7.625);
