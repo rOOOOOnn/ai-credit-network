@@ -3793,9 +3793,9 @@
         "calendarPeriod": "2026Q3",
         "periodStart": "2026-07-01",
         "periodEnd": "2026-09-30",
-        "disclosedDate": "2026-11-04",
-        "publicationDate": "2026-11-04",
-        "accessionNumber": "0001839341-26-000028",
+        "disclosedDate": "2026-11-05",
+        "publicationDate": "2026-11-05",
+        "accessionNumber": "0001839341-26-000030",
         "revenue": 0.232866,
         "cash": 0.803941,
         "restrictedCash": 0.837603,
@@ -3810,9 +3810,15 @@
         "customerFundingReceivable": 0.282659,
         "customerConcentration": 0.93,
         "interestExp": 0.068,
+        "interestExpDataType": "Assumption",
+        "reportedInterestIncurred": 0.07184,
+        "reportedCapitalizedInterest": 0.017774,
+        "reportedGrossInterestExpense": 0.054066,
+        "reportedNetInterestExpense": 0.035047,
+        "reportedCouponInterest": 0.067388,
         "undrawnCredit": 0,
         "dataType": "Actual",
-        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1839341/000183934126000028/q32026corescientificinc-ea.htm"
+        "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1839341/000183934126000030/core-20260930.htm"
       }
     },
     "defaults": {

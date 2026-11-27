@@ -1111,3 +1111,9 @@ The supplied archive runs its integrated stresses through 2031Q4. The audited br
 ### Downloadable Core Scientific debt terms
 
 The browser download now carries the legal issuer, maturity and secured-note amortization terms. All three pages check the consolidated borrower, funded principal and the $0.18975B contractual installment calculation before rounding. The first installment date is left unknown pending confirmation of rent commencement and abatement of revenue credits. The export adds terms without introducing cash payments.
+
+### Core Scientific interest and construction commitments
+
+The 2026Q3 historical record now uses the November 5 10-Q. Note 7 reports $71.840M interest incurred less $17.774M capitalized, or $54.066M interest expense. Coupon interest was $67.388M, and the income statement presents $35.047M net interest expense. The historical row stores each reported measure separately. The inherited $68M interest input is explicitly classified as an assumption. Substituting gross accounting interest changed the CoreWeave cash path through contagion. The cash-interest calibration is retained pending a quarterly cash-paid bridge. The forward debt ledger continues to use each instrument's contractual coupon.
+
+The filing also discloses $4.4B of gross purchase and construction commitments, including $202.2M expected to pass through to CoreWeave. Most spending is expected within 24 months, with timing dependent on construction and phased AMD lease commencement. Quarterly cash payments and reimbursements are unavailable. The totals remain source evidence pending a reconciliation against forecast baseline CapEx. The $100M cash revolver and $500M letter-of-credit facility are separately disclosed and need their own availability treatment. [Core Scientific September 10-Q](https://www.sec.gov/Archives/edgar/data/1839341/000183934126000030/core-20260930.htm).
