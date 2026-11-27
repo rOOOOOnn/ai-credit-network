@@ -51,3 +51,9 @@ for (const [, id, cells] of entityRows) {
   }
 }
 console.log("Source inventory covers " + entities.length + " entities");
+
+const { renderFieldCoverage } = require("../scripts/render_audit4_field_coverage.cjs");
+const fieldCoverage = readFileSync(path.join(root, "docs/audit4_field_coverage.md"), "utf8");
+assert.equal(fieldCoverage.replace(/\r\n/g, "\n"), renderFieldCoverage(entities),
+  "Regenerate the historical field coverage matrix after updating entity data");
+console.log("Historical field coverage matrix matches repository snapshots");
