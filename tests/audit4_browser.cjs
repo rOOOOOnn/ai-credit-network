@@ -183,6 +183,12 @@ async function checkPage(browser, url) {
     assert.equal(download.suggestedFilename(), "audit4_quarterly_credit_ledger.json");
     const ledger = JSON.parse(await fs.readFile(await download.path(), "utf8"));
     assert.equal(ledger.currency, "USD billions");
+    const tx26Opening = ledger.quarters.find(row => row.quarter === "2026Q4").financingLedger.TX26;
+    assert.equal(tx26Opening.cumulativeDrawdown, null);
+    assert.deepEqual(tx26Opening.forecastPrincipalMovements, {
+      openingPrincipal: 4.583, cumulativeDrawdown: 0,
+      cumulativeRepayment: tx26Opening.principalRepayment, cumulativeNonCashConversion: 0
+    });
     const replay = runSimulation(ledger.entities, ledger.transactions, ledger.simulationOptions);
     for (const id of ["OPENAI", "ANTHROPIC", "CRWV"]) {
       assert.deepEqual(ledger.scenarioSummary[id], replay.scenarioSummary[id]);

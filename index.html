@@ -2797,7 +2797,15 @@
       });
       deferredRevenue = deferredRevenue.filter(entry => !entry.settled);
       for (const row of Object.values(financingLedger)) {
-        if (row.endingOutstanding !== null) facilityBalances[row.txId] = row;
+        if (row.endingOutstanding === null) continue;
+        const prior = facilityBalances[row.txId]?.forecastPrincipalMovements;
+        row.forecastPrincipalMovements = {
+          openingPrincipal: prior?.openingPrincipal ?? row.beginningOutstanding,
+          cumulativeDrawdown: money((prior?.cumulativeDrawdown ?? 0) + row.newDrawdown),
+          cumulativeRepayment: money((prior?.cumulativeRepayment ?? 0) + row.principalRepayment),
+          cumulativeNonCashConversion: money((prior?.cumulativeNonCashConversion ?? 0) + (row.nonCashConversion ?? 0))
+        };
+        facilityBalances[row.txId] = row;
       }
       for (const [id, guarantee] of Object.entries(guaranteeLedger)) {
         guarantee.calledGuarantee = cumCreditLossByTx[id] ?? 0;

@@ -235,8 +235,14 @@ assert.equal(termRow("2027Q2").endingOutstanding, 4);
 assert.equal(termRow("2027Q2").remainingCommitment, 0);
 assert.equal(termRow("2027Q3").principalRepayment, 4);
 assert.equal(termRow("2027Q3").endingOutstanding, 0);
+assert.deepEqual(["2027Q1", "2027Q2", "2027Q3"].map(q => termRow(q).forecastPrincipalMovements), [
+  { openingPrincipal: 0, cumulativeDrawdown: 3, cumulativeRepayment: 0, cumulativeNonCashConversion: 0 },
+  { openingPrincipal: 0, cumulativeDrawdown: 5, cumulativeRepayment: 1, cumulativeNonCashConversion: 0 },
+  { openingPrincipal: 0, cumulativeDrawdown: 5, cumulativeRepayment: 5, cumulativeNonCashConversion: 0 }
+]);
 assert.equal(termResult.timeline["2027Q2"].debtReconciliation.OPENAI.namedTermPrincipal, 4);
 assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.cumulativeDrawdown, null);
+assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.forecastPrincipalMovements.openingPrincipal, 4.583);
 assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.undrawnCommitment, null);
 console.log("Audit 4 term loan draw, repayment and reconciliation checks passed");
 
@@ -1009,6 +1015,10 @@ for (const [name, entity, overrides, options] of cases) {
       if (row.endingOutstanding == null) continue;
       assert.equal(row.endingOutstanding, usd(row.beginningOutstanding + row.newDrawdown -
         row.principalRepayment - row.nonCashConversion), `${name} ${quarter.quarter} ${row.txId}`);
+      const moves = row.forecastPrincipalMovements;
+      assert.equal(row.endingOutstanding, usd(moves.openingPrincipal + moves.cumulativeDrawdown -
+        moves.cumulativeRepayment - moves.cumulativeNonCashConversion),
+      `${name} ${quarter.quarter} ${row.txId} forecast cumulative principal`);
     }
     for (const [id, state] of Object.entries(quarter.entities)) {
       if (!quarter.debtReconciliation[id] || !Number.isFinite(state.begCash)) continue;

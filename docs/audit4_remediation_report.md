@@ -1295,3 +1295,7 @@ NVIDIA's July 26 derivative note reports $3.529B of neocloud guarantee gross not
 ### Unknown effective guarantee liability
 
 The closing ledger was coercing an unknown effective exposure to a zero remaining liability. It now preserves null for the two unallocated NVIDIA categories and reports the separately measurable maximum less assumed calls under remaining disclosed cap. The neocloud fixture verifies null remaining effective liability and a $3.5B unused disclosed cap at opening, then null liability and a $0.5B unused cap after a $3B assumed call. The exposure change is a reporting correction; the call and cash calculation is unchanged.
+
+### Forecast-to-date principal movements
+
+Financing rows with known principal now carry a roll-forward from their first modeled opening balance with separate cumulative scenario draws, cash principal repayments and noncash conversions. This is a forecast-to-date measure. For TX26, $4.583B is observed opening principal and lifetime cumulative draws stay unknown. The staged term facility fixture draws $3B and then $2B, repays $1B and later $4B, and closes at zero. The A–G suite independently reconciles the forecast-to-date movements to each known closing principal. Browser downloads preserve both the observed opening balance and the missing lifetime draw field.
