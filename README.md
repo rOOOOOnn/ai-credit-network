@@ -1,10 +1,18 @@
-# AI Credit Network (v3.0 — Audit 3.0 Remediated)
+# AI Credit Network
 
 [简体中文](#chinese)
 
 An institutional research model and interactive network platform mapping capital flows, financing structures, operational dependencies, and 4-layer credit contagion across the global AI infrastructure value chain (**50 entities**, **82 directed transaction records**).
 
-## Key Capabilities (v3.0)
+## Audit 4 research branch
+
+Open [the default page](index.html), [English](index_en.html), or [简体中文](index_zh.html) in a modern browser. Each page embeds the model and data and uses CDN resources.
+
+The company forecast panel supports source-by-source manual financing and linear, exponential, logistic, or historical curves. Financing eligibility and limits feed cash and debt. The audit JSON includes the loan ledger, GPU cohorts, lease and guarantee schedules, and the inputs needed to replay the simulation.
+
+Audit 4 acceptance remains open for the data and verification gaps listed in the [audit report](docs/audit4_remediation_report.md) and [historical field coverage](docs/audit4_field_coverage.md).
+
+## Model capabilities
 
 - **Strict Point-in-Time (PIT) Backtesting (`P0-1`)**: `getHistoricalSnapshot()` enforces `period <= targetQuarter` and `disclosedDate <= quarterEndDate` on both exact and fallback lookups with deterministic chronological sorting.
 - **Announced vs. Active Lifecycle Separation (`P0-2`)**: `getTransactionLifecycle()` and `isTransactionActive()` separate `announcedDate`, `startQ`, and `endQ`. Announced-but-not-yet-active deals (e.g., `TX03`, `TX11`, `TX67`, `TX68`, `TX69`) display as future commitments without generating premature cash or operational flows.
@@ -14,8 +22,8 @@ An institutional research model and interactive network platform mapping capital
   - **L2 Commercial**: Revenue loss, defensive crisis CapEx cuts, and deduplicated upstream hardware demand shocks.
   - **L3 Operational**: 7 service categories (Cloud Computing, Take-or-Pay, Data Center Lease, Power Purchase Agreement, GPU/Server Supply, Cooling/Electrical Infrastructure, Critical Infrastructure) with substitution availability, switching window decay, and recovery.
   - **L4 Secondary Market**: Peer credit spread widening for leveraged sector peers without double-counting L1–L3 losses.
-- **Dynamic Phased Guarantee Schedule (`P0-5`)**: `TX11` (NVIDIA `$105B` SB Energy / OpenAI guarantee) activates phase-by-phase starting FY29 (`2028Q1`: `$25B` → `2028Q4`: `$105B`) and amortizes linearly through `2035Q4` with zero premature calls.
-- **Parent / SPV Debt Reconciliation (`P0-6`)**: `reconcileParentSpvDebt()` reconciles CoreWeave (`$46.873B` = `$41.600B` recourse + `$5.273B` non-recourse) and consolidated `SPV_CRWV8` (`$8.5B` facility, `$6.0B` funded, `$2.5B` undrawn) with zero system-wide double-counting.
+- **Phased guarantee schedule**. TX11 uses the disclosed $105B aggregate cap and adjustable project assumptions for activation, rent, calls and settlement.
+- **Parent and SPV debt reconciliation**. TX26 records $4.583B of outstanding principal within the $8.5B CoreWeave facility at 2026Q3. The consolidated debt reconciliation eliminates overlap with the SPV. Facility-specific cumulative draws and availability remain unverified.
 - **Three Browser Entry Points**: `index.html` (bilingual), `index_zh.html` (pure Chinese), and `index_en.html` (100% pure English, 0 Chinese characters).
 
 ## Repository Structure
@@ -52,6 +60,8 @@ node tests/validate_schema_and_data.cjs
 node tests/run_16_tests.cjs
 node tests/audit_regression.cjs
 node tests/v3_independent_audit_tests.cjs
+node tests/audit4_foundations.cjs
+node tests/audit4_report.cjs
 ```
 
 ## Disclaimer
@@ -64,15 +74,19 @@ All forward projections and stress scenarios are illustrative structural simulat
 
 ## 简体中文
 
-[返回英文](#ai-credit-network-v30--audit-30-remediated)
+[返回英文](#ai-credit-network)
 
-AI Credit Network 是一个交互式信用风险模拟器。第三轮审计修订版覆盖 **50 个主体、82 笔有向交易**，用于分析 AI 基础设施产业链中的资金流、合同义务、运营依赖与信用风险传导。
+AI Credit Network 是一个交互式信用风险模拟器，覆盖 **50 个主体、82 笔有向交易**，用于分析 AI 基础设施产业链中的资金流、合同义务、运营依赖与信用风险传导。
 
 ### 快速启动
 
 下载或克隆仓库后，用现代浏览器打开 [默认入口](index.html)、[中文版](index_zh.html) 或 [英文版](index_en.html)。页面内嵌数据与引擎，加载 CDN 资源需要联网。
 
-### 第三轮审计修订
+### 第四轮审计整改
+
+- 可以按公司、年份和来源手填融资，也可以用线性、指数、逻辑斯蒂或历史曲线预测。融资限额、租赁付款和 GPU 更新会进入现金流，下载的 JSON 可用于复算。
+- TX26 截至 2026Q3 的未偿本金为 **45.83 亿美元**，总额度为 **85 亿美元**。累计提款和可提款额度仍待核实。TX11 的 **1,050 亿美元**是担保组合上限，逐项目分期可按情景调整。
+- 第四轮审计尚未全部验收。已验证的功能和数据缺口见[第四轮审计报告](docs/audit4_remediation_report.md)和[历史字段覆盖矩阵](docs/audit4_field_coverage.md)。
 
 - **历史数据与交易时点**。历史快照同时校验报告期和披露日。已公告但尚未生效的交易会显示为未来承诺，生效后才纳入相关现金流与运营影响。
 - **信用敞口与担保**。区分已提款敞口、未提款承诺和担保敞口，按分期计划计入有效担保，并对信用损失事件去重。
