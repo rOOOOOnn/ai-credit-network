@@ -1409,3 +1409,11 @@ assert.deepEqual([equipmentEad.fundedEAD, equipmentEad.undrawnCommitment, equipm
   [20, null, 20, "FundedOnly"]);
 const expiredEquipmentEad = engine.computeTransactionEAD(equipmentTerms, "2028Q4");
 assert.equal(expiredEquipmentEad.undrawnCommitment, 0);
+const defaultBeforeEquipmentDraw = engine.runSimulation([equipmentBorrower], [], {
+  ...equipmentOptions, forcedDefaults: ["AMZN"],
+  facilityDrawdowns: { [equipmentId]: { "2027Q1": 20 } }
+});
+assert.equal(defaultBeforeEquipmentDraw.scenarioSummary.AMZN.defaultQuarter, "2026Q4");
+assert.equal(defaultBeforeEquipmentDraw.timeline["2027Q1"].financingLedger[equipmentId].newDrawdown, 0);
+assert.equal(defaultBeforeEquipmentDraw.timeline["2027Q1"].financingLedger[equipmentId].borrowerDefaultBlocksDraw, true);
+assert.equal(defaultBeforeEquipmentDraw.timeline["2027Q1"].entities.AMZN.contractualTermDraw, 0);

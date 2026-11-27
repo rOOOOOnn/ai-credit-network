@@ -1096,7 +1096,9 @@
         const cumulativeDrawdown = previous ? previous.cumulativeDrawdown : tx.amountDrawn ?? null;
         const remainingCommitment = cumulativeDrawdown === null ? tx.remainingCommitment ?? null
           : money(Math.max(0, nonnegative(tx.totalCommitment) - cumulativeDrawdown));
-        const canDraw = active && tx.endQ !== q && !previous?.defaulted &&
+        const borrowerDefaultBlocksDraw = tx.drawEligibilityRequired === true &&
+          (prevStates[tx.receiver]?.distressLevel === 3 || scenarioSummary[tx.receiver]?.defaultQuarter != null);
+        const canDraw = active && tx.endQ !== q && !previous?.defaulted && !borrowerDefaultBlocksDraw &&
           (!tx.commitmentTerminationDate || quarterEndDate(q) <= tx.commitmentTerminationDate);
         const row = {
           txId: tx.id, borrower: tx.receiver, lender, instrumentType: tx.type, isRevolver,
@@ -1114,6 +1116,7 @@
         if (tx.drawTenorQuarters) {
           row.drawTenorQuarters = tx.drawTenorQuarters;
           row.drawEligibilityRequired = tx.drawEligibilityRequired === true;
+          row.borrowerDefaultBlocksDraw = borrowerDefaultBlocksDraw;
           row.trancheBalances = (previous?.trancheBalances ?? []).map(tranche => ({ ...tranche }));
         }
         financingLedger[tx.id] = row;
