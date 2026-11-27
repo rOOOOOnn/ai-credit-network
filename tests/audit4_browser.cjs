@@ -274,6 +274,13 @@ async function checkPage(browser, url) {
     await page.locator('[data-network-entity="AMZN"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    await page.locator('[data-network-entity="IREN"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    assert.match(await panel.locator("[data-gpu-disclosure]").innerText(), /150,000 \(2026-03-31\)/);
+    await page.locator('[data-network-entity="AMZN"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
     const equipmentDraw = panel.locator('[data-equipment-draw="2027Q1"]');
     await equipmentDraw.fill("2");
     await equipmentDraw.press("Tab");

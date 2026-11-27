@@ -1445,3 +1445,7 @@ const irenFinal = irenSolvent["2029Q3"].financingLedger.IREN_GPU3;
 assert.equal(irenFinal.amortization.openingRemainingMonths, 2);
 assert.equal(irenFinal.principalRepayment, irenFinal.beginningOutstanding);
 assert.equal(irenFinal.endingOutstanding, 0);
+const irenFleetEvidence = irenAmortizationFixture.audit4HardwareDisclosure.fleetDisclosures;
+assert.equal(irenFleetEvidence.installedOrOrderedUnits, 150000);
+assert.equal(irenFleetEvidence.installedOnlyUnits, null);
+assert.equal(irenFleetEvidence.unitsByModel, null);
