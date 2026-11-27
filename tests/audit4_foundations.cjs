@@ -1313,3 +1313,12 @@ assert.equal(tx26Cutoff.quarterlyPayment, null);
 assert.equal(tx26Cutoff.reportedAmortizationTerms.frequency, "Monthly");
 assert.equal(tx26Cutoff.reportedAmortizationTerms.paymentScheduleAvailable, false);
 assert.equal(tx26Cutoff.reportedAmortizationTerms.undrawnFeeAnnualRate, 0.005);
+
+const tx26Bounds = tx26Cutoff.conditionalReconciliationBounds;
+const tx26MinimumAvailability = usd(5.653 - 0.754 - (2.6 - 1.555));
+const tx26MaximumDraw = usd(8.5 - tx26MinimumAvailability);
+assert.deepEqual(tx26Bounds.undrawnAvailability, [3.854, 3.917]);
+assert.deepEqual(tx26Bounds.cumulativeDrawdown, [4.583, tx26MaximumDraw]);
+assert.deepEqual(tx26Bounds.cumulativePrincipalRepaid, [0, usd(tx26MaximumDraw - 4.583)]);
+assert.equal(tx26Cutoff.amountDrawn, null);
+assert.equal(tx26Cutoff.amountRepaid, null);

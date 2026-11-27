@@ -185,6 +185,10 @@ async function checkPage(browser, url) {
     assert.equal(coreWeaveDebt.netSystemWidePrincipal, 47.505);
     assert.equal(firstQuarter.financingLedger.TX26.lender, null);
     assert.equal(firstQuarter.financingLedger.TX26.undrawnCommitment, null);
+    const tx26 = ledger.transactions.find(tx => tx.id === "TX26");
+    assert.equal(tx26.amountDrawn, null);
+    assert.equal(tx26.conditionalReconciliationBounds.asOf, "2026-09-30");
+    assert.deepEqual(tx26.conditionalReconciliationBounds.cumulativeDrawdown, [4.583, 4.646]);
     const oracleInitialLease = firstQuarter.leaseCashSchedules.ORCL;
     assert.equal(oracleInitialLease.incremental.uncommencedCommitment, 288);
     assert.equal(oracleInitialLease.incremental.payment, 0);
