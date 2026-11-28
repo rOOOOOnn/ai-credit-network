@@ -2089,6 +2089,18 @@ assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettlementP
 assert.equal(delayedCall.timeline["2028Q3"].guaranteeLedger.TX11.cashSettledCumulative, 3);
 assert.equal(cappedProjectQ2.remainingGuaranteeLiability, 0);
 assert.equal(cappedProjectQ2.projects[1].remainingGuaranteeLiability, 0);
+const replacementRecoveryCase = engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, forcedDefaults: ["OPENAI"],
+  sbEnergyProjects: [
+    { readyQuarter: "2028Q1", leaseStartQuarter: "2028Q1", termQuarters: 8, cap: 12,
+      paymentsByQuarter: { "2028Q1": 2 }, replacementLeaseOrSaleProceeds: 3 },
+    { readyQuarter: "2028Q1", leaseStartQuarter: "2028Q1", termQuarters: 8, cap: 5,
+      replacementLeaseOrSaleProceeds: 6 }
+  ]
+}).timeline["2028Q1"].guaranteeLedger.TX11;
+assert.equal(replacementRecoveryCase.effectiveExposure, 15);
+assert.deepEqual(replacementRecoveryCase.projects.map(project => project.calledThisQuarter), [7, 0]);
+assert.equal(replacementRecoveryCase.cashSettledThisQuarter, 7);
 const oracleCommenced = engine.runSimulation(entities, transactions, { audit4Contracts: true,
   overrides: { ORCL: { includeOracleCommencedFinanceLease: true } } }).timeline["2026Q4"].entities.ORCL;
 assert.deepEqual([oracleCommenced.recognizedFinanceLease?.opening, oracleCommenced.recognizedFinanceLease?.payment,

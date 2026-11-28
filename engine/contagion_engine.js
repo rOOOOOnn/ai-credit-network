@@ -948,6 +948,8 @@
         scenarioReleaseQuarter: release?.[1] ?? null, releaseReason: terminated ? release[0] : null,
         effectiveExposure: active ? Math.max(0, cap - rentPaid) : 0,
         contingentExposure: contingent ? cap : 0, rentPaid: money(rentPaid),
+        ...(Number.isFinite(project.replacementLeaseOrSaleProceeds)
+          ? { replacementLeaseOrSaleProceeds: money(nonnegative(project.replacementLeaseOrSaleProceeds)) } : {}),
         calledGuarantee: previouslyCalled?.[index] ?? 0, calledThisQuarter: 0
       };
     });
@@ -1162,7 +1164,8 @@
       if (useAudit4Contracts) {
         const tx = transactions.find(item => item.id === "TX11");
         if (tx && getTransactionLifecycle(tx, q).isVisible) {
-          guaranteeLedger[tx.id] = phasedGuarantee(options.sbEnergyProjects ?? SB_ENERGY_SCENARIO, q,
+          guaranteeLedger[tx.id] = phasedGuarantee(options.sbEnergyProjects ??
+            overrides[tx.payer]?.sbEnergyProjects ?? SB_ENERGY_SCENARIO, q,
             tx.totalCommitment, sbEnergyCalls);
         }
       }
@@ -2268,16 +2271,25 @@
               const eligibleProjects = scenario?.projects?.filter(project => project.calledGuarantee === 0);
               const exposure = eligibleProjects
                 ? money(eligibleProjects.reduce((sum, project) => sum + project.remainingGuaranteeLiability, 0)) : undefined;
+              const projectClaims = eligibleProjects?.some(project => project.replacementLeaseOrSaleProceeds != null)
+                ? Object.fromEntries(eligibleProjects.map(project => [project.projectIndex,
+                  project.replacementLeaseOrSaleProceeds == null
+                    ? project.remainingGuaranteeLiability * guaranteeCallRate
+                    : Math.max(0, project.remainingGuaranteeLiability - project.replacementLeaseOrSaleProceeds)]))
+                : null;
               const eadInfo = exposure === undefined
                 ? computeTransactionEAD(tx, q, { lgd, guaranteeCallRate })
                 : { guaranteeEAD: exposure, totalEAD: exposure, lgd: guaranteeCallRate,
-                    creditLossAtDefault: money(exposure * guaranteeCallRate), eadBasis: "Project phase scenario" };
+                    creditLossAtDefault: money(projectClaims
+                      ? Object.values(projectClaims).reduce((sum, claim) => sum + claim, 0)
+                      : exposure * guaranteeCallRate),
+                    eadBasis: projectClaims ? "Project phase scenario with assumed recovery" : "Project phase scenario" };
               const callAmt = eligibleProjects
                 ? money(Math.min(eadInfo.creditLossAtDefault, Math.max(0, scenario.disclosedMaximum - scenario.calledGuarantee)))
                 : eadInfo.creditLossAtDefault;
               if (callAmt > 0) {
                 if (eligibleProjects) {
-                  const allocation = allocateFunding(Object.fromEntries(eligibleProjects.map(project =>
+                  const allocation = allocateFunding(projectClaims ?? Object.fromEntries(eligibleProjects.map(project =>
                     [project.projectIndex, project.remainingGuaranteeLiability])), callAmt);
                   for (const project of eligibleProjects) {
                     project.calledThisQuarter = allocation[project.projectIndex];

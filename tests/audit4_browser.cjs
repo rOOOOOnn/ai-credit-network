@@ -372,6 +372,14 @@ async function checkPage(browser, url) {
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
     await panel.locator("[data-nvidia-lease-preset]").selectOption("annual");
     assert.equal(JSON.parse(await scenario.inputValue()).includeNvidiaLeaseBuckets, true);
+    const nvidiaSettings = JSON.parse(await scenario.inputValue());
+    nvidiaSettings.sbEnergyProjects = [{
+      readyQuarter: "2028Q1", leaseStartQuarter: "2028Q1", termQuarters: 8,
+      cap: 12, paymentsByQuarter: { "2028Q1": 2 }, replacementLeaseOrSaleProceeds: 3
+    }];
+    await scenario.fill(JSON.stringify(nvidiaSettings));
+    await panel.locator("button").click();
+    assert.deepEqual(JSON.parse(await scenario.inputValue()).sbEnergyProjects, nvidiaSettings.sbEnergyProjects);
     await page.locator('[data-network-entity="AMZN"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
@@ -399,6 +407,12 @@ async function checkPage(browser, url) {
     const equipmentDownload = page.waitForEvent("download");
     await page.locator("#dlAuditLedgerJson").click();
     const equipmentExport = JSON.parse(await fs.readFile(await (await equipmentDownload).path(), "utf8"));
+    assert.deepEqual(equipmentExport.simulationOptions.overrides.NVDA.sbEnergyProjects, nvidiaSettings.sbEnergyProjects);
+    assert.equal(equipmentExport.simulationOptions.includeFirstGpuRefresh, true);
+    const tx11Project = equipmentExport.quarters.find(entry => entry.quarter === "2028Q1")
+      .guaranteeLedger.TX11.projects[0];
+    assert.deepEqual([tx11Project.effectiveExposure, tx11Project.rentPaid, tx11Project.replacementLeaseOrSaleProceeds],
+      [10, 2, 3]);
     const openingCreditLedger = equipmentExport.quarters[0].financingLedger;
     const securedNotes = openingCreditLedger.CORZ_SECURED_2031;
     assert.equal(securedNotes?.issuer, "Core Scientific Finance I LLC");
