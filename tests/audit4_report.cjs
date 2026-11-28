@@ -10,6 +10,7 @@ const replays = [
   ["scripts/replay_audit4_financing.cjs", ["2031Q4"], "### Companion Audit 4 archive review"],
   ["scripts/replay_audit4_gpu.cjs", [], "### Full-engine 3–7 year GPU sensitivity"],
   ["scripts/replay_audit4_sustainability.cjs", [], "### Financing sustainability across five comparable stresses"],
+  ["scripts/replay_audit4_sustainability.cjs", ["--operating-paths"], "### Scale effects and cost pressure at equal revenue growth"],
   ["tests/audit4_foundations.cjs", ["--audited-stress-markdown"], "### A–G stress tests on the audited profile"],
   ["tests/audit4_foundations.cjs", ["--extended-stress-markdown"], "### Extended A–G stress replay"]
 ];

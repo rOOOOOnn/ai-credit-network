@@ -1345,3 +1345,22 @@ The three company panels show the signed Dell order value and scheduled delivery
 Each TX11 project may specify assumed proceeds from a replacement lease or sale. At a model trigger, the call on that project is the remaining modeled guarantee liability after tenant payments less the supplied recovery, floored at zero and subject to the shared cap. Projects without recovery inputs retain the scenario call rate. The independent fixture has $12B of initial exposure, $2B of rent and $3B of recovery, giving a $7B call. A second $5B project with $6B of recovery contributes no call. Only the $7B guarantee settlement affects NVIDIA cash. The modeled amount remains a scenario because the agreement's minimum-value schedule, actual eligible recovery, and settlement timing are unavailable. [NVIDIA August 8-K](https://www.sec.gov/Archives/edgar/data/1045810/000104581026000069/nvda-20260817.htm).
 
 NVIDIA's company scenario JSON accepts the project array as `sbEnergyProjects`. Quarterly audit downloads preserve this override and the forecast horizon's GPU refresh option so the standalone engine can replay the same inputs. A browser fixture checks the saved project and the downloaded exposure, rent and recovery fields.
+
+### Scale effects and cost pressure at equal revenue growth
+
+These paired scenarios hold the revenue growth input at 7% and freeze scenario financing for the selected company. The scale case uses a 55% pre-financing cash operating margin and 1% quarterly base CapEx growth. The cost-pressure case uses a 5% margin and 15% quarterly base CapEx growth. Both are illustrative assumptions. Independently modeled financing, including Anthropic's estimated IPO receipt, remains available under its own rules. Amounts are USD billions as of 2028Q4. The first break-even is the earliest nonnegative forecast FCF, so Anthropic's cost-pressure path can cross it early and return to negative FCF later.
+
+| Entity | Operating path | Revenue | OCF | FCF | End cash | Funding gap | Runway months | Funding dependency | First default | First FCF break-even | Nonnegative FCF through cutoff since |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
+| OPENAI | Scale effects | 10.2202 | 5.6211 | 3.9968 | 81.6247 | 0 | — | — | — | 2026Q4 | 2026Q4 |
+| OPENAI | Cost pressure | 10.2202 | 0.511 | -4.0775 | 21.2375 | 0 | 8.2679 | 0 | — | — | — |
+| ANTHROPIC | Scale effects | 18.3901 | 10.0303 | 9.5972 | 304.8808 | 0 | — | — | — | 2026Q4 | 2026Q4 |
+| ANTHROPIC | Cost pressure | 18.3901 | 0.8352 | -0.3884 | 213.5466 | 0 | 1587.6411 | 0 | — | 2026Q4 | — |
+| ANTHROPIC | Scale effects without IPO receipt | 18.3901 | 10.0303 | 9.5972 | 187.8808 | 0 | — | — | — | 2026Q4 | 2026Q4 |
+| ANTHROPIC | Cost pressure without IPO receipt | 18.3901 | 0.8352 | -0.3884 | 96.5466 | 0 | 683.9336 | 0 | — | 2026Q4 | — |
+
+Equal ending revenue within each company leads to materially different FCF and cash. All six cases remain above the modeled cash floor at the reporting cutoff. Sustained positive FCF and forecast solvency remain separate outcomes.
+
+The runway is a point-in-time burn ratio. Anthropic's 1,587.6411-month value divides a large cash balance by a small quarterly burn and does not imply viability for that period. Funding dependency is the final-quarter financing inflow divided by modeled cash uses and is unavailable when those uses are zero. The sustained FCF column starts after the last negative quarter through 2028Q4 and is blank when ending FCF is negative. Its date is bounded by the modeled window.
+
+Removing the estimated Anthropic closing proceeds lowers 2028Q4 cash by $117B in both operating paths. In these scenarios it changes neither operating cash flow nor FCF and neither path reaches the model cash floor by the cutoff. The cost-pressure runway falls from 1,587.6411 to 683.9336 months under the same closing burn denominator. Both are static ratios. The no-receipt cases are counterfactual sensitivities to the modeled cash amount, since the issuer confirmed that the offering closed.
