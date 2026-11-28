@@ -229,3 +229,26 @@ assert.deepEqual(appliedDigital.debtMaturity, {
   FY2027Remaining: 0.108739, FY2028: 0.221545, FY2029: 0.341453,
   FY2030: 0.354294, FY2031: 4.256666, thereafter: 1.438908
 });
+const hpeCredit = entitiesById.get("HPE").audit4Facilities.find(row => row.id === "HPE_RCF_DISCLOSED");
+const dellCredit = entitiesById.get("DELL").audit4Facilities.find(row => row.id === "DELL_RCF_2026");
+assert.equal(hpeCredit.totalCommitment, 5.25);
+assert.equal(dellCredit.remainingCommitment, (6000 - 116) / 1000);
+assert.equal(dellCredit.principalOutstanding, 0);
+for (const [entityId, facilityId, commitment, lcSublimit] of [
+  ["AMD", "AMD_RCF_2026", 5, 0.25],
+  ["AVGO", "AVGO_RCF_2025", 7.5, 0.5]
+]) {
+  const facility = entitiesById.get(entityId).audit4Facilities.find(row => row.id === facilityId);
+  assert.deepEqual([facility.totalCommitment, facility.principalOutstanding, facility.lettersOfCredit],
+    [commitment, 0, lcSublimit]);
+  assert.equal(facility.lettersOfCreditDataType, "Assumption");
+  assert.equal(facility.remainingCommitment, commitment - lcSublimit);
+}
+const micronCredit = entitiesById.get("MU").audit4Facilities.find(row => row.id === "MU_RCF_DISCLOSED");
+assert.deepEqual([micronCredit.totalCommitment, micronCredit.principalOutstanding, micronCredit.maturityDate],
+  [2, 0, "2030-03-12"]);
+const superMicroCredit = entitiesById.get("SMCI").audit4Facilities.find(row => row.id === "SMCI_JPM_RCF");
+assert.deepEqual([superMicroCredit.totalCommitment, superMicroCredit.principalOutstanding,
+  superMicroCredit.lettersOfCredit, superMicroCredit.remainingCommitment], [2, 0, 0.2, 1.8]);
+assert.equal(superMicroCredit.lettersOfCreditDataType, "Assumption");
+assert.equal(superMicroCredit.payer, null);
