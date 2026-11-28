@@ -1301,3 +1301,7 @@ The closing ledger was coercing an unknown effective exposure to a zero remainin
 ### Forecast-to-date principal movements
 
 Financing rows with known principal now carry a roll-forward from their first modeled opening balance with separate cumulative scenario draws, cash principal repayments and noncash conversions. This is a forecast-to-date measure. For TX26, $4.583B is observed opening principal and lifetime cumulative draws stay unknown. The staged term facility fixture draws $3B and then $2B, repays $1B and later $4B, and closes at zero. The A–G suite independently reconciles the forecast-to-date movements to each known closing principal. Browser downloads preserve both the observed opening balance and the missing lifetime draw field.
+
+### Oracle reported lease cash, expense and noncash additions
+
+For the three months ended August 31, 2026, Oracle reported $0.950B in operating lease cash paid and $0.186B in finance lease cash paid. Operating lease expense was $1.101B. Finance lease expense was $0.275B, comprising $0.149B of right-of-use asset amortization and $0.126B of interest expense. The latter is an expense measure, and the disclosure does not establish a cash principal and interest split. Noncash operating and finance lease additions totaled $6.442B. The historical evidence now preserves these three measures separately from the modeled future payments and uncommenced commitments. [Oracle 10-Q, Note 6](https://www.sec.gov/Archives/edgar/data/1341439/000119312526389274/orcl-20260831.htm).

@@ -737,6 +737,11 @@ assert.equal(usd(orclOperatingLeaseCash - orclMaturities.operatingImputedInteres
 assert.equal(usd(orclFinanceLeaseCash - orclMaturities.financeImputedInterest), oracleFiling.financeLeaseLiability);
 assert.equal(oracleFiling.uncommencedLeaseCommitment, 288);
 assert.equal(usd(oracleFiling.reportedLeaseCashPaid.operating + oracleFiling.reportedLeaseCashPaid.finance), 1.136);
+assert.equal(oracleFiling.reportedLeaseExpense.operating, 1.101);
+assert.equal(usd(oracleFiling.reportedLeaseExpense.financeRouAmortization +
+  oracleFiling.reportedLeaseExpense.financeInterest), 0.275);
+assert.equal(oracleFiling.reportedLeaseExpense.totalFinanceExpense, 0.275);
+assert.equal(usd(oracleFiling.noncashOperatingLeaseAcquisitions + oracleFiling.noncashFinanceLeaseAcquisitions), 6.442);
 const lateGpuConfig = {
   capex: 4,
   gpuRefresh: { gpuPurchasesByQuarter: { "2027Q1": 2 }, economicLife: 7, replacementRatio: 0.5, residualValue: 0.25 }
