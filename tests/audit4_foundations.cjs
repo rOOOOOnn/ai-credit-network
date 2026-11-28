@@ -368,6 +368,17 @@ assert.equal(coreweaveHistorical.offBalanceLeases, 47.4);
 assert.equal(coreweaveHistorical.undrawnCredit, usd(2.5 - 1.2 - 0.546));
 assert.deepEqual([coreweaveHistorical.ocf, coreweaveHistorical.capex, coreweaveHistorical.fcf],
   [1.975, 9.441, usd(1.975 - 9.441)]);
+const coreweaveEntity = entities.find(entity => entity.id === "CRWV");
+const coreweaveOpeningWithoutOverride = engine.runSimulation([coreweaveEntity], [])
+  .timeline["2026Q4"].entities.CRWV;
+const coreweaveOpeningWithSparseOverride = engine.runSimulation([{
+  ...coreweaveEntity, legacyForecastOpening: { undrawnCredit: 0.754 }
+}], []).timeline["2026Q4"].entities.CRWV;
+assert.equal(coreweaveOpeningWithSparseOverride.insufficientData, false);
+assert.equal(coreweaveOpeningWithSparseOverride.begCash, 4.122);
+assert.equal(coreweaveOpeningWithSparseOverride.ocf, 2.1814);
+assert.equal(coreweaveOpeningWithSparseOverride.ocf, coreweaveOpeningWithoutOverride.ocf);
+assert.equal(coreweaveOpeningWithSparseOverride.undrawnCredit, 0.754);
 assert.equal(liquid.timeline["2026Q4"].entities.CRWV.begCash, 4.122);
 assert.equal(liquid.timeline["2026Q4"].entities.CRWV.openingLiquidityDisclosure.restrictedCashSeparate, 2.282);
 console.log("Audit 4 CoreWeave quarterly cash-flow bridge checks passed");
@@ -450,6 +461,7 @@ assert.equal(nvidiaFcfSnapshot.debt, 32.371);
 assert.equal(nvidiaFcfSnapshot.leaseLiab, null);
 assert.equal(nvidiaFcfSnapshot.noncurrentOperatingLeaseLiability, 5.777);
 assert.equal(nvidiaFcfSnapshot.offBalanceLeases + nvidiaFcfSnapshot.separateCloudServiceCommitments, 102);
+assert.equal(nvidiaFcfSnapshot.rpo, null);
 const oracleSnapshot = entities.find(entity => entity.id === "ORCL").financials["2026Q3"];
 assert.equal(oracleSnapshot.accountsPayable, 11.063);
 assert.equal(oracleSnapshot.shortTermDebt, 7.625);

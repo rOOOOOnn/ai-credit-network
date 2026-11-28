@@ -1394,8 +1394,11 @@
     const hasCoreFinancials = {};
     entities.forEach(e => {
       const fiscal = useAudit4Contracts ? e.audit4FiscalCashFlow : null;
+      const historicalQ3 = e.financials?.["2026Q3"];
+      const legacyCalibration = useAudit4Contracts ? null : e.legacyForecastOpening;
       const originalQ3 = useAudit4Contracts && e.audit4ForecastOpeningUnavailable
-        ? null : ((!useAudit4Contracts ? e.legacyForecastOpening : null) ?? e.financials?.["2026Q3"]);
+        ? null
+        : legacyCalibration ? { ...historicalQ3, ...legacyCalibration } : historicalQ3;
       const existingQ3 = fiscal?.calendarBucket === "2026Q3" && (originalQ3 || e.audit4Liquidity)
         ? { ...originalQ3, cash: e.audit4Liquidity?.cashAndEquivalents ?? originalQ3?.cash, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;
@@ -3172,11 +3175,15 @@ const INITIAL_ENTITIES = [
         "fcfBasis": "Issuer non-GAAP: OCF less asset purchases and related principal payments",
         "cashFlowSourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/q3fy27pr.htm",
         "ar": 81.033,
-        "rpo": 134,
+        "arSourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/supplementalfinancialinfor.htm",
+        "rpo": null,
         "leaseLiab": null,
         "noncurrentOperatingLeaseLiability": 5.777,
+        "noncurrentOperatingLeaseLiabilitySourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/supplementalfinancialinfor.htm",
         "offBalanceLeases": 74,
+        "offBalanceLeasesSourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/q3fy27cfocommentary.htm",
         "separateCloudServiceCommitments": 28,
+        "separateCloudServiceCommitmentsSourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/q3fy27cfocommentary.htm",
         "interestExp": 0.32,
         "undrawnCredit": 0,
         "dataType": "Actual",

@@ -1074,8 +1074,11 @@
     const hasCoreFinancials = {};
     entities.forEach(e => {
       const fiscal = useAudit4Contracts ? e.audit4FiscalCashFlow : null;
+      const historicalQ3 = e.financials?.["2026Q3"];
+      const legacyCalibration = useAudit4Contracts ? null : e.legacyForecastOpening;
       const originalQ3 = useAudit4Contracts && e.audit4ForecastOpeningUnavailable
-        ? null : ((!useAudit4Contracts ? e.legacyForecastOpening : null) ?? e.financials?.["2026Q3"]);
+        ? null
+        : legacyCalibration ? { ...historicalQ3, ...legacyCalibration } : historicalQ3;
       const existingQ3 = fiscal?.calendarBucket === "2026Q3" && (originalQ3 || e.audit4Liquidity)
         ? { ...originalQ3, cash: e.audit4Liquidity?.cashAndEquivalents ?? originalQ3?.cash, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;

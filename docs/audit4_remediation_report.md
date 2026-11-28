@@ -502,6 +502,10 @@ Status below applies to the audited research profile. Model acceptance requires 
 | P1. Data quality | The [50-entity source register](audit4_entity_source_register.md) identifies field gaps and issuer sources. Independent reconciliation exists for the published issuer updates documented above. | A field-level restatement and primary-source verification pass for all 50 entities is incomplete. Private cash-flow histories and several company-specific asset and obligation schedules remain unavailable. |
 | UI and acceptance | All three pages use identical audited data. Browser tests cover manual and curve inputs, history disclosure, lease controls, GPU horizon and downloadable ledgers. Legacy 48 tests, dataset checks and independent audit cases run on the three platforms. | Browser runs have not manually exercised every optional company-level setting. Use the run linked to the exact candidate commit for acceptance. |
 
+### Partial legacy opening adjustments
+
+Using the same CoreWeave data and no bilateral transactions, supplying only the $0.754B opening credit override caused the legacy forecast to flag insufficient data and leave opening cash and OCF null. The calibration now overlays the explicitly provided values onto the historical snapshot. With that same override, 2026Q4 begins with $4.122B cash, has $2.1814B forecast OCF and retains $0.754B of undrawn credit. The added regression verifies these outputs and checks that OCF agrees with the equivalent run without the override.
+
 ### Scenario equity dilution
 
 The company panel accepts a scenario pre-money valuation and reports quarterly and cumulative dilution derived only from funded scenario equity. Each modeled raise dilutes existing ownership by equity issued divided by pre-money value plus equity issued. Cumulative ownership multiplies retained ownership across raises. Missing valuation for a positive raise leaves cumulative dilution unavailable. Strategic funding, customer prepayment, debt, and separately modeled closing events do not enter this calculation because their equity terms are not established.
