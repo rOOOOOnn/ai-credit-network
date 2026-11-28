@@ -6,12 +6,15 @@ const fields = [
   ["Revenue", "revenue"], ["OCF", "ocf"], ["FCF", "fcf"], ["CapEx", "capex"],
   ["Cash", "cash"], ["Debt", "debt"], ["Current debt", "shortTermDebt"],
   ["Noncurrent debt", "longTermDebt"], ["Payables", "accountsPayable"],
+  ["Payables and accrued liabilities", "accountsPayableAndAccruedLiabilities"],
   ["Lease liabilities", "leaseLiab"], ["Operating lease liability", "operatingLeaseLiability"],
+  ["Finance lease liability", "financeLeaseLiability"], ["Noncurrent lease liability", "noncurrentLeaseLiability"],
   ["Uncommenced leases", "offBalanceLeases"], ["Interest input", "interestExp"],
   ["Reported gross interest expense", "reportedGrossInterestExpense"],
   ["Debt maturities", "debtMaturity"], ["RPO", "rpo"],
-  ["Customer concentration", "customerConcentration"], ["GPU purchases", "gpuPurchases"],
-  ["GPU fleet age", "gpuFleetAge"], ["Replacement CapEx", "replacementCapex"],
+  ["Customer concentration", "customerConcentration"],
+  ["Individual customer concentration upper bound (exclusive)", "customerConcentrationExclusiveUpperBound"],
+  ["GPU purchases", "gpuPurchases"], ["GPU fleet age", "gpuFleetAge"], ["Replacement CapEx", "replacementCapex"],
   ["Financing commitments", "financingCommitments"], ["Undrawn credit", "undrawnCredit"]
 ];
 
