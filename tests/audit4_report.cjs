@@ -176,3 +176,17 @@ for (const entity of entities) {
   const snapshot = entity.financials?.["2026Q3"];
   if (snapshot?.offBalanceGuarantees === 0) assert.ok(snapshot.offBalanceGuaranteesSourceUrl, entity.id);
 }
+const corzNotes = entitiesById.get("CORZ").audit4Facilities;
+const corzConvertible = corzNotes.find(row => row.id === "CORZ_CONVERTIBLE_2031");
+const corzSecured = corzNotes.find(row => row.id === "CORZ_SECURED_2031");
+assert.deepEqual([corzConvertible.amountDrawn, corzConvertible.reportedCashCoupon], [0.625, 0]);
+assert.deepEqual([corzSecured.amountDrawn, corzSecured.reportedCashCoupon], [3.3, 0.0775]);
+assert.equal((3300 * corzSecured.principalSchedule.annualRate / 2).toFixed(2), "189.75");
+
+assert.equal(equinix.offBalanceLeases, 0.694);
+assert.match(equinix.offBalanceLeasesSourceUrl, /eqix-20260930[.]htm$/);
+const dlrRevolver = entitiesById.get("DLR").audit4Facilities.find(row => row.id === "DLR_GLOBAL_RCF");
+assert.equal(dlrRevolver.principalOutstanding, 1.655570);
+assert.equal(dlrRevolver.lettersOfCredit, 0.1008);
+assert.equal(dlrRevolver.remainingCommitment, Number((4.470 - 1.655570 - 0.1008).toFixed(4)));
+assert.equal(dlrRevolver.lenderAllocationVerified, false);
