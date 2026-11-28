@@ -1460,8 +1460,14 @@
           const manualRepayment = options.facilityRepayments?.[tx.id]?.[q];
           const scheduledRepayment = manualRepayment == null
             ? modeledInstallments.get(tx.id)?.principal ?? equalPrincipalPayment : nonnegative(manualRepayment);
+          const availableForSweep = ov?.facilitySweepCash?.[tx.id]?.[q];
+          const sweep = Number.isFinite(availableForSweep) && tx.cashSweepFloor != null &&
+            quarterEndDate(q) > tx.commitmentTerminationDate && compareQuarter(q, tx.endQ) < 0 && !row.defaulted
+            ? money(Math.min(nonnegative(availableForSweep),
+              Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledRepayment - tx.cashSweepFloor))) : 0;
+          if (sweep > 0) row.assumedCashSweepRequested = sweep;
           const requested = tx.endQ === q ? row.beginningOutstanding :
-            (maturityByFacility[tx.id] ?? 0) + scheduledRepayment;
+            (maturityByFacility[tx.id] ?? 0) + scheduledRepayment + sweep;
           return [row.txId, row.defaulted ? 0 : Math.min(row.beginningOutstanding - row.nonCashConversion, requested)];
         }));
         const explicitRepayments = (facilities ?? []).reduce((sum, row) => {
@@ -1490,6 +1496,10 @@
             openingRemainingMonths: installment.remainingMonths, quarterlyScheduledPrincipal: installment.principal };
           if (coupon !== null) row.reportedCashCoupon = coupon;
           row.principalRepayment = money(Math.min(scheduledFacilityRepayments[row.txId], repaymentRoom));
+          if (row.assumedCashSweepRequested != null) {
+            const otherPrincipal = scheduledFacilityRepayments[row.txId] - row.assumedCashSweepRequested;
+            row.assumedCashSweepPaid = money(Math.max(0, row.principalRepayment - otherPrincipal));
+          }
           repaymentRoom = money(repaymentRoom - row.principalRepayment);
           row.endingOutstanding = money(row.beginningOutstanding - row.nonCashConversion - row.principalRepayment);
           let trancheRepayment = row.principalRepayment;

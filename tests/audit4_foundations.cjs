@@ -251,6 +251,20 @@ assert.deepEqual(["CRWV_DDTL50", "CRWV_DDTL55"].map(id => {
   return [loan.beginningOutstanding, loan.newDrawdown, loan.cumulativeDrawdown, loan.undrawnCommitment, loan.lender];
 }), [[2.749, 0, null, 0, null], [1.555, 0, null, null, null]]);
 assert.equal(coreweaveAdditional["2027Q1"].financingLedger.CRWV_DDTL55.undrawnCommitment, 0);
+assert.equal(coreweaveOpening.financingLedger.CRWV_DDTL50.maturityDate, "2031-11-15");
+assert.equal(coreweaveOpening.financingLedger.CRWV_DDTL55.maturityDate, "2031-09-01");
+const sweepCase = facilitySweepCash => engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, overrides: { CRWV: { cash: 100, facilitySweepCash } }
+}).timeline;
+const noSweep = sweepCase(undefined);
+const withSweep = sweepCase({ CRWV_DDTL55: { "2026Q4": 1, "2027Q1": 1, "2027Q2": 1 } });
+const sweepLoan = quarter => withSweep[quarter].financingLedger.CRWV_DDTL55;
+assert.equal(sweepLoan("2026Q4").assumedCashSweepPaid, undefined);
+assert.equal(sweepLoan("2027Q1").assumedCashSweepPaid, 0.255);
+assert.equal(sweepLoan("2027Q1").endingOutstanding, 1.3);
+assert.equal(sweepLoan("2027Q2").assumedCashSweepPaid, undefined);
+assert.equal(usd(noSweep["2027Q1"].entities.CRWV.cash - withSweep["2027Q1"].entities.CRWV.cash), 0.255);
+assert.equal(usd(noSweep["2027Q1"].entities.CRWV.debt - withSweep["2027Q1"].entities.CRWV.debt), 0.255);
 assert.equal(coreweaveOpening.financingLedger.TX27, undefined);
 assert.deepEqual(["10", "20", "21", "30"].map(suffix =>
   coreweaveOpening.financingLedger["CRWV_DDTL" + suffix].beginningOutstanding), [1.139, 2.796, 2.494, 2.323]);
