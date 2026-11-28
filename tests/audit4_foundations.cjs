@@ -2376,3 +2376,21 @@ const hyperionPortfolio = hyperionGuarantee.hyperionGuaranteeEvidence;
 assert.equal(usd(hyperionPortfolio.portfolioEquityCarryingValue + hyperionPortfolio.portfolioLeaseCommitments +
   hyperionPortfolio.portfolioFutureFunding + hyperionPortfolio.portfolioMaximumResidualGuarantees), 68.404);
 assert.equal(engine.computeTransactionEAD(hyperionGuarantee, "2026Q4").creditLossAtDefault, 0);
+
+const valorFunding = transactions.find(tx => tx.id === "TX41");
+const valorLease = transactions.find(tx => tx.id === "TX42");
+assert.deepEqual([valorFunding.reportedCapitalSolution, valorFunding.amountDrawn], [3.5, null]);
+assert.deepEqual([valorLease.reportedInfrastructureTransactionValue, valorLease.quarterlyPayment], [5.4, null]);
+assert.equal(fullLedgerAudit.timeline["2026Q4"].entities.SPV_VALOR.insufficientData, true);
+
+for (const id of ["TX32", "TX33", "TX34"]) {
+  const jupiter = transactions.find(tx => tx.id === id);
+  assert.deepEqual([jupiter.totalCommitment, jupiter.amountDrawn, jupiter.quarterlyPayment], [null, null, null]);
+}
+assert.equal(fullLedgerAudit.timeline["2026Q4"].entities.SPV_JUPITER.insufficientData, true);
+
+for (const id of ["TX40B", "TX40C", "TX40D"]) {
+  const sopaipilla = transactions.find(tx => tx.id === id);
+  assert.deepEqual([sopaipilla.totalCommitment, sopaipilla.amountDrawn, sopaipilla.quarterlyPayment], [null, null, null]);
+}
+assert.equal(fullLedgerAudit.timeline["2026Q4"].entities.SPV_SOPAIPILLA.insufficientData, true);

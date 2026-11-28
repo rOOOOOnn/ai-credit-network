@@ -2898,6 +2898,7 @@
   },
   {
     "id": "SPV_JUPITER",
+    "audit4ForecastOpeningUnavailable": true,
     "name": "Project Jupiter SPV (Stargate NM)",
     "ticker": "SPV-LOAN",
     "cik": null,
@@ -3172,6 +3173,7 @@
   },
   {
     "id": "SPV_VALOR",
+    "audit4ForecastOpeningUnavailable": true,
     "name": "Valor Compute Infra SPV (xAI)",
     "ticker": "SPV-GPU",
     "cik": null,
@@ -3611,6 +3613,7 @@
   },
   {
     "id": "SPV_SOPAIPILLA",
+    "audit4ForecastOpeningUnavailable": true,
     "name": "Sopaipilla Investor LLC (Meta El Paso SPV)",
     "ticker": "SPV-144A",
     "cik": null,
