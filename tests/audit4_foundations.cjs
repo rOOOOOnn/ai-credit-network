@@ -2233,3 +2233,35 @@ assert.equal(fixedSpreadEvent?.impactB, 0);
 assert.equal(fixedSpreadEvent.spreadWideningBps, 100);
 assert.equal(fixedSpreadEvent.floatingPrincipal, 0);
 assert.equal(fixedPeer["2027Q1"].entities.ORCL.secondaryRefinancingMultiplier, 0.95);
+
+const alignedAcquisition = transactions.find(tx => tx.id === "TX45");
+assert.equal(alignedAcquisition.type, "Asset Acquisition");
+assert.equal(alignedAcquisition.acquisitionTerms.reportedEnterpriseValue, 40);
+assert.equal(alignedAcquisition.acquisitionTerms.targetPrimaryProceeds, null);
+assert.equal(alignedAcquisition.amountDrawn, null);
+assert.equal(alignedAcquisition.totalCommitment, null);
+assert.equal(engine.computeTransactionEAD(alignedAcquisition, "2026Q3").fundedEAD, 0);
+
+const abileneDebt = transactions.find(tx => tx.id === "TX30");
+assert.equal(usd(abileneDebt.reportedPhaseCommitments[0] + abileneDebt.reportedPhaseCommitments[1]), 9.4);
+assert.equal(abileneDebt.amountDrawn, null);
+assert.equal(abileneDebt.remainingCommitment, null);
+assert.equal(abileneDebt.lenderAllocationVerified, false);
+const abileneEquity = transactions.find(tx => tx.id === "TX31");
+assert.equal(abileneEquity.reportedJointVentureSize, 15);
+assert.equal(abileneEquity.amountDrawn, null);
+assert.equal(abileneEquity.totalCommitment, null);
+
+const phaseOneRent = transactions.find(tx => tx.id === "TX29").phaseOneLeaseEvidence;
+assert.deepEqual(phaseOneRent.buildingRentCommencement, ["2025-03-18", "2025-07-01"]);
+assert.equal((2 * 12 * (phaseOneRent.dataHallsPerBuilding * phaseOneRent.monthlyBaseRentPerHall +
+  phaseOneRent.monthlyNetworkCoreRentPerBuilding)).toFixed(6), "0.244728");
+assert.equal(abileneDebt.phaseOneLoanEvidence.maxCommitment, 2.288);
+assert.equal(abileneDebt.phaseOneLoanEvidence.maturityYear, 2028);
+const phaseOneOwnership = transactions.find(tx => tx.id === "TX56").phaseOneOwnershipEvidence;
+assert.equal(phaseOneOwnership.crusoeAbileneShare + phaseOneOwnership.borecLonghornMemberShare, 1);
+
+const phaseOneSale = transactions.find(tx => tx.id === "TX56").phaseOneSecondarySaleEvidence;
+assert.equal(phaseOneSale.consideration, phaseOneSale.receivable);
+assert.equal(phaseOneSale.subsequentlyCancelled, true);
+assert.equal(phaseOneSale.primarySponsorProceeds, null);
