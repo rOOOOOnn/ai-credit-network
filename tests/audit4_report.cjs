@@ -153,3 +153,21 @@ assert.equal(coreWeaveSnapshot.debt, (47505 - 552 - 80) / 1000);
 assert.equal(tx26Disclosure.principalOutstanding, 4.583);
 assert.equal((4583 + 770 - 80) / 1000, 5.273);
 assert.equal(tx26Disclosure.carryingValue, null);
+
+const nvidiaSnapshot = entitiesById.get("NVDA").financials["2026Q3"];
+assert.equal(nvidiaSnapshot.periodEnd, "2026-10-25");
+assert.deepEqual([nvidiaSnapshot.cash, nvidiaSnapshot.longTermDebt, nvidiaSnapshot.noncurrentOperatingLeaseLiability],
+  [29.089, 32.371, 5.777]);
+assert.equal(nvidiaSnapshot.leaseLiab, null);
+assert.match(coverageRow("NVDA"), /5\.777 · Actual/);
+
+const oracleSnapshot = entitiesById.get("ORCL").financials["2026Q3"];
+assert.equal(oracleSnapshot.periodEnd, "2026-08-31");
+assert.equal(oracleSnapshot.leaseLiab, (4027 + 30594 + 749 + 8436) / 1000);
+assert.equal(oracleSnapshot.offBalanceLeases, 288);
+
+assert.equal(vertiv.noncurrentLeaseLiability, 0.3397);
+assert.equal(constellation.longTermBorrowingsPrincipal, 19.524);
+assert.equal(vistra.debt, 21.146);
+assert.equal(vistra.cash, 2.743);
+assert.equal(vistra.undrawnCredit, (5500 - 786) / 1000);

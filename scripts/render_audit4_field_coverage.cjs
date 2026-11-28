@@ -9,6 +9,7 @@ const fields = [
   ["Payables and accrued liabilities", "accountsPayableAndAccruedLiabilities"],
   ["Lease liabilities", "leaseLiab"], ["Operating lease liability", "operatingLeaseLiability"],
   ["Finance lease liability", "financeLeaseLiability"], ["Noncurrent lease liability", "noncurrentLeaseLiability"],
+  ["Noncurrent operating lease liability", "noncurrentOperatingLeaseLiability"],
   ["Uncommenced leases", "offBalanceLeases"], ["Interest input", "interestExp"],
   ["Reported gross interest expense", "reportedGrossInterestExpense"],
   ["Debt maturities", "debtMaturity"], ["RPO", "rpo"],
