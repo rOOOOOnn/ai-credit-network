@@ -2295,3 +2295,31 @@ assert.equal(abileneEvents[0].migrationCashCost, usd(19.5 * 0.04 * 0.7 * 0.35));
 assert.equal(abileneEvents[1].deferredRevenue, 0.129);
 assert.equal(abileneEvents[1].permanentRevenueLoss, 0.043);
 assert.equal(abileneEvents[1].impactB, usd(0.129 + 0.043));
+
+const qtsTransaction = transactions.find(tx => tx.id === "TX46");
+const qtsEvidence = qtsTransaction.absIssuerEvidence;
+assert.equal(usd(qtsEvidence.fixedRateIssuance + qtsEvidence.floatingRateIssuance), qtsEvidence.newGrossIssuance);
+assert.equal(usd(qtsEvidence.priorIssuances + qtsEvidence.newGrossIssuance), 3.705);
+assert.equal(qtsTransaction.amountDrawn, null);
+assert.equal(qtsTransaction.lenderAllocationVerified, false);
+assert.equal(entities.find(entity => entity.id === "QTS").financials["2026Q3"].debt, null);
+
+const airtrunkFacility = transactions.find(tx => tx.id === "TX47");
+assert.equal(airtrunkFacility.reportedRefinancing.currency, "AUD");
+assert.equal(airtrunkFacility.reportedRefinancing.exJapanPackage, 16);
+assert.deepEqual(airtrunkFacility.reportedRefinancing.singaporeGreenLoan, { currency: "SGD", amount: 2.25 });
+assert.equal(airtrunkFacility.totalCommitment, null);
+assert.equal(airtrunkFacility.amountDrawn, null);
+assert.equal(entities.find(entity => entity.id === "AIRTRUNK").financials["2026Q3"].debt, null);
+
+const frontier = transactions.find(tx => tx.id === "TX35A");
+assert.equal(frontier.projectInvestmentEvidence.investmentLowerBoundExclusive, 25);
+for (const id of ["TX35A", "TX35B", "TX36"]) {
+  const facility = transactions.find(tx => tx.id === id);
+  assert.equal(facility.amountDrawn, null);
+  assert.equal(facility.totalCommitment, null);
+  assert.equal(facility.lenderAllocationVerified, false);
+}
+assert.deepEqual(transactions.find(tx => tx.id === "TX36").separateFinancingDisclosures
+  .map(row => row.facilityAmount), [2.4, 2]);
+assert.equal(entities.find(entity => entity.id === "VANTAGE").financials["2026Q3"].debt, null);

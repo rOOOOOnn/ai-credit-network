@@ -24,10 +24,10 @@ CRUSOE,Crusoe Energy Systems,,3,,,,,,Unavailable
 LAMBDA,"Lambda, Inc.",,3,,,,,,Unavailable
 COHERE,Cohere Inc.,,3,,,,,,Unavailable
 MISTRAL,Mistral AI SAS,,3,,,,,,Unavailable
-VANTAGE,Vantage Data Centers,,3,,,,,48.0,Estimated
-QTS,QTS Data Centers (BX),,3,,,,,8.26,Actual
+VANTAGE,Vantage Data Centers,,3,,,,,,Unavailable
+QTS,QTS Data Centers (BX),,3,,,,,,Unavailable
 ALIGNED,Aligned Data Centers (AIP),,3,,,,,,Unavailable
-AIRTRUNK,AirTrunk (BX / CPPIB),,3,,,,,13.2,Estimated
+AIRTRUNK,AirTrunk (BX / CPPIB),,3,,,,,,Unavailable
 SPV_BEIGNET,Beignet Investor LLC (Meta Hyperion SPV),,3,META,,0.65,2.0,27.3,Estimated
 SPV_JUPITER,Project Jupiter SPV (Stargate NM),,3,ORCL,,0.0,0.8,18.0,Estimated
 SPV_ABILENE,Abilene / Stargate JV SPV (TX),,3,ORCL,,0.35,1.1,9.4,Estimated
