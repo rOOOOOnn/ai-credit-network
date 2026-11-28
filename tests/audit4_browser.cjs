@@ -238,7 +238,9 @@ async function checkPage(browser, url) {
     const firstQuarter = ledger.quarters[0];
     assert.equal(firstQuarter.quarter, "2026Q4");
     const crwvMargin = firstQuarter.gpuCashSchedules.CRWV;
-    assert.equal(crwvMargin.marginStressByFacility.TX27.principal, 10);
+    assert.equal(crwvMargin.marginStressByFacility.TX27, undefined);
+    assert.deepEqual(["10", "20", "21", "30"].map(suffix =>
+      crwvMargin.marginStressByFacility["CRWV_DDTL" + suffix].principal), [1.139, 2.796, 2.494, 2.323]);
     assert.equal(crwvMargin.marginCall, Number(Object.values(crwvMargin.marginStressByFacility)
       .reduce((sum, facility) => sum + facility.marginCall, 0).toFixed(4)));
     assert.ok(Array.isArray(firstQuarter.operationalRevenueLedger));

@@ -309,9 +309,9 @@ Run `node scripts/replay_audit4_financing.cjs` from a checkout containing the co
 | Continuation | ANTHROPIC | Freeze | 171.8728 | 0 | — | — | 2026Q4 |
 | Remediated | ANTHROPIC | Freeze | 240.9793 | 0 | — | — | 2026Q4 |
 | Continuation | CRWV | Manual | -1.2404 | 3.2404 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Manual | 3.3409 | 0 | 1.5318 | — | — |
+| Remediated | CRWV | Manual | 2.9478 | 0 | 1.0868 | — | — |
 | Continuation | CRWV | Curve | -1.1763 | 3.1763 | 0 | 2028Q4 | — |
-| Remediated | CRWV | Curve | 3.3409 | 0 | 1.5318 | — | — |
+| Remediated | CRWV | Curve | 2.9478 | 0 | 1.0868 | — | — |
 | Continuation | CRWV | Freeze | -31.6668 | 33.6668 | 0 | 2027Q1 | — |
 | Remediated | CRWV | Freeze | -26.211 | 28.211 | 0 | 2027Q1 | — |
 
@@ -329,17 +329,17 @@ Run `node scripts/replay_audit4_gpu.cjs`. Each case assigns the selected company
 
 | Entity | Life | Profile | First refresh | 2030Q4 cash | 2030Q4 gap | 2032Q4 cash | 2032Q4 gap | First default |
 | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | --- |
-| CRWV | 3 | Reference | 2029Q4 | -9.2759 | 11.2759 | -21.738 | 23.738 | 2029Q2 |
-| CRWV | 4 | Reference | 2030Q4 | -0.7891 | 2.7891 | -16.8258 | 18.8258 | 2030Q4 |
-| CRWV | 5 | Reference | 2031Q4 | 4.7389 | 0 | -12.5015 | 14.5015 | 2031Q4 |
-| CRWV | 6 | Reference | 2032Q4 | 8.5395 | 0 | -5.6939 | 7.6939 | 2032Q2 |
-| CRWV | 7 | Reference | 2033Q4 | 10.5957 | 0 | -2.1977 | 4.1977 | 2032Q3 |
-| CRWV | 4 | Combined stress | 2030Q4 | -83.9581 | 85.9581 | -139.2453 | 141.2453 | 2027Q1 |
-| OPENAI | 3 | Reference | 2029Q4 | 47.3241 | 0 | 27.1594 | 0 | — |
-| OPENAI | 4 | Reference | 2030Q4 | 50.9129 | 0 | 27.9124 | 0 | — |
-| OPENAI | 5 | Reference | 2031Q4 | 52.6629 | 0 | 29.0479 | 0 | — |
-| OPENAI | 6 | Reference | 2032Q4 | 52.6629 | 0 | 32.6367 | 0 | — |
-| OPENAI | 7 | Reference | 2033Q4 | 52.6629 | 0 | 34.3867 | 0 | — |
+| CRWV | 3 | Reference | 2029Q4 | -20.7139 | 22.7139 | -34.4484 | 36.4484 | 2029Q4 |
+| CRWV | 4 | Reference | 2030Q4 | -14.8028 | 16.8028 | -32.8366 | 34.8366 | 2030Q1 |
+| CRWV | 5 | Reference | 2031Q4 | -11.058 | 13.058 | -30.1321 | 32.1321 | 2030Q3 |
+| CRWV | 6 | Reference | 2032Q4 | -4.8071 | 6.8071 | -20.9302 | 22.9302 | 2030Q3 |
+| CRWV | 7 | Reference | 2033Q4 | -0.9498 | 2.9498 | -15.6269 | 17.6269 | 2030Q4 |
+| CRWV | 4 | Combined stress | 2030Q4 | -81.237 | 83.237 | -131.7003 | 133.7003 | 2027Q1 |
+| OPENAI | 3 | Reference | 2029Q4 | 47.3241 | 0 | 26.9874 | 0 | — |
+| OPENAI | 4 | Reference | 2030Q4 | 50.9129 | 0 | 27.7404 | 0 | — |
+| OPENAI | 5 | Reference | 2031Q4 | 52.6629 | 0 | 28.8759 | 0 | — |
+| OPENAI | 6 | Reference | 2032Q4 | 52.6629 | 0 | 32.4647 | 0 | — |
+| OPENAI | 7 | Reference | 2033Q4 | 52.6629 | 0 | 34.2147 | 0 | — |
 | OPENAI | 4 | Combined stress | 2030Q4 | -169.7052 | 179.7052 | -297.3603 | 307.3603 | 2027Q3 |
 | ANTHROPIC | 3 | Reference | 2029Q4 | 234.3174 | 0 | 196.9005 | 0 | — |
 | ANTHROPIC | 4 | Reference | 2030Q4 | 237.9062 | 0 | 197.6535 | 0 | — |
@@ -430,11 +430,11 @@ The original A–G tests retained the legacy profile as a regression. The same i
 | --- | --- | ---: | ---: | ---: | --- |
 | A | OpenAI | -64.6984 | -13.3109 | 74.6984 | 2027Q4 |
 | B | Anthropic | 104.3167 | -0.8852 | 0 | — |
-| C | CoreWeave | -35.8641 | -3.3004 | 37.8641 | 2027Q1 |
+| C | CoreWeave | -35.0747 | -3.3004 | 37.0747 | 2027Q1 |
 | D | Oracle | -80.323 | -21.4009 | 90.323 | 2027Q4 |
-| E | CoreWeave | -34.1454 | -3.3912 | 36.1454 | 2027Q1 |
-| F | CoreWeave | -43.8987 | -4.8786 | 45.8987 | 2027Q1 |
-| G | CoreWeave | -60.1128 | -5.7082 | 62.1128 | 2026Q4 |
+| E | CoreWeave | -33.1615 | -3.3912 | 35.1615 | 2027Q1 |
+| F | CoreWeave | -43.1105 | -4.8786 | 45.1105 | 2027Q1 |
+| G | CoreWeave | -59.3255 | -5.7082 | 61.3255 | 2026Q4 |
 
 Values are scenario results in USD billions, reproducible with `node tests/audit4_foundations.cjs` in the final A–G table. The cash identity includes loan and lease principal, collateral-related margin, equipment sale proceeds, investment sales and both project and unallocated guarantee cash payments. The financing source sum is also verified for every eligible company-quarter. The updated CoreWeave values reflect the full audited profile. First default quarters are unchanged from the earlier audited replay.
 
@@ -631,14 +631,14 @@ The archive's longer financing comparison was adapted to this branch. Run `node 
 
 | Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |
 | --- | --- | --- | ---: | ---: | ---: | --- | --- |
-| Remediated | OPENAI | Manual | -134.4555 | 144.4555 | 0 | 2028Q2 | — |
-| Remediated | OPENAI | Curve | -134.4555 | 144.4555 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Manual | -134.463 | 144.463 | 0 | 2028Q2 | — |
+| Remediated | OPENAI | Curve | -134.463 | 144.463 | 0 | 2028Q2 | — |
 | Remediated | OPENAI | Freeze | -163.4441 | 173.4441 | 0 | 2027Q4 | — |
 | Remediated | ANTHROPIC | Manual | 254.3391 | 0 | 166.2506 | — | 2026Q4 |
 | Remediated | ANTHROPIC | Curve | 254.3391 | 0 | 166.2506 | — | 2026Q4 |
 | Remediated | ANTHROPIC | Freeze | 224.3391 | 0 | 146.0041 | — | 2026Q4 |
-| Remediated | CRWV | Manual | -53.5352 | 55.5352 | 0 | 2029Q2 | — |
-| Remediated | CRWV | Curve | -53.5352 | 55.5352 | 0 | 2029Q2 | — |
+| Remediated | CRWV | Manual | -51.6554 | 53.6554 | 0 | 2029Q2 | — |
+| Remediated | CRWV | Curve | -51.6554 | 53.6554 | 0 | 2029Q2 | — |
 | Remediated | CRWV | Freeze | -82.4877 | 84.4877 | 0 | 2027Q1 | — |
 
 
@@ -1104,11 +1104,11 @@ The supplied archive runs its integrated stresses through 2031Q4. The audited br
 | --- | --- | ---: | ---: | ---: | --- |
 | A | OpenAI | -245.8359 | -15.8321 | 255.8359 | 2027Q4 |
 | B | Anthropic | 57.0278 | -5.4577 | 0 | — |
-| C | CoreWeave | -107.0212 | -6.6273 | 109.0212 | 2027Q1 |
+| C | CoreWeave | -102.0176 | -6.6273 | 104.0176 | 2027Q1 |
 | D | Oracle | -314.7076 | -22.4739 | 324.7076 | 2027Q4 |
-| E | CoreWeave | -89.5535 | -7.0773 | 91.5535 | 2027Q1 |
-| F | CoreWeave | -120.2558 | -7.2469 | 122.2558 | 2027Q1 |
-| G | CoreWeave | -145.4832 | -7.0643 | 147.4832 | 2026Q4 |
+| E | CoreWeave | -80.7521 | -7.1186 | 82.7521 | 2027Q1 |
+| F | CoreWeave | -113.2947 | -7.28 | 115.2947 | 2027Q1 |
+| G | CoreWeave | -140.4817 | -7.0643 | 142.4817 | 2026Q4 |
 
 ### Downloadable Core Scientific debt terms
 
@@ -1364,3 +1364,13 @@ Equal ending revenue within each company leads to materially different FCF and c
 The runway is a point-in-time burn ratio. Anthropic's 1,587.6411-month value divides a large cash balance by a small quarterly burn and does not imply viability for that period. Funding dependency is the final-quarter financing inflow divided by modeled cash uses and is unavailable when those uses are zero. The sustained FCF column starts after the last negative quarter through 2028Q4 and is blank when ending FCF is negative. Its date is bounded by the modeled window.
 
 Removing the estimated Anthropic closing proceeds lowers 2028Q4 cash by $117B in both operating paths. In these scenarios it changes neither operating cash flow nor FCF and neither path reaches the model cash floor by the cutoff. The cost-pressure runway falls from 1,587.6411 to 683.9336 months under the same closing burn denominator. Both are static ratios. The no-receipt cases are counterfactual sensitivities to the modeled cash amount, since the issuer confirmed that the offering closed.
+
+### CoreWeave additional delayed-draw facility evidence
+
+Note 10 confirms DDTL 5.0 has a $3.1B commitment and $2.749B September principal, and DDTL 5.5 has a $2.6B commitment and $1.555B September principal. Both are recourse balances already inside consolidated debt. The note separately lists the debt table maturities and earlier expected final installment months. The latter are used as disclosed expectations and cannot establish actual payment dates. The new source record preserves both dates, draw-window terminations and separately unknown cumulative draw, principal repayment and drawable amounts at the observation. The historical balances provide no new forecast cash at opening. [CoreWeave September 10-Q, Note 10](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/R16.htm).
+
+The audited financing ledger now names both facilities inside existing CoreWeave parent debt. The 2026Q4 opening verifies $4.304B of additional named principal and no opening draw. The modeled maturity uses the debt-table month, with no invented pre-maturity installment schedule. In the 2031Q4 manual and curve paths, CoreWeave cash moves from -$53.5352B to -$54.4437B after the facility-level allocation reaches maturity. The first model default stays in 2029Q2.
+
+The same debt table reports DDTL 1.0, 2.0, 2.1 and 3.0 principal of $1.139B, $2.796B, $2.494B and $2.323B, respectively, totaling $8.752B. These are separate from the DDTL 5.0 and 5.5 rows. The inherited TX27 $10B modeling input exceeds this disclosed four-facility subtotal by $1.248B and has not been reconciled to instrument balances or lender allocations. Its single May 2029 maturity also does not reproduce the four separate maturities between March 2028 and March 2031. The audited financing ledger supersedes that aggregate with the four disclosed positions. The legacy aggregate remains available for legacy replays and the synthetic collateral fixtures. [CoreWeave September 10-Q, Note 10](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/R16.htm).
+
+With the four legacy facilities and the two newer DDTLs, $13.056B of term debt is named on the CoreWeave opening ledger. The borrower opening still includes consolidated debt once. Loan-level lender shares and actual pre-maturity cash installments are unavailable. Until an explicit schedule is supplied, the model uses the debt-table maturity quarter for remaining principal. The four reported instruments replace the TX27 haircut base, affecting the stressed cash and credit-loss calculations. For example, 2031Q4 CoreWeave cash under stress C moves from -$35.8641B to -$35.0747B, with first default still 2027Q1. The synthetic $10B collateral fixture retains the same inputs and expected loss thresholds.

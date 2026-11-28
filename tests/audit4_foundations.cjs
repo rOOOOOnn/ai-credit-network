@@ -244,6 +244,17 @@ assert.equal(termResult.timeline["2027Q2"].debtReconciliation.OPENAI.namedTermPr
 assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.cumulativeDrawdown, null);
 assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.forecastPrincipalMovements.openingPrincipal, 4.583);
 assert.equal(termResult.timeline["2027Q1"].financingLedger.TX26.undrawnCommitment, null);
+const coreweaveAdditional = engine.runSimulation(entities, transactions, { audit4Contracts: true }).timeline;
+const coreweaveOpening = coreweaveAdditional["2026Q4"];
+assert.deepEqual(["CRWV_DDTL50", "CRWV_DDTL55"].map(id => {
+  const loan = coreweaveOpening.financingLedger[id];
+  return [loan.beginningOutstanding, loan.newDrawdown, loan.cumulativeDrawdown, loan.undrawnCommitment, loan.lender];
+}), [[2.749, 0, null, 0, null], [1.555, 0, null, null, null]]);
+assert.equal(coreweaveAdditional["2027Q1"].financingLedger.CRWV_DDTL55.undrawnCommitment, 0);
+assert.equal(coreweaveOpening.financingLedger.TX27, undefined);
+assert.deepEqual(["10", "20", "21", "30"].map(suffix =>
+  coreweaveOpening.financingLedger["CRWV_DDTL" + suffix].beginningOutstanding), [1.139, 2.796, 2.494, 2.323]);
+assert.equal(coreweaveOpening.debtReconciliation.CRWV.namedTermPrincipal, 13.056);
 console.log("Audit 4 term loan draw, repayment and reconciliation checks passed");
 
 
@@ -798,7 +809,10 @@ assert.equal(physicalQuarter.gpuCollateralValue, 1);
 assert.equal(physicalQuarter.gpuFleetAgeYears, 0);
 assert.equal(usd(physicalReference.cash - physicalQuarter.cash), 17);
 assert.equal(usd(physicalReference.fcf - physicalQuarter.fcf), 18);
-const pledgedGpu = engine.runSimulation(entities, transactions, {
+const legacyPledgeFixtureEntities = entities.map(entity => entity.id === "CRWV" ? {
+  ...entity, audit4Facilities: entity.audit4Facilities.filter(facility => !facility.supersedesFacilityIds?.includes("TX27"))
+} : entity);
+const pledgedGpu = engine.runSimulation(legacyPledgeFixtureEntities, transactions, {
   audit4Contracts: true, forcedDefaults: ["CRWV"],
   overrides: { CRWV: { gpuRefresh: {
     cohorts: [{ acquired: "2024Q4", cost: 4, pledgedTo: "TX27" }, { acquired: "2026Q4", cost: 50 }],
@@ -1625,7 +1639,7 @@ assert.equal(expiredTx26.undrawnCommitment, 0);
 assert.equal(expiredTx26.fundedEAD, 4.583);
 assert.equal(expiredTx26.exposureCoverage, "FundedAndUndrawn");
 assert.equal(termResult.timeline["2027Q3"].financingLedger.TX26.canDraw, false);
-const soldPledge = engine.runSimulation(entities, transactions, {
+const soldPledge = engine.runSimulation(legacyPledgeFixtureEntities, transactions, {
   audit4Contracts: true, forcedDefaults: ["CRWV"],
   overrides: { CRWV: { gpuRefresh: {
     cohorts: [{ acquired: "2022Q4", cost: 4, pledgedTo: "TX27" }],
