@@ -202,3 +202,17 @@ for (const entity of entities) {
   const latestQuarter = Object.keys(entity.financials ?? {}).sort().at(-1);
   if (latestQuarter) assert.equal(entity.dataType, entity.financials[latestQuarter].dataType, entity.id);
 }
+const irenGpuOne = entitiesById.get("IREN").audit4Facilities
+  .filter(row => ["IREN_GPU1_DDTL", "IREN_GPU1_USPP"].includes(row.id));
+assert.equal(irenGpuOne.length, 2);
+const gpuOneSum = key => Math.round(irenGpuOne.reduce((sum, row) => sum + row[key], 0) * 1000);
+assert.equal(gpuOneSum("amountDrawn"), 1988);
+assert.equal(gpuOneSum("principalOutstanding"), 1980);
+assert.equal(gpuOneSum("remainingCommitment"), 1657);
+assert.equal(gpuOneSum("amountDrawn") + gpuOneSum("remainingCommitment"), gpuOneSum("totalCommitment"));
+
+const irenOctoberDraw = irenGpuOne.find(row => row.id === "IREN_GPU1_DDTL").subsequentDraw;
+const irenNotes = irenGpuOne.find(row => row.id === "IREN_GPU1_USPP");
+assert.deepEqual([irenOctoberDraw.date, irenOctoberDraw.amount], ["2026-10-01", 0.388]);
+assert.deepEqual([irenNotes.subsequentEscrowRelease.date, irenNotes.subsequentEscrowRelease.amount,
+  irenNotes.restrictedProceedsEscrow], ["2026-10-01", 0.525, 1.05]);
