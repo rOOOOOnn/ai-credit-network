@@ -2950,6 +2950,7 @@
   },
   {
     "id": "SPV_ABILENE",
+    "audit4ForecastOpeningUnavailable": true,
     "name": "Abilene / Stargate JV SPV (TX)",
     "ticker": "SPV-LOAN",
     "cik": null,

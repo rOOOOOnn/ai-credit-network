@@ -1074,7 +1074,8 @@
     const hasCoreFinancials = {};
     entities.forEach(e => {
       const fiscal = useAudit4Contracts ? e.audit4FiscalCashFlow : null;
-      const originalQ3 = (!useAudit4Contracts ? e.legacyForecastOpening : null) ?? e.financials?.["2026Q3"];
+      const originalQ3 = useAudit4Contracts && e.audit4ForecastOpeningUnavailable
+        ? null : ((!useAudit4Contracts ? e.legacyForecastOpening : null) ?? e.financials?.["2026Q3"]);
       const existingQ3 = fiscal?.calendarBucket === "2026Q3" && (originalQ3 || e.audit4Liquidity)
         ? { ...originalQ3, cash: e.audit4Liquidity?.cashAndEquivalents ?? originalQ3?.cash, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;
@@ -1265,7 +1266,8 @@
 
       // Step 2A: Standalone Quarterly Cash Flow Projection
       entities.forEach(e => {
-        const prev = prevStates[e.id] || {};
+        const prev = useAudit4Contracts && e.audit4ForecastOpeningUnavailable && q === QUARTER_PARTIAL
+          ? {} : (prevStates[e.id] || {});
         if (e.isOcean) {
           states[e.id] = {
             quarter: q, revenue: null, cash: ocean.maxCapacity, debt: 0, ocf: null, capex: 0, fcf: null,

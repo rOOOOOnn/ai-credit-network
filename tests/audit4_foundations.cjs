@@ -2265,3 +2265,33 @@ const phaseOneSale = transactions.find(tx => tx.id === "TX56").phaseOneSecondary
 assert.equal(phaseOneSale.consideration, phaseOneSale.receivable);
 assert.equal(phaseOneSale.subsequentlyCancelled, true);
 assert.equal(phaseOneSale.primarySponsorProceeds, null);
+
+const abileneAudit = fullLedgerAudit.timeline["2026Q4"].entities.SPV_ABILENE;
+assert.equal(abileneAudit.insufficientData, true);
+assert.equal(abileneAudit.begCash, null);
+assert.equal(abileneAudit.debt, null);
+assert.equal(abileneAudit.newDebt, 0);
+const abileneOverride = engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, overrides: { SPV_ABILENE: { cash: 3, revenue: 1, debt: 2 } }
+}).timeline["2026Q4"].entities.SPV_ABILENE;
+assert.equal(abileneOverride.insufficientData, false);
+assert.equal(abileneOverride.begCash, 3);
+assert.equal(abileneOverride.priorQuarterRevenue, 1);
+
+const abileneLease = transactions.find(tx => tx.id === "TX29");
+assert.equal(abileneLease.totalCommitment, null);
+assert.equal(abileneLease.quarterlyPayment, null);
+assert.equal(abileneLease.guarantor, null);
+assert.equal(abileneLease.scheduleType, "Assumption");
+
+const abileneOutage = engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, forcedDefaults: ["SPV_ABILENE"]
+}).timeline["2026Q4"];
+const abileneEvents = abileneOutage.contagionLog.filter(event => event.txId === "TX29");
+assert.equal(abileneOutage.entities.SPV_ABILENE.insufficientData, true);
+assert.deepEqual(abileneEvents.map(event => event.layer), ["L3_OPERATIONAL", "L3_OPERATIONAL"]);
+// Oracle's $19.5B CapEx anchors 4% modeled contract exposure with 70% unsubstituted capacity.
+assert.equal(abileneEvents[0].migrationCashCost, usd(19.5 * 0.04 * 0.7 * 0.35));
+assert.equal(abileneEvents[1].deferredRevenue, 0.129);
+assert.equal(abileneEvents[1].permanentRevenueLoss, 0.043);
+assert.equal(abileneEvents[1].impactB, usd(0.129 + 0.043));

@@ -1394,7 +1394,8 @@
     const hasCoreFinancials = {};
     entities.forEach(e => {
       const fiscal = useAudit4Contracts ? e.audit4FiscalCashFlow : null;
-      const originalQ3 = (!useAudit4Contracts ? e.legacyForecastOpening : null) ?? e.financials?.["2026Q3"];
+      const originalQ3 = useAudit4Contracts && e.audit4ForecastOpeningUnavailable
+        ? null : ((!useAudit4Contracts ? e.legacyForecastOpening : null) ?? e.financials?.["2026Q3"]);
       const existingQ3 = fiscal?.calendarBucket === "2026Q3" && (originalQ3 || e.audit4Liquidity)
         ? { ...originalQ3, cash: e.audit4Liquidity?.cashAndEquivalents ?? originalQ3?.cash, revenue: fiscal.revenue, ocf: money(fiscal.ocf - (fiscal.financingComponentPrepayments ?? 0)) }
         : originalQ3;
@@ -1585,7 +1586,8 @@
 
       // Step 2A: Standalone Quarterly Cash Flow Projection
       entities.forEach(e => {
-        const prev = prevStates[e.id] || {};
+        const prev = useAudit4Contracts && e.audit4ForecastOpeningUnavailable && q === QUARTER_PARTIAL
+          ? {} : (prevStates[e.id] || {});
         if (e.isOcean) {
           states[e.id] = {
             quarter: q, revenue: null, cash: ocean.maxCapacity, debt: 0, ocf: null, capex: 0, fcf: null,
@@ -5914,6 +5916,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "SPV_ABILENE",
+    "audit4ForecastOpeningUnavailable": true,
     "name": "Abilene / Stargate JV SPV (TX)",
     "ticker": "SPV-LOAN",
     "cik": null,
@@ -7594,23 +7597,24 @@ const INITIAL_TRANSACTIONS = [
     "announcedDate": "2024-10-15",
     "startQ": "2026Q2",
     "endQ": "2041Q2",
-    "totalCommitment": 15,
+    "totalCommitment": null,
     "amountDrawn": null,
-    "amountRepaid": 0,
-    "remainingCommitment": 15,
+    "amountRepaid": null,
+    "remainingCommitment": null,
     "interestRate": null,
-    "maturityDate": "2041-06-30",
-    "quarterlyPayment": 0.35,
+    "maturityDate": null,
+    "quarterlyPayment": null,
     "scheduleType": "Assumption",
     "phaseOneLeaseEvidence": {"legalLessor":"Abilene DC 1, LLC","asOf":"2025-12-31","buildingRentCommencement":["2025-03-18","2025-07-01"],"termYears":15,"dataHallsPerBuilding":4,"monthlyBaseRentPerHall":0.002475,"monthlyNetworkCoreRentPerBuilding":0.000297,"annualEscalator":0.03,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1944366/000194436626000020/exhibit993-2025abelinedc1l.htm"},
-    "collateral": "15-Year Lease Backing SPV Debt",
-    "guarantor": "Oracle Corp.",
+    "collateral": null,
+    "exposureBasis": "Confirmed service relationship; aggregate rent, guarantees and phase-two timing unavailable. Lifecycle quarters and operational friction are scenario assumptions.",
+    "guarantor": null,
     "arranger": "N/A",
     "actualLender": "N/A",
     "spv": "Abilene / Stargate JV SPV",
     "confidence": "A",
-    "sourceDoc": "Crusoe / Blue Owl BusinessWire & Kirkland PR",
-    "sourceUrl": "https://www.businesswire.com/news/home/20241015910376/en/Crusoe-Blue-Owl-Capital-and-Primary-Digital-Infrastructure-Enter-%243.4-billion-Joint-Venture-for-AI-Data-Center-Development",
+    "sourceDoc": "Crusoe Abilene OCI project announcement",
+    "sourceUrl": "https://www.crusoe.ai/resources/newsroom/crusoe-wins-north-american-data-center-project-of-the-year-at-2025-data-center-dynamics-global-awards",
     "currency": "USD",
     "isFloatingRate": false,
     "networkLayer": "Operational",
