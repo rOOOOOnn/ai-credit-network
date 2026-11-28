@@ -701,8 +701,9 @@
     const weights = config.quarterWeights ?? [1, 1, 1, 1];
     const totalWeight = weights.reduce((sum, value) => sum + nonnegative(value), 0);
     const share = totalWeight > 0 ? nonnegative(weights[quarterIndex]) / totalWeight : 0;
+    const companyAvailability = Math.min(1, nonnegative(config.availability ?? 1));
     const amounts = Object.fromEntries(FINANCING_SOURCES.map(source => [
-      source, nonnegative(forecast.amounts[source]) * share * availability *
+      source, nonnegative(forecast.amounts[source]) * share * availability * companyAvailability *
         (["debt", "assetBacked"].includes(source) ? debtFactor : 1)
     ]));
     const requested = Object.values(amounts).reduce((sum, value) => sum + value, 0);
@@ -1345,7 +1346,8 @@
 
         const baseFixedRate = p.interestRate ?? 0.06;
         const oceanBaseRate = (ocean.interestRate ?? 7.5) / 100;
-        const tightening = ((ocean.creditTighteningBps ?? 0) + (secondarySpreadBpsById[e.id] || 0)) / 10000;
+        const companySpreadBps = Math.min(2500, nonnegative(ov?.companyCreditSpreadBps));
+        const tightening = ((ocean.creditTighteningBps ?? 0) + (secondarySpreadBpsById[e.id] || 0) + companySpreadBps) / 10000;
         const blendedRate = share => (1 - share) * baseFixedRate + share * Math.max(0.01, oceanBaseRate + tightening);
         const effectiveRate = blendedRate(floatShare);
         const disclosedCoupon = tx => useAudit4Contracts && Number.isFinite(tx?.reportedCashCoupon)
@@ -1438,7 +1440,7 @@
         gpuMarginCall = money(gpuMarginCall);
 
         const availFactor = Math.max(0, Math.min(1, ocean.fundingAvailability / 100));
-        const secRefiPenalty = secondarySpreadBpsById[e.id] ? Math.max(0.70, 1 - (secondarySpreadBpsById[e.id] / 1000)) : 1.0;
+        const secRefiPenalty = Math.max(0.70, 1 - ((secondarySpreadBpsById[e.id] ?? 0) + companySpreadBps) / 1000);
         const refiFactor = Math.max(0, Math.min(1, (p.refiSuccess ?? 0.85) * (ocean.refiSuccessRate / 100) * gpuRefiPenalty * secRefiPenalty));
 
         // 100% Maturity Wall with Refinancing Rollover (strictly on fundedEAD of maturing ACTIVE debt)

@@ -35,6 +35,11 @@ const state = (result, quarter) => result.timeline[quarter].entities.OPENAI;
 assert.equal(state(funded, "2027Q1").equityInflow, 4);
 assert.equal(state(funded, "2027Q2").equityInflow, 3);
 assert.equal(state(funded, "2027Q3").equityInflow, 0);
+const halfAvailable = engine.runSimulation(entities, transactions, {
+  overrides: { OPENAI: { financing: { ...funding, availability: 0.5 } } }
+});
+assert.deepEqual(["2027Q1", "2027Q2", "2027Q3", "2027Q4"].map(q => state(halfAvailable, q).equityInflow),
+  [2.5, 2.5, 2, 0]);
 assert.equal(Number((state(funded, "2027Q1").cash - state(baseline, "2027Q1").cash).toFixed(4)), 4);
 
 const lease = { startQuarter: "2027Q1", termQuarters: 2, quarterlyPayment: 1.25 };
@@ -282,6 +287,11 @@ assert.equal(coreweaveOpening.financingLedger.TX27, undefined);
 assert.deepEqual(["10", "20", "21", "30"].map(suffix =>
   coreweaveOpening.financingLedger["CRWV_DDTL" + suffix].beginningOutstanding), [1.139, 2.796, 2.494, 2.323]);
 assert.equal(coreweaveOpening.debtReconciliation.CRWV.namedTermPrincipal, 13.056);
+const spreadOpening = engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, overrides: { CRWV: { companyCreditSpreadBps: 100 } }
+}).timeline["2026Q4"];
+assert.equal(usd(spreadOpening.financingLedger.CRWV_DDTL50.accruedInterest -
+  coreweaveOpening.financingLedger.CRWV_DDTL50.accruedInterest), usd(2.749 * 0.01 / 4));
 console.log("Audit 4 term loan draw, repayment and reconciliation checks passed");
 
 
