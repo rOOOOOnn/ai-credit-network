@@ -347,12 +347,12 @@ Run `node scripts/replay_audit4_gpu.cjs`. Each case assigns the selected company
 | ANTHROPIC | 6 | Reference | 2032Q4 | 239.6562 | 0 | 202.3778 | 0 | — |
 | ANTHROPIC | 7 | Reference | 2033Q4 | 239.6562 | 0 | 204.1278 | 0 | — |
 | ANTHROPIC | 4 | Combined stress | 2030Q4 | 209.8234 | 0 | 164.3694 | 0 | — |
-| ORCL | 3 | Reference | 2029Q4 | 15.1918 | 0 | 21.1506 | 0 | — |
-| ORCL | 4 | Reference | 2030Q4 | 18.7806 | 0 | 21.9036 | 0 | — |
-| ORCL | 5 | Reference | 2031Q4 | 20.5306 | 0 | 23.0391 | 0 | — |
-| ORCL | 6 | Reference | 2032Q4 | 20.5306 | 0 | 26.6279 | 0 | — |
-| ORCL | 7 | Reference | 2033Q4 | 20.5306 | 0 | 28.3779 | 0 | — |
-| ORCL | 4 | Combined stress | 2030Q4 | -164.5757 | 174.5757 | -306.3832 | 316.3832 | 2027Q4 |
+| ORCL | 3 | Reference | 2029Q4 | 15.3614 | 0 | 21.4238 | 0 | — |
+| ORCL | 4 | Reference | 2030Q4 | 18.9502 | 0 | 22.1768 | 0 | — |
+| ORCL | 5 | Reference | 2031Q4 | 20.7002 | 0 | 23.3123 | 0 | — |
+| ORCL | 6 | Reference | 2032Q4 | 20.7002 | 0 | 26.9011 | 0 | — |
+| ORCL | 7 | Reference | 2033Q4 | 20.7002 | 0 | 28.6511 | 0 | — |
+| ORCL | 4 | Combined stress | 2030Q4 | -164.3299 | 174.3299 | -306.0137 | 316.0137 | 2027Q4 |
 
 At the first eligible quarter, the reference scenario allocates $2.25B to replacement CapEx and $0.50B to resale proceeds, for a $1.75B investing cash outflow. Shortening life from six to four years advances this first outflow from 2032Q4 to 2030Q4. At 2030Q4 it reduces CoreWeave modeled cash by $9.3286B and produces a $2.8289B gap versus zero. By 2032Q4 the four-year gap is $18.8652B versus $7.7333B in the six-year reference. That full-model difference includes collateral and refinancing effects that can precede replacement. In the other three profiles the same 2030Q4 cash difference is $1.75B and no reference funding gap opens. The combined stress has multiple simultaneous changes. It does not isolate the effects of lower replacement prices, residual values or financing.
 
@@ -1114,7 +1114,7 @@ The supplied archive runs its integrated stresses through 2031Q4. The audited br
 | A | OpenAI | -245.8359 | -15.8321 | 255.8359 | 2027Q4 |
 | B | Anthropic | 57.0278 | -5.4577 | 0 | — |
 | C | CoreWeave | -102.0176 | -6.6273 | 104.0176 | 2027Q1 |
-| D | Oracle | -314.7076 | -22.4739 | 324.7076 | 2027Q4 |
+| D | Oracle | -314.5356 | -22.4736 | 324.5356 | 2027Q4 |
 | E | CoreWeave | -80.7521 | -7.1186 | 82.7521 | 2027Q1 |
 | F | CoreWeave | -113.2947 | -7.28 | 115.2947 | 2027Q1 |
 | G | CoreWeave | -140.4817 | -7.0643 | 142.4817 | 2026Q4 |
