@@ -30,6 +30,25 @@ const scenarios = {
   Curve: { mode: "curve", capacity: 30, quarterlyLimit: 5, base: { equity: 12 }, initialGrowth: 0.5, annualDecline: 0.25 },
   Freeze: { mode: "manual", capacity: 0, quarterlyLimit: 5, annual: { 2027: { equity: 20 }, 2028: { equity: 10 } } }
 };
+if (reportQuarter === "--openai-october-receipt") {
+  const { engine, entities, transactions } = versions.Remediated;
+  console.log("| October receipt | 2026Q4 closing cash | 2028Q4 closing cash | 2028Q4 funding gap | 2028Q4 runway months | First default | FCF break-even |");
+  console.log("| --- | ---: | ---: | ---: | ---: | --- | --- |");
+  for (const includeObservedRoundReceipt of [false, true]) {
+    const result = engine.runSimulation(entities, transactions, {
+      audit4Contracts: true, forecastThrough: 2028,
+      overrides: { OPENAI: { financing: scenarios.Freeze, includeObservedRoundReceipt } }
+    });
+    const opening = result.timeline["2026Q4"].entities.OPENAI;
+    const closing = result.timeline["2028Q4"].entities.OPENAI;
+    const { defaultQuarter, breakEvenQuarter } = result.scenarioSummary.OPENAI;
+    console.log("| " + [includeObservedRoundReceipt ? "Included" : "Excluded", opening.cash, closing.cash,
+      closing.fundingGap, closing.cashRunwayMonths, defaultQuarter, breakEvenQuarter]
+      .map(value => value ?? "—").join(" | ") + " |");
+  }
+  process.exit(0);
+}
+
 console.log("| Version | Entity | Path | Cash | Funding gap | Runway months | First default | FCF break-even |");
 console.log("| --- | --- | --- | ---: | ---: | ---: | --- | --- |");
 const display = value => value ?? "—";

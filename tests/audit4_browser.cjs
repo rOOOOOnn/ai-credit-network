@@ -403,6 +403,12 @@ async function checkPage(browser, url) {
     const octoberTranche = panel.locator('[data-financing-tranche="2026-10-01"]');
     assert.match(await octoberTranche.innerText(), /2026-10-01 \$10B \(SoftBank Vision Fund 2\)/);
     assert.match(await octoberTranche.getAttribute("href"), /financial-report_q2fy2026_01_en\.pdf$/);
+    const receiptControl = panel.locator("[data-openai-october-receipt]");
+    assert.equal(await receiptControl.inputValue(), "exclude");
+    await receiptControl.selectOption("include");
+    assert.equal(JSON.parse(await scenario.inputValue()).includeObservedRoundReceipt, true);
+    await receiptControl.selectOption("exclude");
+    assert.equal(JSON.parse(await scenario.inputValue()).includeObservedRoundReceipt, false);
     const amazonTranche = panel.locator('[data-financing-tranche="2026Q3"]');
     assert.match(await amazonTranche.innerText(), /2026Q3 \$21\.3B \(Amazon\)/);
     assert.match(await amazonTranche.getAttribute("href"), /amzn-20260930\.htm$/);

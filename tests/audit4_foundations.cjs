@@ -295,6 +295,22 @@ assert.equal(usd(spreadOpening.financingLedger.CRWV_DDTL50.accruedInterest -
 console.log("Audit 4 term loan draw, repayment and reconciliation checks passed");
 
 
+const openaiOctober = overrides => engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, overrides: { OPENAI: { financing: noFunding, ...overrides } }
+}).timeline;
+const openaiWithoutOctober = openaiOctober({});
+const openaiWithOctober = openaiOctober({ includeObservedRoundReceipt: true });
+const openaiExcluded = openaiOctober({ includeObservedRoundReceipt: true, includeScheduledEquity: false });
+const october = openaiWithOctober["2026Q4"].entities.OPENAI;
+assert.equal(october.financingForecast.scheduledEquity, 10);
+assert.equal(openaiWithoutOctober["2026Q4"].entities.OPENAI.financingForecast.scheduledEquity, 0);
+assert.equal(openaiExcluded["2026Q4"].entities.OPENAI.financingForecast.scheduledEquity, 0);
+assert.equal(openaiWithOctober["2027Q1"].entities.OPENAI.financingForecast.scheduledEquity, 0);
+assert.equal(usd(october.cash - openaiWithoutOctober["2026Q4"].entities.OPENAI.cash), 10);
+assert.equal(october.begCash, openaiWithoutOctober["2026Q4"].entities.OPENAI.begCash);
+console.log("Audit 4 OpenAI October receipt and opening-cash boundary checks passed");
+
+
 const reportedAnthropic = includeScheduledEquity => engine.runSimulation(entities, transactions, {
   audit4Contracts: true, overrides: { ANTHROPIC: { financing: noFunding, includeScheduledEquity } }
 }).timeline["2026Q4"];

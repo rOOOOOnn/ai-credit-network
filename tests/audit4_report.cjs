@@ -8,6 +8,7 @@ const report = readFileSync(path.join(root, "docs/audit4_remediation_report.md")
 const replays = [
   ["scripts/replay_audit4_financing.cjs", [], "## Reproducible comparison on the current data"],
   ["scripts/replay_audit4_financing.cjs", ["2031Q4"], "### Companion Audit 4 archive review"],
+  ["scripts/replay_audit4_financing.cjs", ["--openai-october-receipt"], "### OpenAI October receipt under scenario financing freeze"],
   ["scripts/replay_audit4_gpu.cjs", [], "### Full-engine 3–7 year GPU sensitivity"],
   ["scripts/replay_audit4_sustainability.cjs", [], "### Financing sustainability across five comparable stresses"],
   ["scripts/replay_audit4_sustainability.cjs", ["--operating-paths"], "### Scale effects and cost pressure at equal revenue growth"],

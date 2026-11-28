@@ -1627,8 +1627,14 @@
         }
         oceanUsedThisQ += allowedDebt;
 
-        const scheduledEq = ov?.includeScheduledEquity === false ? 0 : (disclosedOpening?.estimatedNetProceeds ?? e.scheduledEquityInflows?.[q] ?? 0);
-        const scheduledEquityStatus = disclosedOpening ? "Issuer estimate; full option exercise confirmed" : e.id === "ANTHROPIC" && q === "2026Q4" ? "Unverified legacy input" : "Scheduled model input";
+        const observedRoundReceipt = useAudit4Contracts && q === QUARTER_PARTIAL && ov?.includeObservedRoundReceipt === true
+          ? e.audit4RoundReconciliation?.verifiedAdditionalOctoberPayment?.SOFTBANK : null;
+        const scheduledEq = ov?.includeScheduledEquity === false ? 0
+          : (disclosedOpening?.estimatedNetProceeds ?? observedRoundReceipt ?? e.scheduledEquityInflows?.[q] ?? 0);
+        const scheduledEquityStatus = ov?.includeScheduledEquity === false ? "Excluded by scenario"
+          : observedRoundReceipt != null ? "Investor-confirmed payment; scenario assumes opening cash excludes it"
+          : disclosedOpening ? "Issuer estimate; full option exercise confirmed"
+          : e.id === "ANTHROPIC" && q === "2026Q4" ? "Unverified legacy input" : "Scheduled model input";
         const assumedNonDebt = funding
           ? funding.amounts.equity + funding.amounts.strategic + funding.amounts.prepayment + funding.amounts.other
           : (p.equityInflow ?? 0) * availFactor;

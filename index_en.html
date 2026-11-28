@@ -1944,8 +1944,14 @@
         }
         oceanUsedThisQ += allowedDebt;
 
-        const scheduledEq = ov?.includeScheduledEquity === false ? 0 : (disclosedOpening?.estimatedNetProceeds ?? e.scheduledEquityInflows?.[q] ?? 0);
-        const scheduledEquityStatus = disclosedOpening ? "Issuer estimate; full option exercise confirmed" : e.id === "ANTHROPIC" && q === "2026Q4" ? "Unverified legacy input" : "Scheduled model input";
+        const observedRoundReceipt = useAudit4Contracts && q === QUARTER_PARTIAL && ov?.includeObservedRoundReceipt === true
+          ? e.audit4RoundReconciliation?.verifiedAdditionalOctoberPayment?.SOFTBANK : null;
+        const scheduledEq = ov?.includeScheduledEquity === false ? 0
+          : (disclosedOpening?.estimatedNetProceeds ?? observedRoundReceipt ?? e.scheduledEquityInflows?.[q] ?? 0);
+        const scheduledEquityStatus = ov?.includeScheduledEquity === false ? "Excluded by scenario"
+          : observedRoundReceipt != null ? "Investor-confirmed payment; scenario assumes opening cash excludes it"
+          : disclosedOpening ? "Issuer estimate; full option exercise confirmed"
+          : e.id === "ANTHROPIC" && q === "2026Q4" ? "Unverified legacy input" : "Scheduled model input";
         const assumedNonDebt = funding
           ? funding.amounts.equity + funding.amounts.strategic + funding.amounts.prepayment + funding.amounts.other
           : (p.equityInflow ?? 0) * availFactor;
@@ -10171,7 +10177,7 @@ const I18N = {
       disclosedLeaseStressYears:state.overrides[entity.id]?.disclosedLeaseStressYears ?? 0,
       disclosedLeaseFinanceShare:state.overrides[entity.id]?.disclosedLeaseFinanceShare ?? 0,
       disclosedLeaseFinanceRate:state.overrides[entity.id]?.disclosedLeaseFinanceRate ?? 0.05,
-      includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75, openingInvestmentSaleFraction:state.overrides[entity.id]?.openingInvestmentSaleFraction ?? 0, includeExistingFinanceLease:state.overrides[entity.id]?.includeExistingFinanceLease ?? true, unallocatedGuaranteeCalls:state.overrides[entity.id]?.unallocatedGuaranteeCalls ?? {}}, null, 2);
+      ...(entity.id === "OPENAI" ? { includeObservedRoundReceipt:state.overrides[entity.id]?.includeObservedRoundReceipt ?? false } : {}), includeScheduledEquity:state.overrides[entity.id]?.includeScheduledEquity ?? true, leaseDelayQuarters:state.overrides[entity.id]?.leaseDelayQuarters ?? 0, operationalRecoveryRate:state.overrides[entity.id]?.operationalRecoveryRate ?? 0.75, openingInvestmentSaleFraction:state.overrides[entity.id]?.openingInvestmentSaleFraction ?? 0, includeExistingFinanceLease:state.overrides[entity.id]?.includeExistingFinanceLease ?? true, unallocatedGuaranteeCalls:state.overrides[entity.id]?.unallocatedGuaranteeCalls ?? {}}, null, 2);
     panel.querySelector("button").textContent = t("Apply assumptions", "\u5e94\u7528\u5047\u8bbe");
     panel.querySelector("p").textContent = t(
       "Edit annual amounts by source in USD billions. Set mode to manual or curve. Example values are assumptions. A scenario freeze excludes only scenario financing. Scheduled equity, rollover and credit draws are separate.",
@@ -10334,6 +10340,14 @@ const I18N = {
       state.overrides[entity.id]?.includeScheduledEquity === false ? "exclude" : "include",
       value => { settings().includeScheduledEquity = value === "include"; },
       [["include", t("Include", "\u8ba1\u5165")], ["exclude", t("Exclude", "\u6392\u9664")]]);
+    if (entity.id === "OPENAI") {
+      const receiptControl = setting(t("October SoftBank receipt ($10B)", "\u8f6f\u94f6\u5341\u6708\u51fa\u8d44\uff08\u767e\u4ebf\u7f8e\u5143\uff09"),
+        state.overrides[entity.id]?.includeObservedRoundReceipt ? "include" : "exclude",
+        value => { settings().includeObservedRoundReceipt = value === "include"; },
+        [["exclude", t("Exclude (opening cash composition unknown)", "\u6392\u9664\uff08\u671f\u521d\u73b0\u91d1\u6784\u6210\u672a\u77e5\uff09")],
+          ["include", t("Include if opening cash excludes it", "\u5982\u671f\u521d\u73b0\u91d1\u672a\u5305\u542b\u8be5\u7b14\u51fa\u8d44\uff0c\u5219\u8ba1\u5165\u672c\u5b63\u5ea6")]]);
+      receiptControl.dataset.openaiOctoberReceipt = "";
+    }
     for (let quarter = 0; quarter < 4; quarter++) {
       const label = t("Financing weight for Q", "\u878d\u8d44\u5206\u914d\u6743\u91cd Q") + (quarter + 1);
       const control = setting(label, selectedConfig.quarterWeights?.[quarter] ?? 1, value => {
@@ -10708,6 +10722,7 @@ const I18N = {
         }
         settings.gpuRefresh = data.gpuRefresh;
         settings.includeScheduledEquity = data.includeScheduledEquity;
+        if (panel.dataset.entity === "OPENAI") settings.includeObservedRoundReceipt = data.includeObservedRoundReceipt === true;
         settings.leaseDelayQuarters = data.leaseDelayQuarters;
         settings.operationalRecoveryRate = data.operationalRecoveryRate;
         settings.operationalSubstitutionAvailability = data.operationalSubstitutionAvailability;

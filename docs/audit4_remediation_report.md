@@ -687,7 +687,16 @@ ION Digital reports that NVIDIA guarantees rent on Nscale's Ward County facility
 
 SoftBank confirmed three completed $10B investments via Vision Fund 2, on April 1, July 1 and October 1, 2026. They are part of OpenAI's disclosed $122B committed round. The investor dates belong to a partial cash history and do not complete the full-year source series required by historical curve mode. The quarter boundary matters because the third tranche followed the model's September opening cutoff. The modeled opening cash anchor is an estimate, and its composition cannot be reconciled to these tranches from the issuer's disclosures.
 
-An isolated freeze scenario adds the $10B October event once as separately scheduled equity. It raises modeled 2026Q4 cash from $30.0884B to $40.0884B and 2028Q4 cash from negative $47.4052B to negative $38.9871B. The first model default is 2027Q4 in both paths. The later cash difference includes secondary changes in modeled financing and operations. The baseline leaves the event as a sourced memorandum item pending an opening cash bridge. [SoftBank financial report](https://group.softbank/media/Project/sbg/sbg/pdf/ir/financials/financial_reports/financial-report_q2fy2026_01_en.pdf), [OpenAI round disclosure](https://openai.com/index/accelerating-the-next-phase-ai/).
+### OpenAI October receipt under scenario financing freeze
+
+| October receipt | 2026Q4 closing cash | 2028Q4 closing cash | 2028Q4 funding gap | 2028Q4 runway months | First default | FCF break-even |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| Excluded | 30.0884 | -48.0878 | 58.0878 | 0 | 2027Q4 | — |
+| Included | 40.0884 | -39.6697 | 49.6697 | 0 | 2027Q4 | — |
+
+Cash and funding gap are in USD billions. The later cash difference includes changes in modeled financing and operations. The issuer cash bridge remains unavailable.
+
+An OpenAI forecast control now exposes the October sensitivity. It defaults to exclusion and requires the scenario to assume that opening cash excludes the payment. Enabling the control posts $10B once in 2026Q4 as scheduled equity, including during a scenario financing freeze. Excluding all scheduled equity suppresses the receipt. The regression verifies the unchanged opening cash and the $10B increase in Q4 closing cash under the matched freeze inputs. [SoftBank October closing announcement](https://group.softbank/en/news/press/20261001).
 
 The three company panels now list the investor-reported tranches as partial history alongside the issuer announcements. The browser fixture verifies all three events and the October source link. Historical fitting still requires a complete Actual annual series per funding source.
 
