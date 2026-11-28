@@ -382,7 +382,9 @@ async function checkPage(browser, url) {
     const irenGpu = panel.locator("[data-gpu-disclosure]");
     assert.match(await irenGpu.innerText(), /50,000 NVIDIA B300/);
     assert.match(await irenGpu.innerText(), /3[.]5/);
-    assert.match(await irenGpu.locator("a").last().getAttribute("href"), /iren-expands-ai-cloud-capacity-to-150000-gpus$/);
+    assert.equal(await irenGpu.locator('a[href$="iren-expands-ai-cloud-capacity-to-150000-gpus"]').count(), 1);
+    assert.match(await irenGpu.innerText(), /Dell Marketing L\.P\..*6\.7.*2027H2/);
+    assert.match(await irenGpu.locator("a").last().getAttribute("href"), /67ed720a-021d-471a-8d9c-ea109edec817$/);
     await page.locator('[data-network-entity="AMZN"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();

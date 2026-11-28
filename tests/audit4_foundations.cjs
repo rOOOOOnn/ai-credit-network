@@ -1204,6 +1204,11 @@ const irenOpening = liquid.timeline["2026Q4"].entities.IREN;
 assert.equal(irenOpening.begCash, 3.522);
 assert.equal(irenOpening.openingQuarterCashFlow.grossCashFcf, -4.295);
 assert.equal(irenOpening.openingFiscalCashFlowDisclosure.computerHardwareCashPurchases, 2.693);
+const irenLeaseEvidence = irenOpening.openingFiscalCashFlowDisclosure;
+const irenFutureLeasePayments = usd(Object.values(irenLeaseEvidence.financeLeaseMaturities)
+  .reduce((sum, amount) => sum + amount, 0));
+assert.equal(irenFutureLeasePayments, 0.341);
+assert.equal(usd(irenFutureLeasePayments - irenLeaseEvidence.financeLeasePresentValueDiscount), 0.311);
 assert.equal(irenOpening.gpuPurchases, 0);
 
 for (const [id, cash, ocf, capex, fcf] of [
@@ -1357,6 +1362,13 @@ assert.deepEqual([nebiusHardware.priorAccountingUsefulLifeYears, nebiusHardware.
 const irenHardware = entities.find(row => row.id === "IREN").audit4HardwareDisclosure;
 assert.deepEqual([irenHardware.accountingUsefulLifeYears, irenHardware.pledgedNetCarryingValue,
   irenHardware.gpuHardwareGrossCarryingValue], [5, 1.4871, 5.819]);
+const irenDellOrders = irenHardware.signedSupplyOrders;
+assert.deepEqual([irenDellOrders.bundledOrderValue, irenDellOrders.firstScheduledDeliveryHalfYear,
+  irenDellOrders.paymentDaysAfterShipment], [6.7, "2027H2", 30]);
+assert.equal(irenDellOrders.gpuOnlyPurchaseCost, null);
+assert.equal(irenDellOrders.deliveredUnitsByQuarter, null);
+assert.equal(liquid.timeline["2027Q3"].entities.IREN.gpuPurchases, 0);
+assert.equal(liquid.timeline["2027Q3"].entities.IREN.gpuClosingCohorts, null);
 
 const irenGpuFacilities = liquid.timeline["2026Q4"].financingLedger;
 for (const [id, opening, funded, remaining] of [
