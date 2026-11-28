@@ -190,3 +190,15 @@ assert.equal(dlrRevolver.principalOutstanding, 1.655570);
 assert.equal(dlrRevolver.lettersOfCredit, 0.1008);
 assert.equal(dlrRevolver.remainingCommitment, Number((4.470 - 1.655570 - 0.1008).toFixed(4)));
 assert.equal(dlrRevolver.lenderAllocationVerified, false);
+
+const anthropicSource = entitiesById.get("ANTHROPIC");
+assert.equal(anthropicSource.dataType, "Assumption");
+assert.equal(anthropicSource.financials["2026Q3"].dataType, "Assumption");
+assert.equal(anthropicSource.audit4Liquidity.cashAndEquivalents, 95.6);
+assert.equal(anthropicSource.audit4Observations.nineMonthOperatingCashFlow, 6.569);
+assert.equal(anthropicSource.audit4Observations.standaloneQ3OperatingCashFlow, null);
+
+for (const entity of entities) {
+  const latestQuarter = Object.keys(entity.financials ?? {}).sort().at(-1);
+  if (latestQuarter) assert.equal(entity.dataType, entity.financials[latestQuarter].dataType, entity.id);
+}

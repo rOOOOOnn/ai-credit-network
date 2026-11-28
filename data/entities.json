@@ -1088,7 +1088,7 @@
     "filingCoverage": "Private / SEC Unavailable (Reported media estimates B/C only)",
     "sourceUrl": "https://safeguard.sh/resources/blog/openai-revenue-losses-and-cash-burn-what-has-been-reported",
     "confidence": "B",
-    "dataType": "Estimated",
+    "dataType": "Assumption",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-10-19",
     "financials": {
@@ -1227,7 +1227,7 @@
     "filingCoverage": "SEC Form S-1/A-3 (2023–Q3 2026); $81.3B IPO + $26.0B concurrent placement closed Nov 18–19, 2026",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2130357/000162828026074338/anthropicpbc-sx1ax3.htm",
     "confidence": "A",
-    "dataType": "Actual",
+    "dataType": "Assumption",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-11-17",
     "financials": {
@@ -1269,9 +1269,9 @@
         "leaseLiab": null,
         "interestExp": 0,
         "undrawnCredit": 15,
-        "dataType": "Actual",
+        "dataType": "Assumption",
         "disclosedDate": "2026-11-17",
-        "note": "Q3 OCF calibrated as 9M26 ($6.569B) minus H126 ($3.929B) per S-1/A-3",
+        "note": "Legacy quarterly model calibration. Audited September cash, principal and nine-month operating cash are separate observations in the final prospectus.",
         "fiscalPeriod": "2026Q3",
         "calendarPeriod": "2026Q3",
         "periodStart": "2026-07-01",
@@ -2842,7 +2842,7 @@
     "filingCoverage": "Unconsolidated VIE SPV ($27.3B 6.581% Notes, S&P A+, Mat 2049)",
     "sourceUrl": "https://investor.atmeta.com/investor-news/press-release-details/2025/Meta-Announces-Joint-Venture-with-Funds-Managed-by-Blue-Owl-Capital-to-Develop-Hyperion-Data-Center/default.aspx",
     "confidence": "A",
-    "dataType": "Actual",
+    "dataType": "Estimated",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2025-10-21",
     "financials": {
@@ -3041,7 +3041,7 @@
     "filingCoverage": "Non-Recourse GPU SPV ($8.5B IG A3 DDTL 4.0, SOFR+225bps / ~5.9%)",
     "sourceUrl": "https://investors.coreweave.com/news/news-details/2026/CoreWeave-Closes-Landmark-8-5-Billion-Financing-Facility-Achieving-First-Investment-Grade-Rated-GPU-backed-Financing/default.aspx",
     "confidence": "A",
-    "dataType": "Actual",
+    "dataType": "Estimated",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-03-31",
     "financials": {
@@ -3116,7 +3116,7 @@
     "filingCoverage": "Structured Compute SPV ($35B Initial Tranche for Anthropic; AVGO Backstopped)",
     "sourceUrl": "https://www.blackstone.com/news/press/broadcom-apollo-and-blackstone-establish-landmark-strategic-platform-to-accelerate-more-than-20-gigawatts-of-global-ai-deployments/",
     "confidence": "A",
-    "dataType": "Actual",
+    "dataType": "Estimated",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-06-09",
     "financials": {
@@ -3182,7 +3182,7 @@
     "filingCoverage": "GPU SPV ($5.4B Vehicle w/ $3.5B Apollo Funds + NVIDIA LP; Triple-Net Lease)",
     "sourceUrl": "https://www.globenewswire.com/news-release/2026/01/07/3214463/0/en/apollo-backs-5-4-billion-valor-and-xai-data-center-compute-infrastructure-transaction-with-3-5-billion-capital-solution.html",
     "confidence": "A",
-    "dataType": "Actual",
+    "dataType": "Estimated",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-01-07",
     "financials": {
@@ -3689,7 +3689,7 @@
     "filingCoverage": "Public SEC 10-Q/10-K; Verified GB300 NVL72 liquid cooling/power partner for CoreWeave & Dell",
     "sourceUrl": "https://www.vertiv.com/en-in/insights/articles/blog-posts/how-vertiv-and-coreweave-are-orchestrating-ai-innovation/",
     "confidence": "A",
-    "dataType": "Unavailable",
+    "dataType": "Actual",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-06-19",
     "financials": {
@@ -3753,7 +3753,7 @@
     "filingCoverage": "Public SEC 10-Q/10-K; 20-Yr Crane Clean Energy PPA (MSFT) & Nuclear PPA (META)",
     "sourceUrl": "https://www.constellationenergy.com/news/2024/Constellation-to-Launch-Crane-Clean-Energy-Center-Restoring-Jobs-and-Carbon-Free-Power-to-The-Grid.html",
     "confidence": "A",
-    "dataType": "Unavailable",
+    "dataType": "Actual",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-01-09",
     "financials": {
@@ -3893,7 +3893,7 @@
     "filingCoverage": "Public SEC Filings; CoreWeave AI Data Center Hosting & Acquisition Agreement (Jul 2025)",
     "sourceUrl": "https://investors.coreweave.com/news/news-details/2025/CoreWeave-to-Acquire-Core-Scientific/default.aspx",
     "confidence": "A",
-    "dataType": "Unavailable",
+    "dataType": "Actual",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2025-07-07",
     "financials": {
