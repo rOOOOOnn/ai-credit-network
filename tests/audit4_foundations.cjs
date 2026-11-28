@@ -358,6 +358,9 @@ console.log("Audit 4 cash classification and investment sale checks passed");
 const coreweaveBridge = entities.find(entity => entity.id === "CRWV").audit4CashFlowBridge;
 assert.equal(usd(coreweaveBridge.nineMonths.ocf - coreweaveBridge.sixMonths.ocf), 1.975);
 assert.equal(usd(coreweaveBridge.nineMonths.capex - coreweaveBridge.sixMonths.capex), 9.441);
+const coreweaveHistorical = entities.find(entity => entity.id === "CRWV").financials["2026Q3"];
+assert.deepEqual([coreweaveHistorical.ocf, coreweaveHistorical.capex, coreweaveHistorical.fcf],
+  [1.975, 9.441, usd(1.975 - 9.441)]);
 assert.equal(liquid.timeline["2026Q4"].entities.CRWV.begCash, 4.122);
 assert.equal(liquid.timeline["2026Q4"].entities.CRWV.openingLiquidityDisclosure.restrictedCashSeparate, 2.282);
 console.log("Audit 4 CoreWeave quarterly cash-flow bridge checks passed");
@@ -374,7 +377,7 @@ assert.equal(usd(oracleFiling.currentBorrowings + oracleFiling.nonCurrentBorrowi
 const metaHistorical = entities.find(entity => entity.id === "META").financials["2026Q3"];
 assert.equal(usd(metaHistorical.cash + metaHistorical.restrictedCash), 24.354);
 assert.equal(metaHistorical.debt, usd(2.747 + 80.922));
-assert.equal(metaHistorical.fcf, usd((96.873 - 64.088) - (83.055 - 49.113)));
+assert.equal(metaHistorical.fcf, usd(32.786 - 33.942));
 assert.equal(metaHistorical.operatingLeaseLiability, usd(2.522 + 28.651));
 assert.equal(metaHistorical.offBalanceLeases, 355.73);
 assert.equal(metaHistorical.offBalanceGuarantees, 41.493);
@@ -591,7 +594,7 @@ console.log("Audit 4 Microsoft cash flow and lease classification checks passed"
 
 for (const [id, ocf, capex, fcf] of [
   ["GOOGL", 42.29, 51.355, -9.065],
-  ["META", 32.785, 33.942, -1.157],
+  ["META", 32.786, 33.942, -1.156],
   ["AMZN", 42.422, 77.259, -34.837]
 ]) {
   const opening = liquid.timeline["2026Q4"].entities[id];

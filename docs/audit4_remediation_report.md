@@ -215,8 +215,10 @@ The audit profile now calibrates Q3 OCF against reported cash-flow statements fo
 | Entity | Q3 OCF | Gross cash PP&E purchases | OCF less gross cash PP&E |
 | --- | ---: | ---: | ---: |
 | Alphabet | 42.290 | 51.355 | -9.065 |
-| Meta | 32.785 | 33.942 | -1.157 |
+| Meta | 32.786 | 33.942 | -1.156 |
 | Amazon | 42.422 | 77.259 | -34.837 |
+
+Meta uses the issuer's direct quarterly OCF of $32.786B. Subtracting the published six-month total from the nine-month total yields $32.785B. The table uses gross cash FCF before finance lease principal. Meta reports -$2.120B after $0.964B of finance lease principal. [Meta earnings exhibit](https://www.sec.gov/Archives/edgar/data/1326801/000162828026066700/meta-09302026xexhibit991.htm).
 
 Figures are USD billions. Meta's separately reported $34.91B capital expenditure measure includes finance lease principal. Amazon reports $1.381B of property sale proceeds and incentives, implying -$33.456B after these receipts. The model keeps gross PP&E, asset sale proceeds, and financing lease payments on distinct bases. None of the consolidated cash PP&E figures establish GPU-only cash purchases.
 
