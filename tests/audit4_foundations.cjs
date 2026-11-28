@@ -2358,3 +2358,21 @@ assert.equal(residualCall.guaranteeLedger.TX21.remainingDisclosedCap, 23.5);
 assert.equal(residualCall.guaranteeLedger.TX21.remainingGuaranteeLiability, 0);
 assert.equal(usd(noResidualCall.entities.AVGO.cash - residualCall.entities.AVGO.cash), 5.5);
 assert.equal(noResidualCall.entities.AVGO.fcf, residualCall.entities.AVGO.fcf);
+
+const beignetNotes = transactions.find(tx => tx.id === "TX37").issuerNotesEvidence;
+assert.equal(beignetNotes.originalNotePrincipal, 27.293849);
+assert.equal(beignetNotes.maturityDate, "2049-05-30");
+assert.equal(beignetNotes.currentPrincipal, null);
+for (const id of ["TX37", "TX38"]) {
+  assert.equal(transactions.find(tx => tx.id === id).amountDrawn, null);
+  assert.equal(fullLedgerAudit.timeline["2026Q4"].financingLedger[id].lender, null);
+}
+assert.equal(fullLedgerAudit.timeline["2026Q4"].entities.SPV_BEIGNET.insufficientData, true);
+
+const hyperionGuarantee = transactions.find(tx => tx.id === "TX40A");
+assert.equal(hyperionGuarantee.totalCommitment, null);
+assert.equal(hyperionGuarantee.quarterlyPayment, null);
+const hyperionPortfolio = hyperionGuarantee.hyperionGuaranteeEvidence;
+assert.equal(usd(hyperionPortfolio.portfolioEquityCarryingValue + hyperionPortfolio.portfolioLeaseCommitments +
+  hyperionPortfolio.portfolioFutureFunding + hyperionPortfolio.portfolioMaximumResidualGuarantees), 68.404);
+assert.equal(engine.computeTransactionEAD(hyperionGuarantee, "2026Q4").creditLossAtDefault, 0);

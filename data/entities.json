@@ -2823,6 +2823,7 @@
   },
   {
     "id": "SPV_BEIGNET",
+    "audit4ForecastOpeningUnavailable": true,
     "name": "Beignet Investor LLC (Meta Hyperion SPV)",
     "ticker": "SPV-144A",
     "cik": null,
