@@ -309,6 +309,7 @@ async function checkPage(browser, url) {
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
     const coreWeaveLease = panel.locator("[data-lease-disclosure]");
+    assert.equal(await panel.locator('[data-financing-facility^="CRWV_DDTL"]').count(), 0);
     assert.match(await coreWeaveLease.innerText(), /47\.40 \(2026-09-30\)/);
     assert.match(await coreWeaveLease.locator("a").getAttribute("href"), /crwv-20260930\.htm$/);
     assert.match(await coreWeaveLease.innerText(), /18\.697 \/ 0\.649/);
@@ -393,6 +394,7 @@ async function checkPage(browser, url) {
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
     const tranches = panel.locator("[data-financing-tranche]");
+    assert.match(await panel.locator("[data-round-reconciliation]").innerText(), /122 \/ 80 \/ 42/);
     assert.equal(await tranches.count(), 8);
     const april2025 = panel.locator('[data-financing-tranche="2025Q2"]');
     assert.match(await april2025.innerText(), /2025Q2 \$7\.5B \(SoftBank Vision Fund 2\)/);
