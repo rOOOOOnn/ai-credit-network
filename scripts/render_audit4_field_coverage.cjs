@@ -73,7 +73,26 @@ function renderFieldCoverage(rows) {
     "Pointer counts measure traceability. Field confirmation additionally requires checking the period, reporting entity, definition and amount against the cited disclosure.",
     ""
   ];
-  return [...titles, ...coverage, row(headers), row(headers.map(() => "---")), ...body, ""].join("\n");
+  const bridgeHeaders = ["Entity", "Calendar bucket", "Nine-month OCF / CapEx",
+    "Six-month OCF / CapEx", "Quarter OCF / CapEx / FCF", "Filing evidence"];
+  const bridgeRows = rows.filter(entity => entity.audit4CashFlowBridge?.nineMonths)
+    .map(entity => {
+      const { quarter, nineMonths, sixMonths, direct } = entity.audit4CashFlowBridge;
+      const ocf = nineMonths.ocf - sixMonths.ocf;
+      const capex = nineMonths.capex - sixMonths.capex;
+      const amounts = values => values.map(value => Number(value.toFixed(6))).join(" / ");
+      const sources = [
+        "[Nine months](" + nineMonths.sourceUrl + ")",
+        "[Six months](" + sixMonths.sourceUrl + ")"
+      ];
+      if (direct) sources.push("[Direct quarterly disclosure used in model](" + direct.sourceUrl + ")");
+      return row([entity.id, quarter, amounts([nineMonths.ocf, nineMonths.capex]),
+        amounts([sixMonths.ocf, sixMonths.capex]), amounts([ocf, capex, ocf - capex]), sources.join(", ")]);
+    });
+  return [...titles, ...coverage, row(headers), row(headers.map(() => "---")), ...body, "",
+    "## Quarterly cash flow computed from cumulative filings", "",
+    "Quarterly OCF and cash CapEx are nine-month amounts less six-month amounts. FCF is the resulting OCF less CapEx. The model uses the direct quarterly disclosure where indicated.", "",
+    row(bridgeHeaders), row(bridgeHeaders.map(() => "---")), ...bridgeRows, ""].join("\n");
 }
 
 if (require.main === module) {

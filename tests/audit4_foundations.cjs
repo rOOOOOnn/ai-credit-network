@@ -1587,6 +1587,14 @@ assert.equal(usd(anthropicReportedCash.nineMonthOperatingCashFlow - anthropicRep
 assert.equal(usd(anthropicReportedCash.nineMonthOperatingCashFlow - anthropicReportedCash.nineMonthCashPpePurchases -
   anthropicReportedCash.nineMonthLeasedAssetAndEquipmentPrepayments - anthropicReportedCash.nineMonthFinanceLeasePrincipalPaid), 3.601);
 assert.equal(anthropicReportedCash.standaloneQ3OperatingCashFlow, null);
+const offering = anthropicReportedCash.equityOfferingClose;
+const issuerIpoGrossUsd = offering.issuerIpoShares * offering.offerPriceUsd;
+const issuerPlacementGrossUsd = offering.issuerPrivatePlacementShares * offering.offerPriceUsd;
+const sellingStockholderGrossUsd = offering.sellingStockholderShares * offering.offerPriceUsd;
+assert.equal(issuerIpoGrossUsd + issuerPlacementGrossUsd, 117_578_161_963);
+assert.equal(sellingStockholderGrossUsd, 1_962_837_618);
+assert.equal(offering.finalIssuerNetCashProceedsUsd, null);
+assert.equal(anthropicReportedCash.estimatedNetProceeds, 117);
 
 const frozenPlan = { mode: "manual", capacity: 8, quarterlyLimit: 2, annual: { 2027: { equity: 8 } }, frozen: true };
 const scheduledEquityFixture = { ...contractedCashFixture, scheduledEquityInflows: { "2027Q1": 3 } };
