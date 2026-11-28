@@ -2394,3 +2394,12 @@ for (const id of ["TX40B", "TX40C", "TX40D"]) {
   assert.deepEqual([sopaipilla.totalCommitment, sopaipilla.amountDrawn, sopaipilla.quarterlyPayment], [null, null, null]);
 }
 assert.equal(fullLedgerAudit.timeline["2026Q4"].entities.SPV_SOPAIPILLA.insufficientData, true);
+const unavailableProjectOpenings = entities.filter(entity => entity.audit4ForecastOpeningUnavailable);
+for (const entity of unavailableProjectOpenings) {
+  for (const quarter of fullLedgerAudit.allQuarters.filter(q => q > "2026Q3")) {
+    const forecast = fullLedgerAudit.timeline[quarter].entities[entity.id];
+    assert.equal(forecast.insufficientData, true, entity.id + " " + quarter);
+    assert.equal(forecast.cash, null, entity.id + " " + quarter);
+    assert.ok(forecast.distressLevel < 3, entity.id + " " + quarter);
+  }
+}
