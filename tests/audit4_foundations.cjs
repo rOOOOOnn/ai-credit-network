@@ -2323,3 +2323,38 @@ for (const id of ["TX35A", "TX35B", "TX36"]) {
 assert.deepEqual(transactions.find(tx => tx.id === "TX36").separateFinancingDisclosures
   .map(row => row.facilityAmount), [2.4, 2]);
 assert.equal(entities.find(entity => entity.id === "VANTAGE").financials["2026Q3"].debt, null);
+
+const xpvTranche = transactions.find(tx => tx.id === "TX18").reportedPlatformTranche;
+assert.equal(xpvTranche.amount, 35);
+assert.equal(xpvTranche.fundedPrincipal, null);
+for (const id of ["TX18", "TX19"]) {
+  const xpvFacility = transactions.find(tx => tx.id === id);
+  assert.equal(xpvFacility.amountDrawn, null);
+  assert.equal(xpvFacility.lenderAllocationVerified, false);
+}
+assert.equal(fullLedgerAudit.timeline["2026Q4"].entities.SPV_XPV.insufficientData, true);
+
+const xpvSupport = transactions.find(tx => tx.id === "TX21");
+assert.equal(xpvSupport.totalCommitment, 29);
+assert.equal(xpvSupport.residualSupportTerms.leaseObligationShare, 0.85);
+assert.equal(xpvSupport.residualSupportTerms.effectiveExposure, null);
+assert.equal(transactions.find(tx => tx.id === "TX20").quarterlyPayment, null);
+const xpvOutage = engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, forcedDefaults: ["SPV_XPV"], guaranteeCallRate: 1
+});
+assert.equal(xpvOutage.creditEvents.some(event => event.txId === "TX21"), false);
+
+const residualOptions = customerLeaseDefault => ({
+  audit4Contracts: true, overrides: { AVGO: { residualSupportScenarios: { TX21: {
+    "2026Q4": { customerLeaseDefault, coveredOutstanding: 10, rackSaleValue: 3 }
+  } } } }
+});
+const noResidualCall = engine.runSimulation(entities, transactions, residualOptions(false)).timeline["2026Q4"];
+const residualCall = engine.runSimulation(entities, transactions, residualOptions(true)).timeline["2026Q4"];
+assert.equal(noResidualCall.guaranteeLedger.TX21.effectiveExposure, 5.5);
+assert.equal(noResidualCall.guaranteeLedger.TX21.calledThisQuarter, 0);
+assert.equal(residualCall.guaranteeLedger.TX21.calledThisQuarter, 5.5);
+assert.equal(residualCall.guaranteeLedger.TX21.remainingDisclosedCap, 23.5);
+assert.equal(residualCall.guaranteeLedger.TX21.remainingGuaranteeLiability, 0);
+assert.equal(usd(noResidualCall.entities.AVGO.cash - residualCall.entities.AVGO.cash), 5.5);
+assert.equal(noResidualCall.entities.AVGO.fcf, residualCall.entities.AVGO.fcf);

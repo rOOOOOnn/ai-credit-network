@@ -3096,6 +3096,7 @@
   },
   {
     "id": "SPV_XPV",
+    "audit4ForecastOpeningUnavailable": true,
     "name": "Broadcom AI XPV Compute SPV",
     "ticker": "SPV-XPV",
     "cik": null,

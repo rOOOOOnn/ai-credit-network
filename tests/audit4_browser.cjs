@@ -454,6 +454,17 @@ async function checkPage(browser, url) {
     assert.equal(await irenGpu.locator('a[href$="iren-expands-ai-cloud-capacity-to-150000-gpus"]').count(), 1);
     assert.match(await irenGpu.innerText(), /Dell Marketing L\.P\..*6\.7.*2027H2/);
     assert.match(await irenGpu.locator("a").last().getAttribute("href"), /67ed720a-021d-471a-8d9c-ea109edec817$/);
+    await page.locator('[data-network-entity="AVGO"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    const broadcomSettings = JSON.parse(await scenario.inputValue());
+    const residualInput = { TX21: {
+      "2028Q4": { customerLeaseDefault: true, coveredOutstanding: 10, rackSaleValue: 3 }
+    } };
+    broadcomSettings.residualSupportScenarios = residualInput;
+    await scenario.fill(JSON.stringify(broadcomSettings));
+    await panel.locator("button").click();
+    assert.deepEqual(JSON.parse(await scenario.inputValue()).residualSupportScenarios, residualInput);
     await page.locator('[data-network-entity="AMZN"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
@@ -470,6 +481,14 @@ async function checkPage(browser, url) {
     const equipmentExport = JSON.parse(await fs.readFile(await (await equipmentDownload).path(), "utf8"));
     assert.deepEqual(equipmentExport.simulationOptions.overrides.NVDA.sbEnergyProjects, nvidiaSettings.sbEnergyProjects);
     assert.equal(equipmentExport.simulationOptions.includeFirstGpuRefresh, true);
+    assert.deepEqual(equipmentExport.simulationOptions.overrides.AVGO.residualSupportScenarios, residualInput);
+    const residualLedger = equipmentExport.quarters.find(entry => entry.quarter === "2028Q4").guaranteeLedger.TX21;
+    assert.deepEqual([residualLedger.disclosedMaximum, residualLedger.calledThisQuarter, residualLedger.remainingDisclosedCap],
+      [29, 5.5, 23.5]);
+    const residualEvent = equipmentExport.creditEvents.find(event => event.txId === "TX21");
+    assert.deepEqual([residualEvent.borrower, residualEvent.lender, residualEvent.recognizedLoss],
+      ["ANTHROPIC", "AVGO", 5.5]);
+
     const tx11Project = equipmentExport.quarters.find(entry => entry.quarter === "2028Q1")
       .guaranteeLedger.TX11.projects[0];
     assert.deepEqual([tx11Project.effectiveExposure, tx11Project.rentPaid, tx11Project.replacementLeaseOrSaleProceeds],

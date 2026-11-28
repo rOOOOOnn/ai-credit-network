@@ -2063,6 +2063,38 @@
           }
         }
       }
+      if (useAudit4Contracts) {
+        for (const tx of transactions) {
+          const terms = tx.residualSupportTerms;
+          const guarantor = states[tx.payer];
+          if (!terms || !guarantor || guarantor.insufficientData || !getTransactionLifecycle(tx, q).isActive) continue;
+          const input = overrides[tx.payer]?.residualSupportScenarios?.[tx.id]?.[q];
+          const previouslyCalled = cumCreditLossByTx[tx.id] ?? 0;
+          const remainingCap = money(Math.max(0, terms.maximumUndiscounted - previouslyCalled));
+          const hasValuation = Number.isFinite(input?.coveredOutstanding) && Number.isFinite(input?.rackSaleValue);
+          const effectiveExposure = hasValuation ? money(Math.min(remainingCap, Math.max(0,
+            terms.leaseObligationShare * nonnegative(input.coveredOutstanding) - nonnegative(input.rackSaleValue)))) : null;
+          const cashCall = input?.customerLeaseDefault === true ? effectiveExposure ?? 0 : 0;
+          cumCreditLossByTx[tx.id] = money(previouslyCalled + cashCall);
+          guaranteeLedger[tx.id] = {
+            guarantor: tx.payer, disclosedMaximum: terms.maximumUndiscounted, effectiveExposure,
+            calledThisQuarter: cashCall, remainingDisclosedCap: money(remainingCap - cashCall),
+            remainingGuaranteeLiability: effectiveExposure == null ? null : money(effectiveExposure - cashCall),
+            customerLeaseDefault: input?.customerLeaseDefault === true,
+            sourceUrl: terms.sourceUrl, dataType: hasValuation ? "Assumption" : "Disclosed maximum only"
+          };
+          if (cashCall === 0) continue;
+          guarantor.cash = money(guarantor.cash - cashCall);
+          guarantor.creditLoss = money(guarantor.creditLoss + cashCall);
+          guarantor.projectGuaranteeCashPaid = money((guarantor.projectGuaranteeCashPaid ?? 0) + cashCall);
+          contagionLog.push({ hop: 0, layer: "L1_FINANCIAL", from: terms.leaseCustomer, to: tx.payer, txId: tx.id,
+            channel: "Residual support paid after assumed customer lease default", impactB: cashCall });
+          creditEvents.push({ quarter: q, txId: tx.id, borrower: terms.leaseCustomer, lender: tx.payer,
+            type: tx.type, fundedEAD: 0, undrawnEAD: 0, guaranteeEAD: effectiveExposure, totalEAD: effectiveExposure,
+            lgd: 1, recognizedLoss: cashCall, expectedRecovery: 0, remainingExposure: 0,
+            eadBasis: "Assumed covered lease balance and rack sale recovery" });
+        }
+      }
       const sbEnergyLedger = guaranteeLedger.TX11;
       if (sbEnergyLedger?.projects) {
         const settlement = sbEnergySettlementQueue.get(q);
@@ -2306,7 +2338,7 @@
             }
 
             // P0-5 Layer 1 (Direct Financial): Dynamic Phased Guarantee Call (fires ONCE when active!)
-            if (tx.receiver === defId && tx.type === "Loan Guarantee") {
+            if (tx.receiver === defId && tx.type === "Loan Guarantee" && !tx.residualSupportTerms) {
               const scenario = guaranteeLedger[tx.id];
               if (!scenario?.projects && defaultedTxIds.has(tx.id)) return;
               const guarId = tx.payer;
@@ -2544,7 +2576,7 @@
       }
       for (const [id, guarantee] of Object.entries(guaranteeLedger)) {
         guarantee.calledGuarantee = cumCreditLossByTx[id] ?? 0;
-        if (!guarantee.projects) {
+        if (!guarantee.projects && guarantee.customerLeaseDefault === undefined) {
           guarantee.remainingGuaranteeLiability = guarantee.effectiveExposure == null ? null
             : money(Math.max(0, guarantee.effectiveExposure - guarantee.calledGuarantee));
         }

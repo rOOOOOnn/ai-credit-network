@@ -2383,6 +2383,38 @@
           }
         }
       }
+      if (useAudit4Contracts) {
+        for (const tx of transactions) {
+          const terms = tx.residualSupportTerms;
+          const guarantor = states[tx.payer];
+          if (!terms || !guarantor || guarantor.insufficientData || !getTransactionLifecycle(tx, q).isActive) continue;
+          const input = overrides[tx.payer]?.residualSupportScenarios?.[tx.id]?.[q];
+          const previouslyCalled = cumCreditLossByTx[tx.id] ?? 0;
+          const remainingCap = money(Math.max(0, terms.maximumUndiscounted - previouslyCalled));
+          const hasValuation = Number.isFinite(input?.coveredOutstanding) && Number.isFinite(input?.rackSaleValue);
+          const effectiveExposure = hasValuation ? money(Math.min(remainingCap, Math.max(0,
+            terms.leaseObligationShare * nonnegative(input.coveredOutstanding) - nonnegative(input.rackSaleValue)))) : null;
+          const cashCall = input?.customerLeaseDefault === true ? effectiveExposure ?? 0 : 0;
+          cumCreditLossByTx[tx.id] = money(previouslyCalled + cashCall);
+          guaranteeLedger[tx.id] = {
+            guarantor: tx.payer, disclosedMaximum: terms.maximumUndiscounted, effectiveExposure,
+            calledThisQuarter: cashCall, remainingDisclosedCap: money(remainingCap - cashCall),
+            remainingGuaranteeLiability: effectiveExposure == null ? null : money(effectiveExposure - cashCall),
+            customerLeaseDefault: input?.customerLeaseDefault === true,
+            sourceUrl: terms.sourceUrl, dataType: hasValuation ? "Assumption" : "Disclosed maximum only"
+          };
+          if (cashCall === 0) continue;
+          guarantor.cash = money(guarantor.cash - cashCall);
+          guarantor.creditLoss = money(guarantor.creditLoss + cashCall);
+          guarantor.projectGuaranteeCashPaid = money((guarantor.projectGuaranteeCashPaid ?? 0) + cashCall);
+          contagionLog.push({ hop: 0, layer: "L1_FINANCIAL", from: terms.leaseCustomer, to: tx.payer, txId: tx.id,
+            channel: "Residual support paid after assumed customer lease default", impactB: cashCall });
+          creditEvents.push({ quarter: q, txId: tx.id, borrower: terms.leaseCustomer, lender: tx.payer,
+            type: tx.type, fundedEAD: 0, undrawnEAD: 0, guaranteeEAD: effectiveExposure, totalEAD: effectiveExposure,
+            lgd: 1, recognizedLoss: cashCall, expectedRecovery: 0, remainingExposure: 0,
+            eadBasis: "Assumed covered lease balance and rack sale recovery" });
+        }
+      }
       const sbEnergyLedger = guaranteeLedger.TX11;
       if (sbEnergyLedger?.projects) {
         const settlement = sbEnergySettlementQueue.get(q);
@@ -2626,7 +2658,7 @@
             }
 
             // P0-5 Layer 1 (Direct Financial): Dynamic Phased Guarantee Call (fires ONCE when active!)
-            if (tx.receiver === defId && tx.type === "Loan Guarantee") {
+            if (tx.receiver === defId && tx.type === "Loan Guarantee" && !tx.residualSupportTerms) {
               const scenario = guaranteeLedger[tx.id];
               if (!scenario?.projects && defaultedTxIds.has(tx.id)) return;
               const guarId = tx.payer;
@@ -2864,7 +2896,7 @@
       }
       for (const [id, guarantee] of Object.entries(guaranteeLedger)) {
         guarantee.calledGuarantee = cumCreditLossByTx[id] ?? 0;
-        if (!guarantee.projects) {
+        if (!guarantee.projects && guarantee.customerLeaseDefault === undefined) {
           guarantee.remainingGuaranteeLiability = guarantee.effectiveExposure == null ? null
             : money(Math.max(0, guarantee.effectiveExposure - guarantee.calledGuarantee));
         }
@@ -6062,6 +6094,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "SPV_XPV",
+    "audit4ForecastOpeningUnavailable": true,
     "name": "Broadcom AI XPV Compute SPV",
     "ticker": "SPV-XPV",
     "cik": null,
@@ -7228,6 +7261,7 @@ const INITIAL_TRANSACTIONS = [
   },
   {
     "id": "TX18",
+    "reportedPlatformTranche": {"amount":35,"fundedPrincipal":null,"financierShare":null,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm"},
     "payer": "APOLLO_FUNDS",
     "receiver": "SPV_XPV",
     "type": "Project Finance",
@@ -7235,18 +7269,19 @@ const INITIAL_TRANSACTIONS = [
     "announcedDate": "2026-06-09",
     "startQ": "2026Q2",
     "endQ": "2031Q2",
-    "totalCommitment": 17.5,
-    "amountDrawn": 17.5,
-    "amountRepaid": 0,
-    "remainingCommitment": 0,
+    "totalCommitment": null,
+    "amountDrawn": null,
+    "amountRepaid": null,
+    "remainingCommitment": null,
     "interestRate": "Undisclosed",
-    "maturityDate": "2031-06-09",
-    "quarterlyPayment": 0,
+    "maturityDate": null,
+    "quarterlyPayment": null,
     "collateral": "Broadcom/Google TPU Pods",
-    "guarantor": "Broadcom Inc.",
+    "guarantor": null,
     "arranger": "Apollo & 7 Global Banks",
-    "actualLender": "Apollo Managed Funds (50% Est. Share of $35B)",
+    "actualLender": null,
     "spv": "Broadcom AI XPV SPV",
+    "lenderAllocationVerified": false,
     "confidence": "A",
     "sourceDoc": "Blackstone & Broadcom PR (Jun 9, 2026)",
     "sourceUrl": "https://www.blackstone.com/news/press/broadcom-apollo-and-blackstone-establish-landmark-strategic-platform-to-accelerate-more-than-20-gigawatts-of-global-ai-deployments/",
@@ -7263,18 +7298,19 @@ const INITIAL_TRANSACTIONS = [
     "announcedDate": "2026-06-09",
     "startQ": "2026Q2",
     "endQ": "2031Q2",
-    "totalCommitment": 17.5,
-    "amountDrawn": 17.5,
-    "amountRepaid": 0,
-    "remainingCommitment": 0,
+    "totalCommitment": null,
+    "amountDrawn": null,
+    "amountRepaid": null,
+    "remainingCommitment": null,
     "interestRate": "Undisclosed",
-    "maturityDate": "2031-06-09",
-    "quarterlyPayment": 0,
+    "maturityDate": null,
+    "quarterlyPayment": null,
     "collateral": "Broadcom/Google TPU Pods",
-    "guarantor": "Broadcom Inc.",
+    "guarantor": null,
     "arranger": "Blackstone & 7 Global Banks",
-    "actualLender": "Blackstone Managed Funds (50% Est. Share of $35B)",
+    "actualLender": null,
     "spv": "Broadcom AI XPV SPV",
+    "lenderAllocationVerified": false,
     "confidence": "A",
     "sourceDoc": "Blackstone & Broadcom PR (Jun 9, 2026)",
     "sourceUrl": "https://www.blackstone.com/news/press/broadcom-apollo-and-blackstone-establish-landmark-strategic-platform-to-accelerate-more-than-20-gigawatts-of-global-ai-deployments/",
@@ -7291,16 +7327,16 @@ const INITIAL_TRANSACTIONS = [
     "announcedDate": "2026-06-09",
     "startQ": "2026Q3",
     "endQ": "2031Q2",
-    "totalCommitment": 35,
+    "totalCommitment": null,
     "amountDrawn": null,
-    "amountRepaid": 0,
-    "remainingCommitment": 35,
+    "amountRepaid": null,
+    "remainingCommitment": null,
     "interestRate": null,
-    "maturityDate": "2031-06-09",
-    "quarterlyPayment": 1.75,
+    "maturityDate": null,
+    "quarterlyPayment": null,
     "scheduleType": "Assumption",
     "collateral": "Compute Lease",
-    "guarantor": "Broadcom Inc.",
+    "guarantor": null,
     "arranger": "N/A",
     "actualLender": "N/A",
     "spv": "Broadcom AI XPV SPV",
@@ -7317,6 +7353,7 @@ const INITIAL_TRANSACTIONS = [
   },
   {
     "id": "TX21",
+    "residualSupportTerms": {"leaseCustomer":"ANTHROPIC","maximumUndiscounted":29,"asOf":"2026-08-02","leaseObligationShare":0.85,"leaseTermYears":5,"paidToDate":0,"trigger":"Customer lease default; net qualifying AI-rack sale value","effectiveExposure":null,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm"},
     "payer": "AVGO",
     "receiver": "SPV_XPV",
     "type": "Loan Guarantee",
@@ -7324,21 +7361,21 @@ const INITIAL_TRANSACTIONS = [
     "announcedDate": "2026-06-09",
     "startQ": "2026Q2",
     "endQ": "2031Q2",
-    "totalCommitment": 35,
-    "amountDrawn": 0,
-    "amountRepaid": 0,
-    "remainingCommitment": 35,
+    "totalCommitment": 29,
+    "amountDrawn": null,
+    "amountRepaid": null,
+    "remainingCommitment": null,
     "interestRate": null,
-    "maturityDate": "2031-06-09",
-    "quarterlyPayment": 0,
+    "maturityDate": null,
+    "quarterlyPayment": null,
     "collateral": "Senior Tranche / Residual Value Backstop",
     "guarantor": "Broadcom Inc.",
     "arranger": "N/A",
     "actualLender": "Contingent Backstop",
     "spv": "Broadcom AI XPV SPV",
-    "confidence": "B",
-    "sourceDoc": "LSEG FTSE Russell Circular Financing Report (Oct 21, 2026)",
-    "sourceUrl": "https://www.lseg.com/en/insights/ftse-russell/mapping-circular-financing-in-ai-does-it-add-Instability",
+    "confidence": "A",
+    "sourceDoc": "Broadcom Form 10-Q, Note 10",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm",
     "currency": "USD",
     "isFloatingRate": false,
     "networkLayer": "Financial"
@@ -10349,6 +10386,7 @@ const I18N = {
       incrementalLease:state.overrides[entity.id]?.incrementalLease ?? null,
       incrementalLeaseTranches:state.overrides[entity.id]?.incrementalLeaseTranches ?? null,
       ...(entity.id === "CRWV" ? {facilitySweepCash: state.overrides.CRWV?.facilitySweepCash ?? null, facilitySweepEvents: state.overrides.CRWV?.facilitySweepEvents ?? null} : {}),
+      ...(entity.id === "AVGO" ? {residualSupportScenarios: state.overrides.AVGO?.residualSupportScenarios ?? {}} : {}),
       ...(entity.id === "NVDA" ? {sbEnergyProjects: state.overrides.NVDA?.sbEnergyProjects ?? null} : {}),
       includeAmazonLeaseBuckets:state.overrides[entity.id]?.includeAmazonLeaseBuckets ?? false,
       includeNvidiaLeaseBuckets:state.overrides[entity.id]?.includeNvidiaLeaseBuckets ?? false,
@@ -10916,6 +10954,7 @@ const I18N = {
         if (data.incrementalLeaseTranches != null && !Array.isArray(data.incrementalLeaseTranches)) throw new TypeError("Lease tranches must be an array");
         if (!["manual","curve"].includes(data.financing?.mode)) throw new Error("Expected manual or curve mode");
         const settings = state.overrides[panel.dataset.entity] ??= {};
+        if (panel.dataset.entity === "AVGO") settings.residualSupportScenarios = data.residualSupportScenarios;
         if (panel.dataset.entity === "NVDA") {
           if (data.sbEnergyProjects != null && (!Array.isArray(data.sbEnergyProjects) ||
             data.sbEnergyProjects.some(project => !project || typeof project !== "object" || Array.isArray(project)))) {
