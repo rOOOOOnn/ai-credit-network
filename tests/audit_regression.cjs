@@ -51,7 +51,15 @@ check('Audit-1: Accounting Conservation & RCF Auto-Draw', () => {
 // 2. TRUE One-Time LGD & Guarantee Ceiling on Active EAD (45% LGD on EAD, 25% Call on Active Guarantee EAD)
 check('Audit-2: True One-Time LGD (<=45.1% EAD) & Guarantee (<=25.1% Active EAD)', () => {
   let maxDebtPct = 0, maxGuarPct = 0;
-  shockOAI.creditEvents.forEach(ev => {
+  // Exercise both loss paths with known hypothetical exposure even when public records lack funded amounts.
+  const fixture = { receiver: "OPENAI", status: "Actual", announcedDate: "2026-09-01",
+    startQ: "2026Q3", endQ: "2029Q4", totalCommitment: 1, amountRepaid: 0 };
+  const shockWithKnownExposure = Engine.runSimulation(entities, [
+    ...transactions,
+    { ...fixture, id: "FIXTURE_LOAN", payer: "MSFT", type: "Direct Loan", amountDrawn: 1 },
+    { ...fixture, id: "FIXTURE_GUARANTEE", payer: "AMZN", type: "Loan Guarantee", amountDrawn: 0 }
+  ], { forcedDefaults: ["OPENAI"] });
+  shockWithKnownExposure.creditEvents.forEach(ev => {
     const pct = (ev.recognizedLoss / Math.max(0.0001, ev.totalEAD)) * 100;
     if (ev.type === 'Loan Guarantee') {
       if (pct > maxGuarPct) maxGuarPct = pct;
