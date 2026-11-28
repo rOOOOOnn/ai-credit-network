@@ -98,3 +98,22 @@ assert.match(coverageRow("APLD"), /Structured · Actual \(Fiscal-year principal,
 assert.match(coverageRow("AMD"), /4\.75 · Assumption \(Reserves the full letter-of-credit sublimit; actual usage unavailable\) \[Source\]\(https:\/\/[^)]+amd-20260926\.htm\)/);
 assert.match(coverageRow("CORZ"), /0\.068 · Assumption \(Legacy quarterly model input\) \| 0\.054066 · Actual/);
 console.log("Historical field coverage matrix matches repository snapshots");
+
+const spacex = entitiesById.get("SPCX_XAI");
+const siSnapshot = spacex.financials["2026Q3"];
+const consolidated = spacex.audit4ConsolidatedEvidence;
+assert.equal(siSnapshot.dataType, "Assumption");
+assert.equal(siSnapshot.revenueDataType, "Actual");
+assert.equal(siSnapshot.revenue, 7.56);
+assert.equal(consolidated.quarterRevenue, 14.575);
+assert.equal((consolidated.currentDebtAndFinanceLeases + consolidated.noncurrentDebtAndFinanceLeases).toFixed(3), "38.844");
+assert.match(coverageRow("SPCX_XAI"), /7\.56 · Actual \(SpaceX Super Intelligence segment only\)/);
+
+assert.equal(spacex.dataType, "Assumption");
+const spacexCsv = readFileSync(path.join(root, "data/entities.csv"), "utf8")
+  .split(/\r?\n/).find(line => line.startsWith("SPCX_XAI,"));
+assert.equal(spacexCsv.split(",").at(-1), "Assumption");
+const historicalSi = require("../engine/contagion_engine.js").getHistoricalSnapshot(spacex, "2026Q3");
+assert.equal(historicalSi.dataType, "Assumption");
+assert.equal(historicalSi.revenueDataType, "Actual");
+assert.equal(historicalSi.hasActual, false);

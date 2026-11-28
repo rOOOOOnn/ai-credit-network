@@ -391,6 +391,14 @@ async function checkPage(browser, url) {
     await page.locator('[data-network-entity="OPENAI"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    await page.locator('[data-network-entity="SPCX_XAI"]').dispatchEvent("click");
+    await page.locator("#tabBtnForecast").click();
+    if (await panel.getAttribute("open") === null) await panel.locator("summary").click();
+    const spacexEvidence = panel.locator("[data-consolidated-evidence]");
+    const spacexText = await spacexEvidence.innerText();
+    assert.ok(spacexText.includes("$7.560B"));
+    assert.ok(spacexText.includes("14.575 / 51.294 / 38.844"));
+    assert.ok((await spacexEvidence.getAttribute("href")).endsWith("/spaceexplorationtechnologi.htm"));
     await page.locator('[data-network-entity="ANTHROPIC"]').dispatchEvent("click");
     await page.locator("#tabBtnForecast").click();
     if (await panel.getAttribute("open") === null) await panel.locator("summary").click();

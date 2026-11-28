@@ -8,7 +8,7 @@ META,Meta Platforms (incl. Meta AI),,1,,,64.6,45.0,37.5,Actual
 OPENAI,OpenAI Group PBC,,1,,,9.5,42.0,0.0,Assumption
 ANTHROPIC,"Anthropic, PBC (S-1)",,1,,,17.0,35.0,0.0,Actual
 CRWV,"CoreWeave, Inc.",,2,,,3.66,4.2,46.873,Actual
-SPCX_XAI,SpaceX / xAI (SI Segment),,2,,,7.56,28.0,38.0,Actual
+SPCX_XAI,SpaceX / xAI (SI Segment),,2,,,7.56,28.0,38.0,Assumption
 AVGO,Broadcom Inc.,,2,,,29.591,23.975,59.419,Actual
 AMD,"AMD, Inc.",,2,,,13.38,7.404,7.079,Actual
 MU,Micron Technology,,2,,,54.229,38.364,5.179,Actual

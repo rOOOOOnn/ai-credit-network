@@ -4366,6 +4366,7 @@ const INITIAL_ENTITIES = [
   },
   {
     "id": "SPCX_XAI",
+    "audit4ConsolidatedEvidence": {"asOf":"2026-09-30","dataType":"Actual","quarterRevenue":14.575,"cashAndEquivalents":51.294,"marketableSecurities":38.561,"currentDebtAndFinanceLeases":2.698,"noncurrentDebtAndFinanceLeases":36.146,"accountsPayable":13.259,"quarterInterestExpense":0.675,"nineMonthOCF":13.097,"sourceUrl":"https://www.sec.gov/Archives/edgar/data/1181412/000162828026066482/spaceexplorationtechnologi.htm"},
     "name": "SpaceX / xAI (SI Segment)",
     "ticker": "SPCX",
     "cik": "0001181412",
@@ -4376,7 +4377,7 @@ const INITIAL_ENTITIES = [
     "filingCoverage": "Private pre-Feb 2026 -> SEC 8-K/S-1 via SpaceX IPO (Jun 2026 – Q3 2026)",
     "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026066482/spaceexplorationtechnologi.htm",
     "confidence": "A",
-    "dataType": "Actual",
+    "dataType": "Assumption",
     "latestDisclosedQuarter": "2026Q3",
     "disclosedDate": "2026-10-20",
     "financials": {
@@ -4392,7 +4393,10 @@ const INITIAL_ENTITIES = [
         "leaseLiab": null,
         "interestExp": 0.75,
         "undrawnCredit": 4,
-        "dataType": "Actual",
+        "dataType": "Assumption",
+        "revenueDataType": "Actual",
+        "revenueBasis": "SpaceX Super Intelligence segment only",
+        "revenueSourceUrl": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026066482/spaceexplorationtechnologi.htm",
         "disclosedDate": "2026-10-20",
         "fiscalPeriod": "2026Q3",
         "calendarPeriod": "2026Q3",
@@ -10695,6 +10699,18 @@ const I18N = {
         if (bounds.filingUrl?.startsWith("https://")) link.href = bounds.filingUrl;
         trend.append(document.createElement("br"), link);
       }
+    }
+    const consolidated = entity.audit4ConsolidatedEvidence;
+    if (consolidated) {
+      const link = document.createElement("a");
+      link.dataset.consolidatedEvidence = "";
+      const segmentRevenue = entity.financials["2026Q3"].revenue;
+      const consolidatedDebt = (consolidated.currentDebtAndFinanceLeases + consolidated.noncurrentDebtAndFinanceLeases).toFixed(3);
+      link.textContent = consolidated.asOf + " · " + t("Super Intelligence quarterly segment revenue", "\u8d85\u7ea7\u667a\u80fd\u5206\u90e8\u5b63\u5ea6\u6536\u5165") + " $" + segmentRevenue.toFixed(3) + "B. " +
+        t("SpaceX consolidated quarterly revenue / cash / debt and finance leases", "SpaceX \u5408\u5e76\u5b63\u5ea6\u6536\u5165\uff0f\u73b0\u91d1\uff0f\u503a\u52a1\u53ca\u878d\u8d44\u79df\u8d41") + " ($B): " + [consolidated.quarterRevenue, consolidated.cashAndEquivalents, consolidatedDebt].join(" / ") +
+        ". " + t("Segment cash and debt are scenario assumptions.", "\u5206\u90e8\u73b0\u91d1\u548c\u503a\u52a1\u4e3a\u60c5\u666f\u5047\u8bbe\u3002");
+      if (consolidated.sourceUrl?.startsWith("https://")) link.href = consolidated.sourceUrl;
+      trend.append(document.createElement("br"), link);
     }
     const round = entity.audit4RoundReconciliation;
     if (round) {
