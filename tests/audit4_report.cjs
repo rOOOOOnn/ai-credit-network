@@ -216,3 +216,16 @@ const irenNotes = irenGpuOne.find(row => row.id === "IREN_GPU1_USPP");
 assert.deepEqual([irenOctoberDraw.date, irenOctoberDraw.amount], ["2026-10-01", 0.388]);
 assert.deepEqual([irenNotes.subsequentEscrowRelease.date, irenNotes.subsequentEscrowRelease.amount,
   irenNotes.restrictedProceedsEscrow], ["2026-10-01", 0.525, 1.05]);
+const nebiusNotes = entitiesById.get("NBIS").audit4Facilities;
+const feb2030 = nebiusNotes.find(row => row.id === "NBIS_FEB30");
+const feb2034 = nebiusNotes.find(row => row.id === "NBIS_FEB34");
+assert.deepEqual([feb2030.principalOutstanding, feb2030.reportedCashCoupon, feb2030.couponPrincipalRatio],
+  [3.795, 0.005, 1.1]);
+assert.deepEqual([feb2034.principalOutstanding, feb2034.reportedCashCoupon, feb2034.couponPrincipalRatio],
+  [2.875, 0.045, 1.25]);
+assert.equal((feb2030.principalOutstanding / feb2030.couponPrincipalRatio).toFixed(3), "3.450");
+assert.equal((feb2034.principalOutstanding / feb2034.couponPrincipalRatio).toFixed(3), "2.300");
+assert.deepEqual(appliedDigital.debtMaturity, {
+  FY2027Remaining: 0.108739, FY2028: 0.221545, FY2029: 0.341453,
+  FY2030: 0.354294, FY2031: 4.256666, thereafter: 1.438908
+});
