@@ -117,3 +117,39 @@ const historicalSi = require("../engine/contagion_engine.js").getHistoricalSnaps
 assert.equal(historicalSi.dataType, "Assumption");
 assert.equal(historicalSi.revenueDataType, "Actual");
 assert.equal(historicalSi.hasActual, false);
+
+const metaSnapshot = entitiesById.get("META").financials["2026Q3"];
+assert.deepEqual(
+  [metaSnapshot.revenue, metaSnapshot.cash, metaSnapshot.ar, metaSnapshot.accountsPayable, metaSnapshot.longTermDebt],
+  [64.601, 11.222, 22.716, 19.097, 80.922]
+);
+assert.equal(metaSnapshot.operatingLeaseLiability, (2522 + 28651) / 1000);
+
+const microsoftSnapshot = entitiesById.get("MSFT").financials["2026Q3"];
+assert.deepEqual(
+  [microsoftSnapshot.cash, microsoftSnapshot.accountsPayable, microsoftSnapshot.shortTermDebt, microsoftSnapshot.longTermDebt],
+  [20.281, 42.625, 4.391, 31.090]
+);
+assert.equal(microsoftSnapshot.debt, (4391 + 31090) / 1000);
+const amazonSnapshot = entitiesById.get("AMZN").financials["2026Q3"];
+assert.deepEqual([amazonSnapshot.cash, amazonSnapshot.accountsPayable], [55.783, 158.715]);
+assert.equal(amazonSnapshot.shortTermDebt, (6827 + 380) / 1000);
+assert.equal(amazonSnapshot.longTermDebt, (180887 - 935 - 6827) / 1000);
+assert.equal(amazonSnapshot.debt, (180887 - 935 + 380) / 1000);
+
+const alphabetSnapshot = entitiesById.get("GOOGL").financials["2026Q3"];
+assert.deepEqual([alphabetSnapshot.cash, alphabetSnapshot.ar, alphabetSnapshot.accountsPayable],
+  [56.334, 72.784, 21.975]);
+assert.deepEqual([alphabetSnapshot.shortTermDebt, alphabetSnapshot.longTermDebt, alphabetSnapshot.debt],
+  [1.016, 125.102, (1016 + 125102) / 1000]);
+assert.equal(alphabetSnapshot.leaseLiab, (20508 + 3705) / 1000);
+assert.equal(alphabetSnapshot.offBalanceLeases, 130.5);
+
+const coreWeaveSnapshot = entitiesById.get("CRWV").financials["2026Q3"];
+const tx26Disclosure = require("../data/transactions.json").find(tx => tx.id === "TX26");
+const consolidatedMaturities = [2433, 10974, 5479, 4727, 4247, 19645];
+assert.equal(consolidatedMaturities.reduce((sum, value) => sum + value), 47505);
+assert.equal(coreWeaveSnapshot.debt, (47505 - 552 - 80) / 1000);
+assert.equal(tx26Disclosure.principalOutstanding, 4.583);
+assert.equal((4583 + 770 - 80) / 1000, 5.273);
+assert.equal(tx26Disclosure.carryingValue, null);

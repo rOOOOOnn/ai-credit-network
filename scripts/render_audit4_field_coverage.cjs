@@ -27,6 +27,10 @@ function renderFieldCoverage(rows) {
     "The source column identifies the row's source pointer or a general entity pointer. Presence of a value or source pointer does not certify the underlying disclosure.",
     "Forecast-side disclosures, source verification and scope limitations are tracked in the [entity source register](audit4_entity_source_register.md) and [audit report](audit4_remediation_report.md).",
     "To regenerate, run `node scripts/render_audit4_field_coverage.cjs`.", ""];
+  let populated = 0;
+  let fieldPointers = 0;
+  let recordPointers = 0;
+  let entityPointers = 0;
   const body = rows.map(entity => {
     const quarter = Object.keys(entity.financials ?? {}).sort().at(-1);
     const record = entity.financials?.[quarter];
@@ -40,12 +44,28 @@ function renderFieldCoverage(rows) {
       const display = typeof value === "object" ? "Structured" : String(value).replaceAll("|", "\\|");
       const basis = record[key + "Basis"];
       const fieldSource = record[key + "SourceUrl"];
+      populated++;
+      if (fieldSource?.startsWith("https://")) fieldPointers++;
+      else if (record?.sourceUrl?.startsWith("https://")) recordPointers++;
+      else if (entity.sourceUrl?.startsWith("https://")) entityPointers++;
       return display + " · " + classification + (basis ? " (" + basis.replaceAll("|", "\\|") + ")" : "") +
         (fieldSource?.startsWith("https://") ? " [Source](" + fieldSource + ")" : "");
     });
     return row([entity.id, quarter ?? "—", record?.disclosedDate ?? "—", source, ...cells]);
   });
-  return [...titles, row(headers), row(headers.map(() => "---")), ...body, ""].join("\n");
+  const coverage = [
+    "| Evidence pointer scope | Latest-snapshot fields |",
+    "| --- | ---: |",
+    row(["Field-specific pointer", fieldPointers]),
+    row(["Record pointer only", recordPointers]),
+    row(["Entity pointer only", entityPointers]),
+    row(["Populated without HTTPS pointer", populated - fieldPointers - recordPointers - entityPointers]),
+    row(["Absent or null", rows.length * fields.length - populated]),
+    "",
+    "Pointer counts measure traceability. Field confirmation additionally requires checking the period, reporting entity, definition and amount against the cited disclosure.",
+    ""
+  ];
+  return [...titles, ...coverage, row(headers), row(headers.map(() => "---")), ...body, ""].join("\n");
 }
 
 if (require.main === module) {

@@ -6,6 +6,16 @@ The source column identifies the row's source pointer or a general entity pointe
 Forecast-side disclosures, source verification and scope limitations are tracked in the [entity source register](audit4_entity_source_register.md) and [audit report](audit4_remediation_report.md).
 To regenerate, run `node scripts/render_audit4_field_coverage.cjs`.
 
+| Evidence pointer scope | Latest-snapshot fields |
+| --- | ---: |
+| Field-specific pointer | 8 |
+| Record pointer only | 136 |
+| Entity pointer only | 240 |
+| Populated without HTTPS pointer | 0 |
+| Absent or null | 916 |
+
+Pointer counts measure traceability. Field confirmation additionally requires checking the period, reporting entity, definition and amount against the cited disclosure.
+
 | Entity | Period | Disclosure | Default record source | Revenue | OCF | FCF | CapEx | Cash | Debt | Current debt | Noncurrent debt | Payables | Payables and accrued liabilities | Lease liabilities | Operating lease liability | Finance lease liability | Noncurrent lease liability | Uncommenced leases | Interest input | Reported gross interest expense | Debt maturities | RPO | Customer concentration | Individual customer concentration upper bound (exclusive) | GPU purchases | GPU fleet age | Replacement CapEx | Financing commitments | Undrawn credit |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | NVDA | 2026Q3 | 2026-11-17 | [Entity pointer](https://nvidianews.nvidia.com/news/nvidia-announces-financial-results-for-third-quarter-fiscal-2027) | 115.84 · Actual | 48.253 · Actual | 43.777 · Actual (Issuer non-GAAP: OCF less asset purchases and related principal payments) | 4.422 · Actual | 29.089 · Actual | 32.371 · Actual | 0 · Actual | 32.371 · Actual | 21.074 · Actual | — | — | — | — | — | 74 · Actual | 0.32 · Actual | — | — | 134 · Actual | — | — | — | — | — | — | 0 · Actual |
