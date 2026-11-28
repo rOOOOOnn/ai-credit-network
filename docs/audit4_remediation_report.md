@@ -485,6 +485,8 @@ The company detail panel now supports incremental R&D cash cost and working-capi
 
 ## Acceptance evidence by requirement
 
+The [historical field matrix](audit4_field_coverage.md) includes the filing-level cash-flow recomputations and Alphabet and Amazon debt series. The series reconcile to face value using reporting-date exchange rates. The ranges do not establish quarterly principal repayments. CoreWeave's historical cash and net receivables now match the September 10-Q. Its historical revolver availability uses the $0.754B drawable cash amount. The historical lease balance separates $18.697B of operating leases and $0.649B of finance leases from the $47.4B uncommenced commitment. These historical corrections leave the audited A–G replay tables unchanged. [CoreWeave September 10-Q](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm).
+
 Status below applies to the audited research profile. Model acceptance requires both executable coverage and a clearly stated boundary on the input data. The original Git baseline is `b727da282df7551e13bc3c1b79a6632b4bff1fed`. The continuation comparison uses `a515599901f062c138f3a86fadf360817f96c4b7`. The [independent branch](https://github.com/rOOOOOnn/ai-credit-network/tree/audit4-financing-gpu-remediation) and its [Actions runs](https://github.com/rOOOOOnn/ai-credit-network/actions?query=branch%3Aaudit4-financing-gpu-remediation) retain the commit and test history.
 
 | Requirement | Evidence checked | Outstanding work or data |

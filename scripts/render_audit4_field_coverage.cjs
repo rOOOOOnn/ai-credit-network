@@ -89,10 +89,19 @@ function renderFieldCoverage(rows) {
       return row([entity.id, quarter, amounts([nineMonths.ocf, nineMonths.capex]),
         amounts([sixMonths.ocf, sixMonths.capex]), amounts([ocf, capex, ocf - capex]), sources.join(", ")]);
     });
+  const debtHeaders = ["Entity", "As of", "Series", "Outstanding face value ($B)", "Maturity years", "Source"];
+  const debtRows = rows.filter(entity => entity.audit4DebtSeries).flatMap(entity => {
+    const { asOf, sourceUrl, series } = entity.audit4DebtSeries;
+    return series.map(({ name, principal, maturityYears }) =>
+      row([entity.id, asOf, name, principal, maturityYears?.join("–") ?? "—", "[Debt note](" + sourceUrl + ")"]));
+  });
   return [...titles, ...coverage, row(headers), row(headers.map(() => "---")), ...body, "",
     "## Quarterly cash flow computed from cumulative filings", "",
     "Quarterly OCF and cash CapEx are nine-month amounts less six-month amounts. FCF is the resulting OCF less CapEx. The model uses the direct quarterly disclosure where indicated.", "",
-    row(bridgeHeaders), row(bridgeHeaders.map(() => "---")), ...bridgeRows, ""].join("\n");
+    row(bridgeHeaders), row(bridgeHeaders.map(() => "---")), ...bridgeRows, "",
+    "## Debt by disclosed series", "",
+    "Face values use reporting-date USD equivalents. The maturity ranges describe each series. Quarterly principal allocations require instrument-level schedules.", "",
+    row(debtHeaders), row(debtHeaders.map(() => "---")), ...debtRows, ""].join("\n");
 }
 
 if (require.main === module) {

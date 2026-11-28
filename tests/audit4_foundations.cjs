@@ -359,6 +359,13 @@ const coreweaveBridge = entities.find(entity => entity.id === "CRWV").audit4Cash
 assert.equal(usd(coreweaveBridge.nineMonths.ocf - coreweaveBridge.sixMonths.ocf), 1.975);
 assert.equal(usd(coreweaveBridge.nineMonths.capex - coreweaveBridge.sixMonths.capex), 9.441);
 const coreweaveHistorical = entities.find(entity => entity.id === "CRWV").financials["2026Q3"];
+assert.deepEqual([coreweaveHistorical.cash, coreweaveHistorical.restrictedCash, coreweaveHistorical.ar],
+  [4.122, usd(1.405 + 0.877), 4.28]);
+assert.equal(coreweaveHistorical.operatingLeaseLiability, usd(0.668 + 18.029));
+assert.equal(coreweaveHistorical.financeLeaseLiability, usd(0.296 + 0.353));
+assert.equal(coreweaveHistorical.leaseLiab, usd(18.697 + 0.649));
+assert.equal(coreweaveHistorical.offBalanceLeases, 47.4);
+assert.equal(coreweaveHistorical.undrawnCredit, usd(2.5 - 1.2 - 0.546));
 assert.deepEqual([coreweaveHistorical.ocf, coreweaveHistorical.capex, coreweaveHistorical.fcf],
   [1.975, 9.441, usd(1.975 - 9.441)]);
 assert.equal(liquid.timeline["2026Q4"].entities.CRWV.begCash, 4.122);
@@ -449,6 +456,9 @@ assert.equal(oracleSnapshot.shortTermDebt, 7.625);
 assert.equal(oracleSnapshot.longTermDebt, 117.712);
 assert.equal(oracleSnapshot.debt, usd(oracleSnapshot.shortTermDebt + oracleSnapshot.longTermDebt));
 assert.equal(oracleSnapshot.leaseLiab, usd(4.027 + 30.594 + 0.749 + 8.436));
+assert.equal(oracleSnapshot.operatingLeaseLiability, usd(4.027 + 30.594));
+assert.equal(oracleSnapshot.financeLeaseLiability, usd(0.749 + 8.436));
+assert.equal(oracleSnapshot.noncurrentOperatingLeaseLiability, 30.594);
 assert.equal(oracleSnapshot.offBalanceLeases, 288);
 const nebius = entities.find(entity => entity.id === "NBIS");
 const irenEvidenceEntity = entities.find(entity => entity.id === "IREN");
@@ -1973,6 +1983,16 @@ assert.equal(cegRcf("2030Q2").undrawnCommitment, 4.787);
 assert.equal(cegRcf("2030Q3").undrawnCommitment, 0);
 assert.equal(cegRcfTimeline["2030Q4"].entities.CEG.undrawnCredit, 0);
 const alphabetEvidence = issuerBalance("GOOGL");
+const alphabetDebtSeries = entities.find(entity => entity.id === "GOOGL").audit4DebtSeries.series;
+assert.equal(usd(alphabetDebtSeries.reduce((sum, row) => sum + row.principal, 0)), 127.485);
+assert.equal(usd(alphabetDebtSeries.reduce((sum, row) => sum + row.principal, 0) - 1.110 - 0.257), 126.118);
+assert.deepEqual(alphabetDebtSeries.find(row => row.name === "2020 USD notes").maturityYears, [2027, 2060]);
+assert.equal(alphabetDebtSeries.find(row => row.name === "Other long-term debt").maturityYears, null);
+const amazonDebtSeries = entities.find(entity => entity.id === "AMZN").audit4DebtSeries.series;
+const amazonLongTermFace = usd(amazonDebtSeries.reduce((sum, row) => sum + row.principal, 0));
+assert.equal(amazonLongTermFace, 180.887);
+assert.equal(usd(amazonLongTermFace - 0.935 + 0.380), 180.332);
+assert.deepEqual(amazonDebtSeries.find(row => row.name === "2026 Term Loan").maturityYears, [2029]);
 assert.equal(usd(alphabetEvidence.borrowingsPrincipal - alphabetEvidence.unamortizedDiscountAndIssuanceCosts -
   alphabetEvidence.hedgeFairValueReduction), 126.118);
 const amazonEvidence = issuerBalance("AMZN");
