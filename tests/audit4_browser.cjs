@@ -296,6 +296,8 @@ async function checkPage(browser, url) {
     assert.equal(tx26.amountDrawn, null);
     assert.equal(tx26.conditionalReconciliationBounds.asOf, "2026-09-30");
     assert.deepEqual(tx26.conditionalReconciliationBounds.cumulativeDrawdown, [4.583, 4.646]);
+    assert.deepEqual(tx26.conditionalReconciliationBounds.standaloneCarryingValue, [4.503, 4.583]);
+    assert.equal(tx26.carryingValue, null);
     const oracleInitialLease = firstQuarter.leaseCashSchedules.ORCL;
     assert.equal(oracleInitialLease.incremental.uncommencedCommitment, 288);
     assert.equal(oracleInitialLease.incremental.payment, 0);
@@ -323,6 +325,12 @@ async function checkPage(browser, url) {
     await scenario.fill(JSON.stringify(coreWeaveSettings));
     await panel.locator("button").click();
     assert.deepEqual(JSON.parse(await scenario.inputValue()).facilitySweepCash, sweepInput);
+    const facilityBounds = panel.locator("[data-tx26-bounds]");
+    const facilityText = await facilityBounds.innerText();
+    for (const value of ["$4.583B", "$4.583–4.646B", "$0–0.063B", "$4.503–4.583B", "$3.854–3.917B"]) {
+      assert.ok(facilityText.includes(value), value);
+    }
+    assert.match(await facilityBounds.getAttribute("href"), /crwv-20260930\.htm$/);
     const hardwareDisclosure = panel.locator("[data-gpu-disclosure]");
     assert.match(await hardwareDisclosure.innerText(), /6/);
     assert.match(await hardwareDisclosure.locator("a").first().getAttribute("href"), /crwv-20251231\.htm$/);

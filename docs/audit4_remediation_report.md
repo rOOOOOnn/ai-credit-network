@@ -1259,9 +1259,13 @@ The September filing records $11.222B cash and equivalents, $13.132B restricted 
 
 ### TX26 collateral and repayment evidence across filings
 
+The closing 8-K identifies limited parent recourse for specified bad acts and unconditional guarantees from the borrower's subsidiaries. The transaction record now states both conditions. The September 10-Q's consolidated non-recourse debt classification is the accounting presentation. No cash recovery from the limited guarantee enters the baseline because an eligible trigger and collectible amount have not been established. [March 30 closing 8-K](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000129/crwv-20260330.htm), [September debt note](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/R16.htm).
+
 June Note 10 reports $0.155B of current collateral, primarily restricted cash, and approximately $3.3B of noncurrent collateral. September Note 10 reports $0.233B of current collateral, primarily receivables, and approximately $5.2B of noncurrent collateral. At the disclosed precision the combined book balances are approximately $3.455B and $5.433B, respectively. The shift in current asset composition and the absence of equipment-level quantities, vintages, and liquidation prices prevent using the increase as evidence of GPU residual value or incremental loan availability. [June Note 10](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000366/R16.htm), [September Note 10](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/R16.htm).
 
 March Note 10 identifies site delivery and incremental draw dates that can start monthly amortization before final commitment termination. Gross draws and repayments therefore cannot be recovered from the three reported closing balances alone. Resolving the remaining inputs requires dated advances, repayments, cancellations and balances from the agent register, the SPV-level unamortized financing cost rollforward, and evidence that eligible uses and draw conditions were met at the measurement date. [March Note 10](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000222/R16.htm), [Executed agreement](https://www.sec.gov/Archives/edgar/data/1769628/000176962826000129/ex1011.htm).
+
+The CoreWeave financing panels link the September filing and show separately the disclosed outstanding principal and the conditional ranges for cumulative draws, repayments, carrying value and undrawn availability. The quarterly download preserves the same ranges alongside missing observed point values. The browser fixture checks the rendered figures and filing link across the three entry points.
 
 ### Browser acceptance for all financing curve shapes
 

@@ -567,6 +567,8 @@
       "cumulativeDrawdown": [4.583, 4.646],
       "cumulativePrincipalRepaid": [0, 0.063],
       "undrawnAvailability": [3.854, 3.917],
+      "standaloneCarryingValue": [4.503, 4.583],
+      "carryingValueBasis": "Gross principal less zero to the full combined non-recourse unamortized costs; assumes those deductions bound the standalone adjustment",
       "assumptions": ["Common September 30 cutoff", "Original facility limits remain applicable", "Term repayments do not restore commitment", "No noncash increase in facility principal"],
       "filingUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000465/crwv-20260930.htm",
       "agreementUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000129/ex1011.htm"
@@ -596,7 +598,8 @@
       "creditAgreementUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000129/ex1011.htm"
     },
     "collateral": "SPV GPU Fleet & Contracted Revenue",
-    "guarantor": "Non-Recourse to CRWV Parent",
+    "guarantor": "CoreWeave parent: limited recourse for specified bad acts; borrower subsidiaries: unconditional guarantees",
+    "guaranteeTermsSourceUrl": "https://www.sec.gov/Archives/edgar/data/1769628/000176962826000129/crwv-20260330.htm",
     "arranger": "MUFG, Morgan Stanley, GS, JPM",
     "actualLender": "Blackstone Credit & Insurance anchor and other syndicate members; allocations undisclosed",
     "lenderAllocationVerified": false,
@@ -615,8 +618,7 @@
     "reconciliationNote": "8.5B capacity; 4.583B outstanding principal at 2026Q3. Cumulative draws, repayments, facility net carrying value and available undrawn commitment are unverified. Included in consolidated non-recourse debt.",
     "principalOutstanding": 4.583,
     "carryingValue": null,
-    "principalAsOfQuarter": "2026Q3",
-    "commitmentTerminationDate": "2027-06-30"
+    "principalAsOfQuarter": "2026Q3"
   },
   {
     "id": "TX27",

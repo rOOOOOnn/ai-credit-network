@@ -1723,6 +1723,9 @@ const tx26MaximumDraw = usd(8.5 - tx26MinimumAvailability);
 assert.deepEqual(tx26Bounds.undrawnAvailability, [3.854, 3.917]);
 assert.deepEqual(tx26Bounds.cumulativeDrawdown, [4.583, tx26MaximumDraw]);
 assert.deepEqual(tx26Bounds.cumulativePrincipalRepaid, [0, usd(tx26MaximumDraw - 4.583)]);
+assert.deepEqual(tx26Bounds.standaloneCarryingValue, [usd(4.583 - (5.353 - 5.273)), 4.583]);
+assert.equal(tx26Cutoff.carryingValue, null);
+assert.match(tx26Cutoff.guarantor, /limited recourse.*unconditional guarantees/);
 assert.equal(tx26Cutoff.amountDrawn, null);
 assert.equal(tx26Cutoff.amountRepaid, null);
 const cycleHistory = engine.financingForecast({ mode: "curve", curve: "historical", history: {
