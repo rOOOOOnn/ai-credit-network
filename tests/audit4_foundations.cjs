@@ -265,6 +265,19 @@ assert.equal(sweepLoan("2027Q1").endingOutstanding, 1.3);
 assert.equal(sweepLoan("2027Q2").assumedCashSweepPaid, undefined);
 assert.equal(usd(noSweep["2027Q1"].entities.CRWV.cash - withSweep["2027Q1"].entities.CRWV.cash), 0.255);
 assert.equal(usd(noSweep["2027Q1"].entities.CRWV.debt - withSweep["2027Q1"].entities.CRWV.debt), 0.255);
+const eventSweepCase = collateralCash => engine.runSimulation(entities, transactions, {
+  audit4Contracts: true, overrides: { CRWV: { cash: 100, facilitySweepEvents: {
+    CRWV_DDTL55: { "2027Q1": { triggered: true, projectedContractValue: 3.6, collateralCash } }
+  } } }
+}).timeline["2027Q1"];
+const limitedEvent = eventSweepCase(0.04).financingLedger.CRWV_DDTL55;
+assert.equal(limitedEvent.assumedEventSweep.requiredPrincipalRepayment, 0.0551);
+assert.equal(limitedEvent.assumedEventSweep.paid, 0.04);
+assert.equal(limitedEvent.assumedEventSweep.targetMet, false);
+const fullEvent = eventSweepCase(1);
+assert.equal(fullEvent.financingLedger.CRWV_DDTL55.assumedEventSweep.paid, 0.0551);
+assert.equal(fullEvent.financingLedger.CRWV_DDTL55.assumedEventSweep.targetMet, true);
+assert.equal(fullEvent.financingLedger.CRWV_DDTL55.endingOutstanding, 1.4999);
 assert.equal(coreweaveOpening.financingLedger.TX27, undefined);
 assert.deepEqual(["10", "20", "21", "30"].map(suffix =>
   coreweaveOpening.financingLedger["CRWV_DDTL" + suffix].beginningOutstanding), [1.139, 2.796, 2.494, 2.323]);

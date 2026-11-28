@@ -289,7 +289,11 @@ async function checkPage(browser, url) {
     assert.match(await coreWeaveLease.innerText(), /18\.697 \/ 0\.649/);
     const coreWeaveSettings = JSON.parse(await scenario.inputValue());
     const sweepInput = { CRWV_DDTL55: { "2026Q4": 1, "2027Q1": 1 } };
+    const sweepEvents = { CRWV_DDTL55: { "2027Q1": {
+      triggered: true, projectedContractValue: 3.6, collateralCash: 0.04
+    } } };
     coreWeaveSettings.facilitySweepCash = sweepInput;
+    coreWeaveSettings.facilitySweepEvents = sweepEvents;
     await scenario.fill(JSON.stringify(coreWeaveSettings));
     await panel.locator("button").click();
     assert.deepEqual(JSON.parse(await scenario.inputValue()).facilitySweepCash, sweepInput);
@@ -423,6 +427,7 @@ async function checkPage(browser, url) {
       [10, 2, 3]);
     const openingCreditLedger = equipmentExport.quarters[0].financingLedger;
     assert.deepEqual(equipmentExport.simulationOptions.overrides.CRWV.facilitySweepCash, sweepInput);
+    assert.deepEqual(equipmentExport.simulationOptions.overrides.CRWV.facilitySweepEvents, sweepEvents);
     assert.equal(openingCreditLedger.CRWV_DDTL50.maturityDate, "2031-11-15");
     assert.equal(openingCreditLedger.CRWV_DDTL55.maturityDate, "2031-09-01");
     assert.equal(openingCreditLedger.CRWV_DDTL55.assumedCashSweepPaid, undefined);
@@ -445,8 +450,12 @@ async function checkPage(browser, url) {
     assert.equal(oracleCommenced.principalCashPaid, 0.0798);
     assert.equal(oracleCommenced.incremental.uncommencedCommitment, 288);
     const equipmentQuarter = equipmentExport.quarters.find(entry => entry.quarter === "2027Q1");
-    assert.equal(equipmentQuarter.financingLedger.CRWV_DDTL55.assumedCashSweepPaid, 0.255);
-    assert.equal(equipmentQuarter.financingLedger.CRWV_DDTL55.endingOutstanding, 1.3);
+    const sweepLoan = equipmentQuarter.financingLedger.CRWV_DDTL55;
+    assert.equal(sweepLoan.assumedEventSweep.paid, 0.04);
+    assert.equal(sweepLoan.assumedEventSweep.targetMet, false);
+    assert.equal(sweepLoan.assumedCashSweepPaid, 0.215);
+    assert.equal(sweepLoan.principalRepayment, 0.255);
+    assert.equal(sweepLoan.endingOutstanding, 1.3);
     const equipmentFacility = equipmentQuarter.financingLedger.AMZN_EQUIPMENT_DDTL;
     assert.equal(equipmentFacility.newDrawdown, 2);
     assert.equal(equipmentQuarter.leaseCashSchedules.MSFT.incremental.payment, 1.1394);

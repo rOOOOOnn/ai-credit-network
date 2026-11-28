@@ -1460,14 +1460,28 @@
           const manualRepayment = options.facilityRepayments?.[tx.id]?.[q];
           const scheduledRepayment = manualRepayment == null
             ? modeledInstallments.get(tx.id)?.principal ?? equalPrincipalPayment : nonnegative(manualRepayment);
+          const afterScheduled = Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledRepayment);
+          const event = ov?.facilitySweepEvents?.[tx.id]?.[q];
+          const ratioTarget = tx.eventSweepRatioTarget;
+          let eventSweep = 0;
+          if (ratioTarget > 0 && event?.triggered === true && Number.isFinite(event.projectedContractValue) &&
+              event.projectedContractValue >= 0 && Number.isFinite(event.collateralCash) &&
+              compareQuarter(q, tx.endQ) < 0 && !row.defaulted && afterScheduled > 0) {
+            const thresholdPrincipal = event.projectedContractValue / ratioTarget;
+            const required = afterScheduled < thresholdPrincipal ? 0
+              : Math.min(afterScheduled, (Math.floor((afterScheduled - thresholdPrincipal) * 1e4 + 1e-8) + 1) / 1e4);
+            eventSweep = money(Math.min(required, Math.floor(nonnegative(event.collateralCash) * 1e4 + 1e-8) / 1e4));
+            row.assumedEventSweep = { projectedContractValue: event.projectedContractValue, ratioTarget,
+              requiredPrincipalRepayment: money(required), requested: eventSweep };
+          }
           const availableForSweep = ov?.facilitySweepCash?.[tx.id]?.[q];
           const sweep = Number.isFinite(availableForSweep) && tx.cashSweepFloor != null &&
             quarterEndDate(q) > tx.commitmentTerminationDate && compareQuarter(q, tx.endQ) < 0 && !row.defaulted
             ? money(Math.min(nonnegative(availableForSweep),
-              Math.max(0, row.beginningOutstanding - row.nonCashConversion - scheduledRepayment - tx.cashSweepFloor))) : 0;
+              Math.max(0, afterScheduled - eventSweep - tx.cashSweepFloor))) : 0;
           if (sweep > 0) row.assumedCashSweepRequested = sweep;
           const requested = tx.endQ === q ? row.beginningOutstanding :
-            (maturityByFacility[tx.id] ?? 0) + scheduledRepayment + sweep;
+            (maturityByFacility[tx.id] ?? 0) + scheduledRepayment + eventSweep + sweep;
           return [row.txId, row.defaulted ? 0 : Math.min(row.beginningOutstanding - row.nonCashConversion, requested)];
         }));
         const explicitRepayments = (facilities ?? []).reduce((sum, row) => {
@@ -1502,6 +1516,15 @@
           }
           repaymentRoom = money(repaymentRoom - row.principalRepayment);
           row.endingOutstanding = money(row.beginningOutstanding - row.nonCashConversion - row.principalRepayment);
+          if (row.assumedEventSweep) {
+            const event = row.assumedEventSweep;
+            const otherPrincipal = scheduledFacilityRepayments[row.txId] - event.requested -
+              (row.assumedCashSweepRequested ?? 0);
+            event.paid = money(Math.min(event.requested, Math.max(0, row.principalRepayment - otherPrincipal)));
+            const afterEvent = money(row.endingOutstanding + (row.assumedCashSweepPaid ?? 0));
+            event.ratioAfter = afterEvent > 0 ? money(event.projectedContractValue / afterEvent) : null;
+            event.targetMet = afterEvent === 0 || event.projectedContractValue > afterEvent * event.ratioTarget;
+          }
           let trancheRepayment = row.principalRepayment;
           for (const tranche of row.trancheBalances ?? []) {
             const paid = Math.min(tranche.principal, trancheRepayment);
