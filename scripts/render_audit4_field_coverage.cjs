@@ -16,7 +16,14 @@ const fields = [
   ["Customer concentration", "customerConcentration"],
   ["Individual customer concentration upper bound (exclusive)", "customerConcentrationExclusiveUpperBound"],
   ["GPU purchases", "gpuPurchases"], ["GPU fleet age", "gpuFleetAge"], ["Replacement CapEx", "replacementCapex"],
-  ["Financing commitments", "financingCommitments"], ["Undrawn credit", "undrawnCredit"]
+  ["Financing commitments", "financingCommitments"], ["Undrawn credit", "undrawnCredit"],
+  ["Net receivables", "ar"], ["Restricted cash", "restrictedCash"],
+  ["Reported guarantee maximum", "offBalanceGuarantees"],
+  ["Separate cloud service commitments", "separateCloudServiceCommitments"],
+  ["Borrowing principal", "borrowingPrincipal"], ["Reported borrowing principal", "reportedBorrowingPrincipal"],
+  ["Recourse principal", "recoursePrincipal"], ["Non-recourse principal", "nonRecoursePrincipal"],
+  ["Instrument commitment", "facilityCommitment"], ["Instrument principal outstanding", "principalOutstanding"],
+  ["Commenced lease maturities", "commencedLeaseMaturities"]
 ];
 
 function renderFieldCoverage(rows) {

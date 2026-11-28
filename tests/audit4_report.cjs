@@ -171,3 +171,8 @@ assert.equal(constellation.longTermBorrowingsPrincipal, 19.524);
 assert.equal(vistra.debt, 21.146);
 assert.equal(vistra.cash, 2.743);
 assert.equal(vistra.undrawnCredit, (5500 - 786) / 1000);
+
+for (const entity of entities) {
+  const snapshot = entity.financials?.["2026Q3"];
+  if (snapshot?.offBalanceGuarantees === 0) assert.ok(snapshot.offBalanceGuaranteesSourceUrl, entity.id);
+}
